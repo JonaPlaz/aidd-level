@@ -70,6 +70,11 @@ Plafonds d'axe : Taille Gold · Harness Gold · Intervention Silver · En parall
 Le statut global devient `évalué, confiance basse` (une fourchette suffit), et « comment
 monter » nomme le champ à fournir avant tout geste.
 
+Tests exigés, par axe (repris dans les sections *Tests* des specs 01, 03, 04 ; Harness dans
+la spec 02) : le champ décideur à `null` → `Range(White, plafond, 0)` et une note pointée
+« = absent » ; au niveau du handler : un tel profil sort `évalué, confiance basse` et son
+plan commence par le champ à fournir.
+
 ## Cohérence annoncé / présent
 
 `profile.json › available` liste les pièces annoncées. Comparé au dossier réel, dans les deux

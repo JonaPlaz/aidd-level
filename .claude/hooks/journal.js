@@ -6,11 +6,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
-const { readInput, projectRoot, parseGit } = require('./lib');
+const { readInput, projectRoot, parseGitAll } = require('./lib');
 
 const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
-const parsedGit = parseGit(command);
+const gitInvocations = parseGitAll(command);
+const parsedGit = gitInvocations.find((g) => ['rebase', 'push', 'merge', 'cherry-pick'].includes(g.subcommand)) || gitInvocations[0] || null;
 // A `git -C <worktree> …` failure is journaled against that worktree's HEAD and branch.
 const root = parsedGit && parsedGit.cPath ? path.resolve(projectRoot(input), parsedGit.cPath) : projectRoot(input);
 

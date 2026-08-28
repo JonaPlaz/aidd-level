@@ -66,9 +66,12 @@ adaptation assumée, revue au journal si une borne est atteinte.
 | `feature` | `argument-hint: [issue-number]`, `disable-model-invocation: true` | enchaîne spec → validation → dev → PR → attente de review → correction → merge auto, sans intervention après validation. Mode `--trivial` pour la PR jetable |
 
 **Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill
-possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13) et agit sur la
-branche par `git -C <worktree>`. Après ouverture de la PR, le skill rebase la branche sur
-`origin/main` (check `ci` requis en mode `strict`) avec `git push --force-with-lease`, demande
+possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Les opérations
+git sur la branche sont exécutées par **le propriétaire du checkout** : l'agent `dev` relancé
+(« rebase, push --force-with-lease, rends la main ») quand la branche vit dans son worktree, le
+skill lui-même quand la PR est née du checkout courant (`docs/spec-<n°>`, `--trivial`). Le
+skill n'emploie jamais `git -C` — les permissions n'autorisent que des verbes git explicites.
+Après ouverture de la PR, le propriétaire rebase la branche sur `origin/main` (check `ci` requis en mode `strict`) avec `git push --force-with-lease`, demande
 le verdict **après** le rebase (`@codex review`), puis interroge avec `--paginate` `gh api repos/{o}/{r}/pulls/{n}/reviews`,
 `…/pulls/{n}/comments` **et `…/issues/{n}/reactions`** (le 👍 « rien à signaler » de Codex
 est une réaction, pas une revue), en ne retenant que le verdict portant sur le SHA courant

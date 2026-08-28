@@ -60,3 +60,6 @@ tests avant le code, règle de projet) pour que la reprise devienne inutile. Voi
 
 Quatre profils → valeurs ci-dessus · fixture médiane 0 avec `total = 8` → fourchette
 [Copper, Silver], « 4 PR manquantes » · fixture médiane 0 avec `total = 30` → Silver.
+Médiane absente → `Range(White, Silver, 0)` + note pointée « = absent » · bornes exactes :
+`total = 12` médiane 0 → Silver, `total = 11` → fourchette, `total = 5` médiane 2 → Blue,
+`total = 4` → fourchette.

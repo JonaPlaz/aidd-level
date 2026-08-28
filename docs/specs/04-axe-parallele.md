@@ -49,4 +49,5 @@ semaine ». Voir § 06.
 ## Tests
 
 Quatre profils → valeurs ci-dessus · fixture médiane 3 → Gold · fixture médiane 1, max 6 →
-Green + note pic · fixture `total = 2` → fourchette.
+Green + note pic · fixture `total = 2` → fourchette. Médiane absente → `Range(White, Gold, 0)` +
+note pointée « = absent » · médiane 2,5 → Green avec un claim qui cite la valeur.

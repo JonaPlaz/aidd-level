@@ -49,8 +49,10 @@ White : voir § 05 (filtre d'entrée, jamais décidé par la taille seule).
 `pull_requests.total < SampleFloors::MIN_PR_SAMPLE` (5) → verdict en fourchette : plancher =
 niveau du palier observé, plafond = Gold, manque chiffré = `5 − total` PR. Voir § 05.
 
-Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
-de l'axe, 0)` et une note par champ manquant.
+Signal absent : règle commune de la spec 05 § *Signal absent* — **seulement quand le signal et
+son repli manquent tous deux** (`median_files_changed` et `median_lines_changed` `null`) ;
+`median_files_changed` absent avec des lignes présentes = repli, pas absence. Alors
+`Range(White, Gold, 0)` et une note par champ manquant, chacune pointée.
 
 ## Preuves rendues
 
@@ -66,4 +68,6 @@ se décrète pas. Jamais recommandée en premier (§ 06).
 ## Tests
 
 `perceval` → S/Red · `bohort` → M/Blue · `leodagan` → L · `arthur` → XL · fixture avec
-`median_files_changed` absent et lignes = 300 → L · fixture `total = 3` → fourchette.
+`median_files_changed` absent et lignes = 300 → L · fixture `total = 3` → fourchette. · les
+deux médianes absentes → `Range(White, Gold, 0)` avec deux notes pointées · `median_files_changed
+= 0` → repli sur les lignes, note citant `= 0`.
