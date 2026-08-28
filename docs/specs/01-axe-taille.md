@@ -49,6 +49,9 @@ White : voir § 05 (filtre d'entrée, jamais décidé par la taille seule).
 `pull_requests.total < SampleFloors::MIN_PR_SAMPLE` (5) → verdict en fourchette : plancher =
 niveau du palier observé, plafond = Gold, manque chiffré = `5 − total` PR. Voir § 05.
 
+Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
+de l'axe, 0)` et une note par champ manquant.
+
 ## Preuves rendues
 
 - `git-activity.json › pull_requests.median_files_changed = 13 → L`

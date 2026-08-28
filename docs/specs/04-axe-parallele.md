@@ -31,6 +31,9 @@ Validés sur les quatre profils (1, 1, 1, 4 → Green, Green, Green, Gold).
 `pull_requests.total < SampleFloors::PARALLELISM_MIN_PR` (5) → fourchette [niveau de la
 médiane, Gold], manque chiffré. Constante non sourcée, adaptation assumée.
 
+Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
+de l'axe, 0)` et une note par champ manquant.
+
 ## Preuves rendues
 
 - `git-activity.json › parallelism.median_concurrent_branches = 1 → un chantier à la fois`

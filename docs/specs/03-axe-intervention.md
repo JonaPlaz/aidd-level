@@ -32,6 +32,9 @@ d'un cadrage par agent. L'axe **plafonne à Silver** par construction, dit en no
 sur cet axe demanderait la preuve que le cadrage lui-même est automatisé ; non observable
 dans les pièces fournies ». C'est une limite assumée, pas un seuil inventé.
 
+Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
+de l'axe, 0)` et une note par champ manquant.
+
 ## Corroboration, jamais décision
 
 `merged_without_human_edit_after_open` est **non monotone** avec le niveau (3/63, 10/48,
