@@ -23,6 +23,11 @@ use AiddLevel\Domain\Profile\ProfileIdentity;
  * `LowConfidence`, and both null when `NotAssessable`. Keeping the ceiling here spares the
  * renderer from recomputing the minimum over `verdicts` on its own
  * (docs/specs/05-robustesse.md § Trois statuts de sortie).
+ *
+ * `missingPrerequisite` and `hint` are set only for `NotAssessable` (docs/specs/05 § Trois
+ * statuts de sortie: "le prérequis manquant nommé (…) la piste pour débloquer"). They are
+ * explicit fields rather than a convention over `notes` — a gate failure names its own
+ * prerequisite and remediation lead, it does not infer them from list position.
  */
 final readonly class Assessment
 {
@@ -41,6 +46,8 @@ final readonly class Assessment
         public array $verdicts,
         public array $recommendations,
         public array $notes,
+        public ?string $missingPrerequisite = null,
+        public ?string $hint = null,
     ) {
     }
 }
