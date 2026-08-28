@@ -28,12 +28,18 @@ final class ParallelismThresholds
      * The level for a given median, ignoring sample size (docs/specs/04-axe-parallele.md §
      * Seuils/Confiance) — a sample below SampleFloors::PARALLELISM_MIN_PR must still be
      * turned into a confidence Range by the evaluator.
+     *
+     * An even-sized PR sample can legitimately yield a fractional median (e.g. concurrent
+     * branch counts 0 and 1 → 0.5): assumed adaptation, not sourced, reading "White" as
+     * exactly 0 and anything strictly above it — including 0 < x < 1 — as at least "some"
+     * concurrency (Green), since a fraction above zero still means more than one chantier
+     * touched the sample.
      */
-    public static function levelForMedian(int $median): Level
+    public static function levelForMedian(float $median): Level
     {
         return match (true) {
             $median >= self::MEDIAN_HABITUAL_MIN => Level::Gold,
-            $median >= self::MEDIAN_SOME_MIN => Level::Green,
+            $median > self::MEDIAN_NONE => Level::Green,
             default => Level::White,
         };
     }

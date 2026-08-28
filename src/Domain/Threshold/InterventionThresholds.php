@@ -30,13 +30,19 @@ final class InterventionThresholds
      * SampleFloors::MIN_PR_SAMPLE_ABSENCE must still be turned into a confidence Range by the
      * evaluator (docs/specs/03-axe-intervention.md § Seuils) — this lookup does not see the
      * sample size.
+     *
+     * An even-sized PR sample can legitimately yield a fractional median (e.g. correction
+     * counts 1 and 2 → 1.5): assumed adaptation, not sourced, reading each band as "at least"
+     * its threshold — >= 3 majority, >= 2 partial, >= 1 (so 1.5 too) key steps — and reserving
+     * "never" for exactly 0; anywhere strictly between 0 and 1 still means some correction
+     * happened, so it reads as key steps too, never as "never".
      */
-    public static function levelForMedian(int $median): Level
+    public static function levelForMedian(float $median): Level
     {
         return match (true) {
             $median >= self::MEDIAN_MAJORITY_MIN => Level::Red,
-            self::MEDIAN_PARTIAL === $median => Level::Blue,
-            self::MEDIAN_KEY_STEPS === $median => Level::Copper,
+            $median >= self::MEDIAN_PARTIAL => Level::Blue,
+            $median > self::MEDIAN_NEVER => Level::Copper,
             default => Level::Silver,
         };
     }

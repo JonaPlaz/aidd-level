@@ -14,7 +14,7 @@ final readonly class AxisVerdict
 {
     /**
      * @param list<Evidence> $evidences
-     * @param list<string>   $notes
+     * @param list<Note>     $notes
      */
     public function __construct(
         public Axis $axis,

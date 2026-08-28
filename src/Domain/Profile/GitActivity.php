@@ -17,11 +17,11 @@ final readonly class GitActivity
         public ?int $pullRequestsTotal,
         public ?float $medianFilesChanged,
         public ?float $medianLinesChanged,
-        public ?int $medianCorrectionCommitsAfterOpen,
+        public ?float $medianCorrectionCommitsAfterOpen,
         public ?int $mergedWithoutHumanEditAfterOpen,
         public ?float $aiCoauthoredRatio,
         public ?int $maxConcurrentBranches,
-        public ?int $medianConcurrentBranches,
+        public ?float $medianConcurrentBranches,
         public ?ContextFiles $contextFiles,
     ) {
     }
