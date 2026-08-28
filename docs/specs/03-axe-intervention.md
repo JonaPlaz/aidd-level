@@ -39,8 +39,10 @@ de l'axe, 0)` et une note par champ manquant.
 
 `merged_without_human_edit_after_open` est **non monotone** avec le niveau (3/63, 10/48,
 37/71, 46/154 → 4,8 %, 20,8 %, 52 %, 29,9 %). Rendu en note, pondération nulle.
-`pull-requests.json` (12 PR) : le champ `commits` par PR corrobore l'ordre de grandeur ; s'il
-contredit franchement la médiane (**non vérifié** : aucun cas), note d'incohérence.
+`pull-requests.json` : **écarté** le 2026-08-29 (remarque Codex sur la PR #18). Son champ
+`commits` compte tous les commits d'une PR, pas ceux d'après ouverture : `bohort` 7,5 pour une
+médiane de 2, `leodagan` 6 pour 0 — les deux champs ne se comparent pas, aucune note n'en
+découle.
 
 ## Preuves rendues
 
