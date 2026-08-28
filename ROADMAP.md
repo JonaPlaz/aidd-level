@@ -26,3 +26,17 @@ qu'aucun ne dépend du résultat de l'autre. Le nombre de fronts ouverts se déd
 sortie commune et ne dépendent que de 1 → **six fronts ouvrables**. La spec du harnais prévoit
 de commencer à trois (doute 6 du brief : trois worktrees simultanés jamais éprouvés). 8 attend
 2–6 ; 9 attend 7 et 8 ; 10 et 11 ferment.
+
+| 0 | Harnais | 07, 08 | — | — | — | **mergé** : #13 `5e9a65c`, corrections #14 `27feb20`, #16 `1cedbfe` (règles de boucle révisées deux fois, cf. journal) |
+| 1 | Noyau de domaine | 00 § 4.1 | 0 | — | #2 | **mergé** : #15 `30062a0` (3 passes Codex) |
+| 2 | Évaluateur Taille | 01 | 1 | — | #3 | **mergé** : #17 `30ec31a` |
+| 3 | Évaluateur Harness | 02 | 1 | — | #4 | **mergé** : #19 `2a83301` (borne `maxTurns` atteinte une fois) |
+| 4 | Évaluateur Intervention | 03 | 1 | — | #5 | **mergé** : #18 `d51c8e9` |
+| 5 | Évaluateur En parallèle | 04 | 1 | — | #6 | **mergé** : #20 `a48066b` |
+| 6 | Adaptateur dossier de profil | 05 | 1 | — | #7 | **mergé** : #21 `78f1873` |
+| 7 | Rendu texte et gestes | 06 | 1 | — | #8 | en revue : #22 |
+
+**Constaté le 2026-08-29** : six fronts ouverts simultanément après le chantier 1 (2, 3, 4, 5,
+6, 7), comme le graphe le prévoyait ; l'intégration s'est faite en cascade séquentielle
+(check `ci` requis en mode `strict` : chaque merge remet les autres en retard, rebase à
+chaque fois).
