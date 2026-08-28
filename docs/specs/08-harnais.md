@@ -65,7 +65,7 @@ adaptation assumée, revue au journal si une borne est atteinte.
 | `bootstrap` | `disable-model-invocation: true`, `allowed-tools: Bash Write Read` | § 07, une fois |
 | `feature` | `argument-hint: [issue-number]`, `disable-model-invocation: true` | enchaîne spec → validation → dev → PR → attente de review → correction → merge auto, sans intervention après validation. Mode `--trivial` pour la PR jetable |
 
-**Attente de review (local)** : après ouverture de la PR, le skill interroge
+**Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Après ouverture de la PR, le skill interroge
 `gh api repos/{o}/{r}/pulls/{n}/reviews` et `…/comments` jusqu'à apparition d'une revue, avec
 un délai plafond (`REVIEW_WAIT_MAX`, **valeur à constater** sur la PR jetable — le temps de
 réponse de Codex n'est connu nulle part). Délai dépassé → journal, label `blocked`, arrêt.
@@ -86,7 +86,7 @@ Versionnés dans `.claude/settings.json` (sinon ils ne comptent pas), scripts da
 | `guard-layers.js` | `PreToolUse` · `Edit\|Write` | fichier sous `src/Domain/` dont le contenu contient `use AiddLevel\Application` ou `use AiddLevel\Infrastructure` → exit 2 | écrire volontairement un `use` interdit, constater le refus |
 | `guard-commit.js` | `PreToolUse` · `Bash` (commande `git commit`) | `git diff --cached --name-only` touche `src/Domain/` **et** `src/Infrastructure/` → exit 2 ; touche `.brief/` → exit 2 | stager deux couches, constater le refus |
 | `format.js` | `PostToolUse` · `Edit\|Write` | fichier `*.php` → `make fmt FILE=…` (php-cs-fixer dans Docker, **version non vérifiée** pour PHP 8.5) | éditer un fichier mal indenté, constater la réécriture |
-| `journal.js` | `PostToolUseFailure` · `Bash` ; `SubagentStop` ; `Stop` | ajoute une ligne à `docs/journal.md` (format § 6) avec `git rev-parse HEAD`, branche, et pour `PostToolUseFailure` la commande échouée — **le journal est alimenté par hook, pas par la bonne volonté du modèle** | faire échouer `make test`, constater la ligne |
+| `journal.js` | `PostToolUseFailure` · `Bash` ; `SubagentStop` ; `Stop` (seulement hors `main` avec travail non committé) | ajoute une ligne à `docs/journal.md` (format § 6) avec `git rev-parse HEAD`, branche, et pour `PostToolUseFailure` la commande échouée — **le journal est alimenté par hook, pas par la bonne volonté du modèle** | faire échouer `make test`, constater la ligne |
 
 Un hook qui ne se déclenche pas au test est **retiré**, pas laissé mort.
 
