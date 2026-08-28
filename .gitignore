@@ -3,5 +3,6 @@ vendor/
 .claude/worktrees/
 .claude/settings.local.json
 .phpunit.cache/
+.php-cs-fixer.cache
 composer.phar
 *.local
