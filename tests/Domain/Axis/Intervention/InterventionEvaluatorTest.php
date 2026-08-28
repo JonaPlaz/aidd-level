@@ -13,6 +13,8 @@ use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Profile\ProfileIdentity;
+use AiddLevel\Domain\Profile\PullRequest;
+use AiddLevel\Domain\Profile\PullRequests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -27,10 +29,10 @@ final class InterventionEvaluatorTest extends TestCase
      */
     public static function suppliedProfiles(): iterable
     {
-        yield 'perceval: after the fact, on most PRs' => [4.0, 63, Level::Red];
-        yield 'bohort: after the fact, on a part' => [2.0, 48, Level::Blue];
-        yield 'leodagan: never, sample above the absence floor' => [0.0, 71, Level::Silver];
-        yield 'arthur: at key steps' => [1.0, 154, Level::Copper];
+        yield 'perceval: après coup, sur la majorité' => [4.0, 63, Level::Red];
+        yield 'bohort: après coup, sur une partie' => [2.0, 48, Level::Blue];
+        yield 'leodagan: jamais, échantillon au-dessus du plancher absence' => [0.0, 71, Level::Silver];
+        yield 'arthur: aux étapes clés' => [1.0, 154, Level::Copper];
     }
 
     #[Test]
@@ -66,6 +68,46 @@ final class InterventionEvaluatorTest extends TestCase
     }
 
     #[Test]
+    public function aTotalExactlyAtTheAbsenceFloorIsConfirmedSilver(): void
+    {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile(0.0, 12));
+
+        self::assertSame(Level::Silver, $verdict->level);
+        self::assertInstanceOf(Confirmed::class, $verdict->confidence);
+    }
+
+    #[Test]
+    public function aTotalOneBelowTheAbsenceFloorIsARange(): void
+    {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile(0.0, 11));
+
+        self::assertInstanceOf(Range::class, $verdict->confidence);
+        self::assertSame(Level::Copper, $verdict->confidence->floor);
+        self::assertSame(Level::Silver, $verdict->confidence->ceiling);
+        self::assertSame(1, $verdict->confidence->missingSample);
+    }
+
+    #[Test]
+    public function aTotalExactlyAtTheGeneralFloorIsConfirmed(): void
+    {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile(2.0, 5));
+
+        self::assertSame(Level::Blue, $verdict->level);
+        self::assertInstanceOf(Confirmed::class, $verdict->confidence);
+    }
+
+    #[Test]
+    public function aTotalOneBelowTheGeneralFloorIsARange(): void
+    {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile(2.0, 4));
+
+        self::assertInstanceOf(Range::class, $verdict->confidence);
+        self::assertSame(Level::Blue, $verdict->confidence->floor);
+        self::assertSame(Level::Silver, $verdict->confidence->ceiling);
+        self::assertSame(1, $verdict->confidence->missingSample);
+    }
+
+    #[Test]
     public function anEvenSampleFractionalMedianReadsAsKeySteps(): void
     {
         $verdict = new InterventionEvaluator()->evaluate($this->profile(1.5, 20));
@@ -87,7 +129,7 @@ final class InterventionEvaluatorTest extends TestCase
     }
 
     #[Test]
-    public function aNullSignalIsARangeFromWhiteToSilverWithANote(): void
+    public function aNullSignalIsARangeFromWhiteToSilverWithNoMissingSampleAndANote(): void
     {
         $verdict = new InterventionEvaluator()->evaluate($this->profile(null, 48));
 
@@ -95,11 +137,20 @@ final class InterventionEvaluatorTest extends TestCase
         self::assertInstanceOf(Range::class, $verdict->confidence);
         self::assertSame(Level::White, $verdict->confidence->floor);
         self::assertSame(Level::Silver, $verdict->confidence->ceiling);
+        // docs/specs/05-robustesse.md § Signal absent: what is missing is the field itself,
+        // not a number of pull requests.
+        self::assertSame(0, $verdict->confidence->missingSample);
         self::assertSame([], $verdict->evidences);
-        self::assertNotEmpty(array_filter(
+
+        $absentSignalNotes = array_filter(
             $verdict->notes,
-            static fn (Note $note): bool => str_contains($note->text, 'no correction-commit signal'),
-        ));
+            static fn (Note $note): bool => str_contains($note->text, 'aucun signal de commits correctifs'),
+        );
+        self::assertCount(1, $absentSignalNotes);
+        $note = array_values($absentSignalNotes)[0];
+        self::assertSame('git-activity.json', $note->pointer->file);
+        self::assertSame('pull_requests.median_correction_commits_after_open', $note->pointer->field);
+        self::assertSame('absent', $note->pointer->value);
     }
 
     #[Test]
@@ -111,7 +162,7 @@ final class InterventionEvaluatorTest extends TestCase
             $verdict->notes,
             static fn (Note $note): bool => str_contains(
                 $note->text,
-                'Gold on this axis would require proof that framing itself is automated',
+                'Gold sur cet axe demanderait la preuve que le cadrage lui-même est automatisé',
             ),
         );
 
@@ -128,12 +179,15 @@ final class InterventionEvaluatorTest extends TestCase
 
         $corroborationNotes = array_filter(
             $verdict->notes,
-            static fn (Note $note): bool => str_contains($note->text, 'corroborates, does not decide'),
+            static fn (Note $note): bool => str_contains($note->text, 'corrobore, ne décide pas'),
         );
 
         self::assertCount(1, $corroborationNotes);
         $note = array_values($corroborationNotes)[0];
         self::assertStringContainsString('10/48', $note->text);
+        // The pointer carries the raw field value (10), never the derived ratio.
+        self::assertSame('10', $note->pointer->value);
+        self::assertSame('pull_requests.merged_without_human_edit_after_open', $note->pointer->field);
         self::assertSame(Level::Blue, $verdict->level, 'the corroborating field must not move the level');
     }
 
@@ -144,14 +198,58 @@ final class InterventionEvaluatorTest extends TestCase
 
         $corroborationNotes = array_filter(
             $verdict->notes,
-            static fn (Note $note): bool => str_contains($note->text, 'corroborates, does not decide'),
+            static fn (Note $note): bool => str_contains($note->text, 'corrobore, ne décide pas'),
         );
 
         self::assertSame([], $corroborationNotes);
     }
 
-    private function profile(?float $median, ?int $total, ?int $mergedWithoutHumanEdit = null): Profile
+    #[Test]
+    public function pullRequestsWithinTheContradictionGapAddNoInconsistencyNote(): void
     {
+        // Aggregate median 0, last-page commit median 1: a one-commit gap is page-to-page
+        // noise, below InterventionThresholds::MEDIAN_CONTRADICTION_GAP (2).
+        $verdict = new InterventionEvaluator()->evaluate(
+            $this->profile(0.0, 30, pullRequestCommits: [1, 1, 1]),
+        );
+
+        self::assertSame([], array_filter(
+            $verdict->notes,
+            static fn (Note $note): bool => str_contains($note->text, 'incohérence'),
+        ));
+    }
+
+    #[Test]
+    public function aFlagrantGapBetweenTheAggregateAndLastPageMediansAddsANonDecisiveNote(): void
+    {
+        // Aggregate median 0, last-page commit median 3: a three-commit gap is flagrant.
+        $verdict = new InterventionEvaluator()->evaluate(
+            $this->profile(0.0, 30, pullRequestCommits: [2, 3, 4]),
+        );
+
+        $inconsistencyNotes = array_filter(
+            $verdict->notes,
+            static fn (Note $note): bool => str_contains($note->text, 'incohérence'),
+        );
+
+        self::assertCount(1, $inconsistencyNotes);
+        $note = array_values($inconsistencyNotes)[0];
+        self::assertSame('pull-requests.json', $note->pointer->file);
+        self::assertSame('commits (median of last page)', $note->pointer->field);
+        self::assertSame('3', $note->pointer->value);
+        // Non-decisive: the level still follows the aggregate median (0, n=30 → Silver).
+        self::assertSame(Level::Silver, $verdict->level);
+    }
+
+    /**
+     * @param list<int>|null $pullRequestCommits
+     */
+    private function profile(
+        ?float $median,
+        ?int $total,
+        ?int $mergedWithoutHumanEdit = null,
+        ?array $pullRequestCommits = null,
+    ): Profile {
         return new Profile(
             identity: new ProfileIdentity('fixture', 'developer', [], []),
             gitActivity: new GitActivity(
@@ -166,6 +264,11 @@ final class InterventionEvaluatorTest extends TestCase
                 medianConcurrentBranches: null,
                 contextFiles: null,
             ),
+            pullRequests: null === $pullRequestCommits ? null : new PullRequests(array_map(
+                static fn (int $index, int $commits): PullRequest => new PullRequest($index + 1, true, $commits),
+                array_keys($pullRequestCommits),
+                $pullRequestCommits,
+            )),
         );
     }
 }

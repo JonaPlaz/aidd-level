@@ -33,4 +33,10 @@ final class InterventionThresholdsTest extends TestCase
     {
         self::assertSame($expected, InterventionThresholds::levelForMedian($median));
     }
+
+    #[Test]
+    public function pinsTheContradictionGap(): void
+    {
+        self::assertSame(2, InterventionThresholds::MEDIAN_CONTRADICTION_GAP);
+    }
 }

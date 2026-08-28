@@ -16,6 +16,7 @@ use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
+use AiddLevel\Domain\Profile\PullRequests;
 use AiddLevel\Domain\Threshold\InterventionThresholds;
 use AiddLevel\Domain\Threshold\SampleFloors;
 
@@ -23,7 +24,9 @@ use AiddLevel\Domain\Threshold\SampleFloors;
  * Intervention axis (docs/specs/03-axe-intervention.md): how often a human corrects the AI's
  * work after a pull request opens, read from `git-activity.json ›
  * pull_requests.median_correction_commits_after_open`. The median decides, never the maximum
- * (docs/specs/00-vue-ensemble.md § 5, rule 5).
+ * (docs/specs/00-vue-ensemble.md § 5, rule 5). `Evidence` and `Note` texts are French: they are
+ * the report the jury reads, and the grid wording they quote (docs/specs/00, 03, 06) is French.
+ * Field names, identifiers and pointers stay as they are in the source pieces.
  *
  * The pull-request sample size gates how sure the verdict is: "never" (Silver) needs its own,
  * higher floor (`SampleFloors::MIN_PR_SAMPLE_ABSENCE`) because it is the only claim of absence
@@ -31,27 +34,30 @@ use AiddLevel\Domain\Threshold\SampleFloors;
  * (`SampleFloors::MIN_PR_SAMPLE`). The axis caps at Silver by construction — no piece supplied
  * distinguishes a human framing a task from an agent framing it — said in a systematic note.
  * `merged_without_human_edit_after_open` corroborates but never decides (docs/specs/03 §
- * Corroboration), because it is not monotone with the level across the four supplied profiles.
+ * Corroboration), because it is not monotone with the level across the four supplied profiles;
+ * so does `pull-requests.json › commits` (last page), flagged only on a flagrant contradiction.
  */
 final class InterventionEvaluator implements AxisEvaluator
 {
-    private const string SOURCE_FILE = 'git-activity.json';
+    private const string ACTIVITY_FILE = 'git-activity.json';
+    private const string PULL_REQUESTS_FILE = 'pull-requests.json';
     private const string MEDIAN_FIELD = 'pull_requests.median_correction_commits_after_open';
     private const string TOTAL_FIELD = 'pull_requests.total';
     private const string MERGED_WITHOUT_EDIT_FIELD = 'pull_requests.merged_without_human_edit_after_open';
+    private const string LAST_PAGE_COMMITS_FIELD = 'commits (median of last page)';
 
-    // Grid wording (docs/specs/00-vue-ensemble.md § 2 and the issue that cites it), one claim
-    // per level this axis can reach from the signal alone.
-    private const string CLAIM_MAJORITY = 'after the fact, on most PRs';
-    private const string CLAIM_PARTIAL = 'after the fact, on a part';
-    private const string CLAIM_KEY_STEPS = 'at key steps';
-    private const string CLAIM_NEVER = 'never, once framed';
+    // Grid wording (docs/specs/00-vue-ensemble.md § 2, docs/specs/06 § Format de sortie), one
+    // claim per level this axis can reach from the signal alone.
+    private const string CLAIM_MAJORITY = 'après coup, sur la majorité';
+    private const string CLAIM_PARTIAL = 'après coup, sur une partie';
+    private const string CLAIM_KEY_STEPS = 'aux étapes clés';
+    private const string CLAIM_NEVER = 'jamais, une fois la tâche cadrée';
 
     // The axis cannot observe whether framing itself is automated (docs/specs/03-axe-
     // intervention.md § Gold): Gold is out of reach from this signal alone, whatever the
     // median and the sample say, so every verdict carries this note.
-    private const string CEILING_NOTE = 'Gold on this axis would require proof that framing '
-        .'itself is automated; not observable in the provided pieces.';
+    private const string CEILING_NOTE = 'Gold sur cet axe demanderait la preuve que le cadrage '
+        .'lui-même est automatisé ; non observable dans les pièces fournies.';
 
     public function axis(): Axis
     {
@@ -64,16 +70,21 @@ final class InterventionEvaluator implements AxisEvaluator
         $median = $activity->medianCorrectionCommitsAfterOpen;
 
         if (null === $median) {
+            // docs/specs/05-robustesse.md § Signal absent: the missing piece is the field
+            // itself, not a pull-request count, so the confidence Range carries no missing
+            // sample size (0) — naming what to supply is the note's job, not a number.
             return new AxisVerdict(
                 axis: $this->axis(),
                 level: Level::White,
-                confidence: new Range(Level::White, Level::Silver, SampleFloors::MIN_PR_SAMPLE),
+                confidence: new Range(Level::White, Level::Silver, 0),
                 evidences: [],
                 notes: [
                     $this->note(
-                        'no correction-commit signal for this axis',
+                        'aucun signal de commits correctifs après ouverture pour cet axe : '
+                            .'fournir pull_requests.median_correction_commits_after_open',
+                        self::ACTIVITY_FILE,
                         self::MEDIAN_FIELD,
-                        'null',
+                        'absent',
                     ),
                     $this->ceilingNote($activity),
                 ],
@@ -87,25 +98,31 @@ final class InterventionEvaluator implements AxisEvaluator
         $evidences = [
             new Evidence(
                 claim: $this->claimFor($level),
-                pointer: $this->pointer(self::MEDIAN_FIELD, self::formatNumber($median)),
+                pointer: $this->pointer(self::ACTIVITY_FILE, self::MEDIAN_FIELD, self::formatNumber($median)),
             ),
         ];
 
         if (null !== $total) {
             $evidences[] = new Evidence(
                 claim: sprintf(
-                    'pull-request sample size (floor %d; floor for "never" %d)',
+                    "taille de l'échantillon de PR (plancher %d ; plancher « jamais » %d)",
                     SampleFloors::MIN_PR_SAMPLE,
                     SampleFloors::MIN_PR_SAMPLE_ABSENCE,
                 ),
-                pointer: $this->pointer(self::TOTAL_FIELD, (string) $total),
+                pointer: $this->pointer(self::ACTIVITY_FILE, self::TOTAL_FIELD, (string) $total),
             );
         }
 
         $notes = [$this->ceilingNote($activity)];
-        $corroboration = $this->corroborationNote($activity, $total);
+
+        $corroboration = $this->corroborationNote($activity);
         if (null !== $corroboration) {
             $notes[] = $corroboration;
+        }
+
+        $inconsistency = $this->inconsistencyNote($median, $profile->pullRequests);
+        if (null !== $inconsistency) {
+            $notes[] = $inconsistency;
         }
 
         return new AxisVerdict(
@@ -159,40 +176,99 @@ final class InterventionEvaluator implements AxisEvaluator
     private function ceilingNote(GitActivity $activity): Note
     {
         $value = null === $activity->medianCorrectionCommitsAfterOpen
-            ? 'null'
+            ? 'absent'
             : self::formatNumber($activity->medianCorrectionCommitsAfterOpen);
 
-        return $this->note(self::CEILING_NOTE, self::MEDIAN_FIELD, $value);
+        return $this->note(self::CEILING_NOTE, self::ACTIVITY_FILE, self::MEDIAN_FIELD, $value);
     }
 
-    private function corroborationNote(GitActivity $activity, ?int $total): ?Note
+    /**
+     * The pointer carries the raw field value (`merged_without_human_edit_after_open`, an
+     * absolute count); the ratio against `pull_requests.total` is derived commentary, so it
+     * stays in the note text, never in the pointer (a pointer asserts a value verifiable at
+     * that exact field).
+     */
+    private function corroborationNote(GitActivity $activity): ?Note
     {
         $merged = $activity->mergedWithoutHumanEditAfterOpen;
         if (null === $merged) {
             return null;
         }
 
-        $value = null !== $total ? sprintf('%d/%d', $merged, $total) : (string) $merged;
+        $total = $activity->pullRequestsTotal;
+        $ratio = null !== $total ? sprintf('%d/%d', $merged, $total) : (string) $merged;
 
         return $this->note(
-            sprintf('merged_without_human_edit_after_open = %s (corroborates, does not decide)', $value),
+            sprintf('merged_without_human_edit_after_open = %s (corrobore, ne décide pas)', $ratio),
+            self::ACTIVITY_FILE,
             self::MERGED_WITHOUT_EDIT_FIELD,
-            $value,
+            (string) $merged,
         );
     }
 
-    private function note(string $text, string $field, string $value): Note
+    /**
+     * `pull-requests.json` is a short, last-page list: its `commits` distribution corroborates
+     * the aggregate median's order of magnitude, never decides it
+     * (docs/specs/03-axe-intervention.md § Corroboration, jamais décision). Only a flagrant
+     * gap — at least `InterventionThresholds::MEDIAN_CONTRADICTION_GAP` commits apart from the
+     * aggregate median — is worth a note; a smaller gap is page-to-page noise.
+     */
+    private function inconsistencyNote(float $aggregateMedian, ?PullRequests $pullRequests): ?Note
     {
-        return new Note($text, $this->pointer($field, $value));
+        if (null === $pullRequests || [] === $pullRequests->items) {
+            return null;
+        }
+
+        $lastPageMedian = self::median(array_map(
+            static fn ($pullRequest): int => $pullRequest->commits,
+            $pullRequests->items,
+        ));
+
+        if (abs($lastPageMedian - $aggregateMedian) < InterventionThresholds::MEDIAN_CONTRADICTION_GAP) {
+            return null;
+        }
+
+        return $this->note(
+            sprintf(
+                'incohérence : médiane agrégée = %s, médiane des commits de la dernière page = %s '
+                    .'(pull-requests.json)',
+                self::formatNumber($aggregateMedian),
+                self::formatNumber($lastPageMedian),
+            ),
+            self::PULL_REQUESTS_FILE,
+            self::LAST_PAGE_COMMITS_FIELD,
+            self::formatNumber($lastPageMedian),
+        );
     }
 
-    private function pointer(string $field, string $value): Pointer
+    private function note(string $text, string $file, string $field, string $value): Note
     {
-        return new Pointer(self::SOURCE_FILE, $field, $value);
+        return new Note($text, $this->pointer($file, $field, $value));
+    }
+
+    private function pointer(string $file, string $field, string $value): Pointer
+    {
+        return new Pointer($file, $field, $value);
     }
 
     private static function formatNumber(float $value): string
     {
         return rtrim(rtrim(sprintf('%.4f', $value), '0'), '.');
+    }
+
+    /**
+     * @param list<int> $values
+     */
+    private static function median(array $values): float
+    {
+        sort($values);
+        $count = count($values);
+        $middle = intdiv($count, 2);
+
+        if (0 === $count % 2) {
+            return ($values[$middle - 1] + $values[$middle]) / 2;
+        }
+
+        return (float) $values[$middle];
     }
 }
