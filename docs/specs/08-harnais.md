@@ -67,24 +67,26 @@ adaptation assumée, revue au journal si une borne est atteinte.
 
 **Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill
 possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Les opérations
-git sur la branche sont exécutées par **le propriétaire du checkout** : l'agent `dev` relancé
-(« rebase, push --force-with-lease, rends la main ») quand la branche vit dans son worktree, le
-skill lui-même quand la PR est née du checkout courant (`docs/spec-<n°>`, `--trivial`). Le
-skill n'emploie jamais `git -C` — les permissions n'autorisent que des verbes git explicites.
-Après ouverture de la PR, le propriétaire rebase la branche sur `origin/main` (check `ci` requis en mode `strict`) avec `git push --force-with-lease`, demande
-le verdict **après** le rebase (`@codex review`), puis interroge avec `--paginate` `gh api repos/{o}/{r}/pulls/{n}/reviews`,
-`…/pulls/{n}/comments` **et `…/issues/{n}/reactions`** (le 👍 « rien à signaler » de Codex
-est une réaction, pas une revue), en ne retenant que le verdict portant sur le SHA courant
-et postérieur à la demande — le verdict précédent est périmé. Délai plafond
-`REVIEW_WAIT_MAX = 20 min` (valeur initiale posée d'après la PR #13 : revue reçue ≈ 12 min
-après le dernier push ; les délais suivants sont consignés dans `docs/harness.md`). Délai
-dépassé → journal, label `blocked`, arrêt. 👍 ou revue sans remarque → revérifier que `origin/main` n'a pas avancé
-(sinon rebase et nouvelle demande), puis `gh pr merge --auto`. Remarques → passe de correction, repush, **commentaire `@codex review`** (Codex ne re-revoit
-pas sur push, constaté sur #14 le 2026-08-28), nouvelle attente sur le nouveau SHA. **Autant
-de passes qu'il en faut** : tant que Codex ne valide pas, Claude Code corrige — arbitré par
-Jonathan le 2026-08-29 sur la PR #15, en remplacement de la borne « une passe ». **`--auto`
-ne s'arme jamais avant le verdict** — le merge auto GitHub ne connaît que la CI, le verrou
-Codex n'existe que dans le skill.
+git sur la branche sont exécutées par **le propriétaire du checkout** (agent `dev` relancé,
+ou skill pour une PR née du checkout courant) ; jamais de `git -C`.
+
+**Une revue Codex par PR, à l'ouverture** — arbitré par Jonathan le 2026-08-29, après
+épuisement du quota de revues en une soirée (3 à 5 re-revues par PR). Le skill attend le
+verdict d'ouverture (revue ou réaction 👍 ; `@codex review` ne sert qu'aux re-revues
+exceptionnelles) avec `gh api --paginate` sur `…/reviews`, `…/comments` et
+`…/issues/{n}/reactions`, plafond `REVIEW_WAIT_MAX = 20 min` (valeur initiale d'après la PR
+#13 : revue reçue ≈ 12 min après le dernier push ; délais suivants consignés dans
+`docs/harness.md`). Puis **une passe de correction** qui traite toutes les remarques, **une
+réponse tracée par remarque** dans le fil de la PR (appliqué en `<sha>`, ou non appliqué et
+motif), rebase, et seulement alors `gh pr merge --auto`. **Rien ne s'arme avant le verdict
+d'ouverture** — c'est le point que Jonathan a fixé : GitHub ne merge jamais avant que Codex
+ait eu le temps de revoir. Re-revue jamais automatique : seulement si la correction change
+une décision de scoring, ou sur demande. Délai dépassé ou quota épuisé → journal, label
+`blocked`, arrêt.
+
+Historique : « une passe » (26 août) → « autant de passes que Codex en demande » (29 août,
+PR #15) → « une revue, une passe, réponses tracées » (29 août, quota). Chaque étape est au
+journal.
 
 **Iron rule** : une fois l'agent dev engagé sur une issue, le skill ne revient pas au routage ;
 il termine, ou s'arrête sur une borne.
@@ -138,9 +140,8 @@ Conventions GenAI OpenTelemetry : connues, écartées (disproportionnées), cit�
 ## 7. Bornes — où la boucle s'arrête
 
 1. `maxTurns` par agent (§ 2) ;
-2. ~~**une** passe de correction par PR~~ — **levée le 2026-08-29** par Jonathan : autant de
-   passes que Codex en demande ; ce qui borne, c'est `REVIEW_WAIT_MAX` par attente et
-   `maxTurns` par relance ;
+2. **une** revue Codex par PR et **une** passe de correction, réponses tracées (2026-08-29,
+   après un passage par « autant de passes qu'il faut » qui a épuisé le quota) ;
 3. arrêt net : tuer les sessions, les worktrees gardent leur travail ; `enforce_admins: false`
    laisse Jonathan merger à la main.
 

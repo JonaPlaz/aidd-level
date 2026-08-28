@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Démarre un chantier depuis une issue GitHub — spec si absente (arrêt humain pour validation), puis implémentation, PR, revue Codex, passes de correction jusqu'à validation, merge automatique. Spec : docs/specs/08-harnais.md.
+description: Démarre un chantier depuis une issue GitHub — spec si absente (arrêt humain pour validation), puis implémentation, PR, une revue Codex à l'ouverture, une passe de correction avec réponse tracée, merge automatique. Spec : docs/specs/08-harnais.md.
 argument-hint: [issue-number] [--trivial]
 disable-model-invocation: true
 ---
@@ -38,53 +38,42 @@ touchées et le test qui les fige, commandes passées (`make test lint dup`).
 `REVIEW_WAIT_MAX = 20 min` — valeur initiale posée d'après la PR #13 (revue Codex reçue
 ≈ 12 min après le dernier push) ; `docs/harness.md` enregistre les délais constatés ensuite.
 
-**Autant de passes de correction qu'il en faut : tant que Codex ne valide pas, Claude Code
-corrige.** Arbitré par Jonathan le 2026-08-29 sur la PR #15, en remplacement de la borne
-« une passe » de la spec 08 § 7. Les bornes restantes : `maxTurns` par relance, le plafond
-d'attente, et l'arrêt manuel.
+**Une revue Codex par PR, à l'ouverture.** Arbitré par Jonathan le 2026-08-29 : le quota de
+revues Codex a été épuisé en une soirée par les re-revues (3 à 5 par PR) ; la boucle
+« jusqu'à validation » du même jour est remplacée. Ce qui tient lieu de validation : la CI,
+les tests qui figent chaque décision, et **une réponse tracée à chaque remarque**.
 
-`W` est le checkout qui a créé la PR : le worktree de l'agent `dev` (chemin rapporté par
-l'agent), ou le checkout courant pour une PR `docs/spec-<n°>` ou `--trivial`. **Les
-opérations git sur la branche sont exécutées par le propriétaire de `W`** : l'agent `dev`,
-relancé avec l'instruction (« rebase sur origin/main, push --force-with-lease, rends la
-main »), ou le skill lui-même quand `W` est le checkout courant. Le skill ne passe jamais par
-`git -C` — `settings.json` n'autorise que les verbes git explicitement listés, et un
-`git -C W clean` ou `reset --hard` n'en fait pas partie.
+`W` est le checkout qui a créé la PR : le worktree de l'agent `dev`, ou le checkout courant
+pour une PR `docs/spec-<n°>` ou `--trivial`. Les opérations git sur la branche sont exécutées
+par le propriétaire de `W` (l'agent `dev` relancé, ou le skill lui-même) ; jamais de `git -C`.
 
-1. **Rebaser.** Le check `ci` est requis en mode `strict` : une branche en retard sur `main`
-   ne peut pas merger. Dans `W` : `git fetch origin && git rebase origin/main`, puis
-   `git push --force-with-lease` (seule forme admise ; `--force`, `-f` et les refspecs `+…`
-   sont refusés par le hook `guard-git`, options globales de git comprises). Conflit → une
-   seule tentative, puis label `blocked`, journal, arrêt.
-2. **Demander le verdict sur ce SHA.** Relever `HEAD` (rapporté par le propriétaire de `W`), puis
-   l'horodatage `T0`, puis commenter `@codex review` — dans cet ordre, toujours après le
-   rebase (Codex ne re-revoit pas sur un push ; une demande faite avant le rebase porte sur
-   un SHA qui n'existe plus). À l'ouverture de la PR, la revue part d'elle-même : si le
-   rebase de l'étape 1 n'a pas changé le SHA d'ouverture, `T0` = heure d'ouverture et pas de
-   commentaire ; s'il l'a changé, commenter comme pour toute autre passe.
-3. **Attendre.** Toutes les 60 s (`sleep 60`), lire avec `gh api --paginate`
-   `repos/{owner}/{repo}/pulls/<pr>/reviews`, `…/pulls/<pr>/comments` et
-   `…/issues/<pr>/reactions`, en ne retenant que : les revues de
-   `chatgpt-codex-connector[bot]` dont `commit_id` = `HEAD`, les commentaires rattachés à
-   ces revues, et les réactions du bot créées après `T0`. Tout ce qui précède est périmé. Une
-   réaction `eyes` signifie « pris en charge », elle ne termine pas l'attente. Plafond :
-   `REVIEW_WAIT_MAX` ; dépassé → label `blocked`, ligne de journal avec l'URL, arrêt.
-4. **Commentaires** → passe de correction : relancer l'agent `dev` sur la même branche avec
-   les commentaires ; il corrige, repousse, rend la main. Retour à l'étape 1.
-5. **Réaction `+1` ou revue sans commentaire inline** → revérifier la base :
-   `git fetch origin` puis `gh pr view <pr> --json mergeStateStatus` ; `BEHIND` → retour à
-   l'étape 1 — le verdict portait sur un SHA qui ne mergera pas. Sinon
-   `gh pr merge <pr> --auto --squash --delete-branch`, puis attendre, toutes les 60 s et
-   sous le même plafond `REVIEW_WAIT_MAX`, `gh pr view <pr> --json mergedAt,statusCheckRollup` :
-   `mergedAt` non nul → fini ; un check en échec, ou le plafond dépassé →
-   **`gh pr merge <pr> --disable-auto`** d'abord (sinon un check tardif mergerait après
-   l'abandon), puis label `blocked`, journal, arrêt.
-6. **Après le merge**, quand `W` est un worktree d'agent : `git worktree remove W` puis
-   `git branch -D <branche>` — `--delete-branch` ne supprime pas une branche encore
-   extraite dans un worktree, et pour un merge différé le CLI n'est plus là quand il
-   survient.
-   **`--auto` ne s'arme jamais avant le verdict ni sur une base périmée** : le merge auto
-   GitHub ne connaît que la CI et ne rebase pas.
+1. **Attendre la revue d'ouverture.** Relever `T0` = heure d'ouverture. Toutes les 60 s
+   (`sleep 60`), lire avec `gh api --paginate` `repos/{owner}/{repo}/pulls/<pr>/reviews`,
+   `…/pulls/<pr>/comments` et `…/issues/<pr>/reactions`, en ne retenant que les revues de
+   `chatgpt-codex-connector[bot]` et ses réactions créées après `T0` (`eyes` = pris en charge,
+   n'arrête pas l'attente ; `+1` = rien à signaler). Plafond `REVIEW_WAIT_MAX` ; dépassé →
+   label `blocked`, journal, arrêt. Un commentaire du bot annonçant un quota épuisé → idem,
+   avec le message dans le journal. **Rien ne s'arme avant ce verdict.**
+2. **Corriger, une passe.** Remarques → relancer l'agent `dev` sur la même branche avec
+   toutes les remarques ; il corrige tout, repousse, rend la main. Une remarque non appliquée
+   se justifie, elle ne s'ignore pas.
+3. **Répondre à chaque remarque**, dans le fil de la PR : un commentaire récapitulatif, une
+   ligne par remarque (`fichier:ligne — appliqué en <sha>` ou `non appliqué : <motif>`).
+   C'est la trace que le jury lit à la place d'un verdict Codex.
+4. **Rebaser.** Le check `ci` est requis en mode `strict`. Le propriétaire de `W` :
+   `git fetch origin && git rebase origin/main && git push --force-with-lease` (`--force`,
+   `-f`, `+refspec`, `--mirror` refusés par le hook `guard-git`). Conflit → une tentative,
+   puis `blocked`, journal, arrêt.
+5. **Armer le merge** : `gh pr view <pr> --json mergeStateStatus` ≠ `BEHIND`, puis
+   `gh pr merge <pr> --auto --squash --delete-branch`, puis attendre, toutes les 60 s et sous
+   `REVIEW_WAIT_MAX`, `gh pr view <pr> --json mergedAt,statusCheckRollup` : `mergedAt` non
+   nul → fini ; check en échec ou plafond → `gh pr merge <pr> --disable-auto`, label
+   `blocked`, journal, arrêt.
+6. **Re-revue : jamais automatique.** Seulement si la correction change une décision de
+   scoring (seuil, niveau, règle du minimum) ou sur demande de Jonathan — alors
+   `@codex review` après le rebase, retour à l'étape 1 avec le nouveau SHA et un nouveau `T0`.
+7. **Après le merge**, quand `W` est un worktree d'agent : `git worktree remove W` puis
+   `git branch -D <branche>`.
 
 ## 4. Après le merge
 
