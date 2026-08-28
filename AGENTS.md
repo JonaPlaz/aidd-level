@@ -45,7 +45,9 @@ PHP 8.5, `symfony/console ^7.4`, PHPUnit 13. Tout tourne dans Docker (PHP local 
 
 ## Conventions
 
-- Code, identifiants et commentaires en **anglais** ; README et `docs/` en **français**.
+- Code, identifiants et commentaires en **anglais** ; README, `docs/` et **tout texte destiné à
+  l'utilisateur** (claims d'`Evidence`, `Note`, gestes, messages d'exception, rendu) en
+  **français**. Les identifiants de pointeurs restent tels quels.
 - Conventional Commits. Une PR = une issue. Rebase sur `main`, jamais de merge de `main`.
 - `ROADMAP.md` et `docs/journal.md` sont **append-only**.
 - `composer.json` n'est modifié que par un chantier à la fois.
