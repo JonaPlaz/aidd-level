@@ -21,7 +21,7 @@ meilleure précision ni source.
 | Médiane | Niveau |
 |---|---|
 | 0 | White (avec le filtre d'entrée, § 05) |
-| 1–2 | Green (satisfait « 1 » de Red à Green ; « 3 » de Copper non atteint) |
+| > 0 et < 3 (1, 2, 2,5…) | Green (satisfait « 1 » de Red à Green ; « 3 » de Copper non atteint) |
 | ≥ 3 | Gold (« 3 » est un minimum, satisfait de Copper à Gold) |
 
 Validés sur les quatre profils (1, 1, 1, 4 → Green, Green, Green, Gold).
@@ -30,6 +30,9 @@ Validés sur les quatre profils (1, 1, 1, 4 → Green, Green, Green, Gold).
 
 `pull_requests.total < SampleFloors::PARALLELISM_MIN_PR` (5) → fourchette [niveau de la
 médiane, Gold], manque chiffré. Constante non sourcée, adaptation assumée.
+
+Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
+de l'axe, 0)` et une note par champ manquant.
 
 ## Preuves rendues
 
@@ -46,4 +49,5 @@ semaine ». Voir § 06.
 ## Tests
 
 Quatre profils → valeurs ci-dessus · fixture médiane 3 → Gold · fixture médiane 1, max 6 →
-Green + note pic · fixture `total = 2` → fourchette.
+Green + note pic · fixture `total = 2` → fourchette. Médiane absente → `Range(White, Gold, 0)` +
+note pointée « = absent » · médiane 2,5 → Green avec un claim qui cite la valeur.

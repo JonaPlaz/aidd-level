@@ -5,10 +5,12 @@
 - Lire la spec concernée dans `docs/specs/` avant toute implémentation ; ne jamais implémenter
   un comportement qui la contredit — signaler l'écart et s'arrêter.
 - Un commit touche une seule couche (`src/Domain/`, `src/Application/`,
-  `src/Infrastructure/`, `tests/`) ou la documentation. Le hook `guard-commit` refuse
+  `src/Infrastructure/`, `tests/`) ou la documentation. Le hook `guard-git` refuse
   domaine + infrastructure ensemble.
-- Branche de feature courte, rebase sur `main`, jamais de merge de `main` dans la branche.
-  Une tentative de rebase automatique ; en cas de conflit, s'arrêter et journaliser.
+- Branche de feature courte, rebase sur `main`, jamais de merge de `main` dans la branche
+  (`git fetch origin && git rebase origin/main && git push --force-with-lease` ; `--force`
+  nu est refusé par hook). Une tentative de rebase automatique ; en cas de conflit,
+  s'arrêter et journaliser.
 - `ROADMAP.md` et `docs/journal.md` : ajouter des lignes en fin de fichier, ne jamais
   réécrire. Une ligne de journal sans pointeur (SHA, PR, run, chemin) ne vaut rien.
 - Ne jamais écrire dans `.brief/`, ne jamais le committer, ne jamais le citer dans le code

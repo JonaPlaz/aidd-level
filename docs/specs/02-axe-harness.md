@@ -72,6 +72,7 @@ câbler », « ajouter une étape de relance plafonnée dans la CI »). Voir § 
 
 ## Tests
 
-`perceval` → prompts/Red · `bohort` → context eng./Blue · `leodagan` et `arthur` →
+`context_files.agents_md` absent (`null`) → `Range(White, Gold, 0)` + note pointée « = absent »
+(spec 05 § *Signal absent* ; jamais coercé en `false`) · `perceval` → prompts/Red · `bohort` → context eng./Blue · `leodagan` et `arthur` →
 behavior/Copper · fixture avec Makefile `retry` borné → boucles/Gold · fixture `arthur` sans
 `repo-context/` → Copper + note · fixture ratio 0 et compteurs 0 → White.

@@ -54,6 +54,27 @@ Aucune n'est sourcée. Les quatre profils fournis ont 48 à 154 PR : **le compor
 confiance basse n'est validé par aucun d'eux** — les fixtures maison le couvrent (§ 00, § 8
 et `fixtures/`). L'unité est la PR, jamais le commit.
 
+## Signal absent — distinct de l'échantillon court
+
+Ajouté le 2026-08-29 (remarque Codex sur la PR #17 : la règle n'était écrite nulle part).
+Quand le champ qui décide un axe est **absent** de `git-activity.json` (`null` après lecture
+tolérante), l'axe n'est pas en confiance basse faute de PR, il est **non observable** :
+
+- verdict `Range(floor = White, ceiling = plafond de l'axe, missingSample = 0)` — le manque
+  n'est pas un nombre de PR, c'est le champ lui-même ;
+- une note par champ manquant, chacune avec son pointeur (`git-activity.json › <champ> =
+  absent`), qui nomme ce qu'il faut fournir ;
+- `0` n'est pas « absent » : une médiane à `0` est une valeur, elle se cite comme telle.
+
+Plafonds d'axe : Taille Gold · Harness Gold · Intervention Silver · En parallèle Gold.
+Le statut global devient `évalué, confiance basse` (une fourchette suffit), et « comment
+monter » nomme le champ à fournir avant tout geste.
+
+Tests exigés, par axe (repris dans les sections *Tests* des specs 01, 03, 04 ; Harness dans
+la spec 02) : le champ décideur à `null` → `Range(White, plafond, 0)` et une note pointée
+« = absent » ; au niveau du handler : un tel profil sort `évalué, confiance basse` et son
+plan commence par le champ à fournir.
+
 ## Cohérence annoncé / présent
 
 `profile.json › available` liste les pièces annoncées. Comparé au dossier réel, dans les deux

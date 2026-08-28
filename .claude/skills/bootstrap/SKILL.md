@@ -19,7 +19,9 @@ lire le code retour de chaque commande externe, journaliser chaque étape dans
    commit `chore: bootstrap repository from validated specs`.
 5. `gh repo create aidd-level --public --source=. --remote=origin --push`.
 6. Labels `to-implement`, `to-review`, `blocked`.
-7. Protection de `main` par `gh api -X PUT …/branches/main/protection` avec la charge de la
+7. `gh repo edit --enable-auto-merge --delete-branch-on-merge` — sans ce réglage,
+   `gh pr merge --auto` est refusé (constaté sur #14).
+8. Protection de `main` par `gh api -X PUT …/branches/main/protection` avec la charge de la
    spec ; en cas de code ≠ 200, journaliser et laisser la protection à poser à la main.
-8. S'arrêter et annoncer le seul geste manuel : activer la revue Codex (réglage web,
+9. S'arrêter et annoncer le seul geste manuel : activer la revue Codex (réglage web,
    *Revue du code*, revue automatique à l'ouverture de PR).

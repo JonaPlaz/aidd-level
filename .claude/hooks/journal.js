@@ -6,10 +6,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
-const { readInput, projectRoot } = require('./lib');
+const { readInput, projectRoot, parseGitAll } = require('./lib');
 
 const input = readInput();
-const root = projectRoot(input);
+const command = (input.tool_input && input.tool_input.command) || '';
+const gitInvocations = parseGitAll(command);
+const parsedGit = gitInvocations.find((g) => ['rebase', 'push', 'merge', 'cherry-pick'].includes(g.subcommand)) || gitInvocations[0] || null;
+// Git facts (HEAD, branch) are read where the command ran: the `-C` path, else `cwd`.
+// The journal file itself always lives in the main checkout (CLAUDE_PROJECT_DIR): writing
+// into an agent worktree would leave it dirty and break the next rebase.
+const root = parsedGit && parsedGit.cPath ? path.resolve(projectRoot(input), parsedGit.cPath) : projectRoot(input);
+const journalRoot = process.env.CLAUDE_PROJECT_DIR || root;
 
 function git(args) {
   try {
@@ -22,10 +29,12 @@ function git(args) {
 const event = input.hook_event_name || 'unknown';
 let what;
 if (event === 'PostToolUseFailure') {
-  const command = ((input.tool_input && input.tool_input.command) || '').replace(/\|/g, '\\|').slice(0, 120);
-  // Only project commands matter; a failed `ls` is noise.
-  if (!/\b(make|git rebase|git push|gh pr|gh api|composer|docker)\b/.test(command)) process.exit(0);
-  what = `commande échouée : \`${command}\``;
+  const shown = command.replace(/\|/g, '\\|').slice(0, 120);
+  // Only project commands matter; a failed `ls` is noise. Git is matched on its parsed
+  // subcommand so `git -C <worktree> rebase` counts like `git rebase`.
+  const gitMatters = parsedGit && ['rebase', 'push', 'merge', 'cherry-pick'].includes(parsedGit.subcommand);
+  if (!gitMatters && !/\b(make|gh pr|gh api|composer|docker)\b/.test(command)) process.exit(0);
+  what = `commande échouée : \`${shown}\``;
 } else if (event === 'SubagentStop') {
   what = `agent terminé : ${input.agent_type || input.agent_name || 'inconnu'}`;
 } else if (event === 'Stop') {
@@ -42,7 +51,7 @@ if (event === 'PostToolUseFailure') {
 
 const line = `| ${new Date().toISOString().slice(0, 16)}Z | ${git('rev-parse --abbrev-ref HEAD')} | hook \`journal.js\` (${event}) | ${what} | \`${git('rev-parse --short HEAD')}\` | — |\n`;
 try {
-  fs.appendFileSync(path.join(root, 'docs', 'journal.md'), line);
+  fs.appendFileSync(path.join(journalRoot, 'docs', 'journal.md'), line);
 } catch {
   // Journal unwritable: nothing to do, git history still records commits.
 }

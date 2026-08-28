@@ -52,7 +52,7 @@ jamais toutes présentes (`profiles/README.md`) :
 | `repo-context/` | cite la preuve de l'axe Harness ; détection des boucles (§ 02) |
 | `sonar-measures.json` | note de prérequis qualité, hors calcul |
 | `declaratif.md` | hors calcul ; mesure l'écart dit / constaté, sert le plan de progression |
-| `pull-requests.json` | corrobore (12 PR, dernière page) ; ne tranche pas |
+| `pull-requests.json` | inventorié (cohérence `available`), **hors calcul** : ses champs ne se comparent à aucune médiane (spec 03, 2026-08-29) |
 | `code/` · `session.md` | non lus par le calcul |
 
 Trois avertissements de la source à respecter : les autres profils n'auront pas les mêmes
@@ -74,7 +74,13 @@ src/
   Infrastructure/ adaptateur dossier, lecteurs de pièces, commande console, rendu texte
 ```
 
-Namespace racine : `AiddLevel\`. Code et commentaires en anglais, README et docs en français.
+Namespace racine : `AiddLevel\`. Code, identifiants et commentaires en anglais ; README et
+docs en français ; **et tout texte destiné à l'utilisateur en français** — claims des
+`Evidence`, textes des `Note`, gestes des `Recommendation`, messages de `ProfileNotAssessable`,
+rendu : c'est la sortie que lit le jury, et la spec 06 en fixe le vocabulaire (« après coup,
+sur la majorité », « aux étapes clés »…). Les identifiants de pointeurs (`git-activity.json ›
+pull_requests.total`) restent tels quels. Précisé le 2026-08-29 (remarque Codex sur la PR
+#18).
 
 ### 4.1 Domaine — les types
 

@@ -29,4 +29,43 @@ function block(message) {
   process.exit(2);
 }
 
-module.exports = { readInput, projectRoot, relativePath, block };
+// Parses the first `git …` invocation of a shell command: skips every global option
+// (with or without a separate value) and returns the subcommand, its arguments and the
+// `-C <path>` if any. Global options taking a value, per `git --help`.
+const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--exec-path', '--namespace', '--super-prefix', '--config-env', '--list-cmds', '--attr-source']);
+
+function parseGitInvocation(rest) {
+  const tokens = rest.split(/\s+/).filter(Boolean);
+  let cPath = null;
+  let i = 0;
+  while (i < tokens.length && tokens[i].startsWith('-')) {
+    const [name, inlineValue] = tokens[i].split(/=(.*)/s);
+    if (GIT_VALUE_OPTIONS.has(name) && inlineValue === undefined) {
+      if (name === '-C') cPath = tokens[i + 1];
+      i += 2;
+    } else {
+      if (name === '-C') cPath = inlineValue;
+      i += 1;
+    }
+  }
+  return { subcommand: tokens[i] || '', args: tokens.slice(i + 1).join(' '), cPath: cPath ? cPath.replace(/^["']|["']$/g, '') : null };
+}
+
+// Every `git …` invocation of a shell command, in order: `git fetch origin && git push --force`
+// yields two entries. Segments are split on `&&`, `||`, `;`, `|` and newlines.
+function parseGitAll(command) {
+  const segments = command.split(/&&|\|\||;|\||\n/);
+  const found = [];
+  for (const segment of segments) {
+    const match = /^\s*(?:\(\s*)?(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*git\s+(.*)$/s.exec(segment);
+    if (match) found.push(parseGitInvocation(match[1]));
+  }
+  return found;
+}
+
+// First invocation, kept for callers that only need one.
+function parseGit(command) {
+  return parseGitAll(command)[0] || null;
+}
+
+module.exports = { readInput, projectRoot, relativePath, block, parseGit, parseGitAll };

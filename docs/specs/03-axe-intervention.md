@@ -32,12 +32,17 @@ d'un cadrage par agent. L'axe **plafonne à Silver** par construction, dit en no
 sur cet axe demanderait la preuve que le cadrage lui-même est automatisé ; non observable
 dans les pièces fournies ». C'est une limite assumée, pas un seuil inventé.
 
+Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
+de l'axe, 0)` et une note par champ manquant.
+
 ## Corroboration, jamais décision
 
 `merged_without_human_edit_after_open` est **non monotone** avec le niveau (3/63, 10/48,
 37/71, 46/154 → 4,8 %, 20,8 %, 52 %, 29,9 %). Rendu en note, pondération nulle.
-`pull-requests.json` (12 PR) : le champ `commits` par PR corrobore l'ordre de grandeur ; s'il
-contredit franchement la médiane (**non vérifié** : aucun cas), note d'incohérence.
+`pull-requests.json` : **écarté** le 2026-08-29 (remarque Codex sur la PR #18). Son champ
+`commits` compte tous les commits d'une PR, pas ceux d'après ouverture : `bohort` 7,5 pour une
+médiane de 2, `leodagan` 6 pour 0 — les deux champs ne se comparent pas, aucune note n'en
+découle.
 
 ## Preuves rendues
 
@@ -55,3 +60,6 @@ tests avant le code, règle de projet) pour que la reprise devienne inutile. Voi
 
 Quatre profils → valeurs ci-dessus · fixture médiane 0 avec `total = 8` → fourchette
 [Copper, Silver], « 4 PR manquantes » · fixture médiane 0 avec `total = 30` → Silver.
+Médiane absente → `Range(White, Silver, 0)` + note pointée « = absent » · bornes exactes :
+`total = 12` médiane 0 → Silver, `total = 11` → fourchette, `total = 5` médiane 2 → Blue,
+`total = 4` → fourchette.

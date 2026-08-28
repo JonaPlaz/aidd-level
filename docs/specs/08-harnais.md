@@ -20,7 +20,7 @@ issue `to-implement`
         ├─► agent dev (worktree) : branche, code, tests, `make test lint dup`, push, PR, label `to-review`
         ├─► CI : tests + analyse statique + duplication
         ├─► Codex : revue automatique à l'ouverture (réglage cloud, seul geste manuel)
-        ├─► agent dev : attend la revue, UNE passe de correction, repush
+        ├─► skill : rebase, revue Codex, passes de correction jusqu'à validation
         └─► `gh pr merge --auto --squash --delete-branch` — merge quand les verrous sont verts
 ```
 
@@ -65,12 +65,28 @@ adaptation assumée, revue au journal si une borne est atteinte.
 | `bootstrap` | `disable-model-invocation: true`, `allowed-tools: Bash Write Read` | § 07, une fois |
 | `feature` | `argument-hint: [issue-number]`, `disable-model-invocation: true` | enchaîne spec → validation → dev → PR → attente de review → correction → merge auto, sans intervention après validation. Mode `--trivial` pour la PR jetable |
 
-**Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Après ouverture de la PR, le skill interroge
-`gh api repos/{o}/{r}/pulls/{n}/reviews` et `…/comments` jusqu'à apparition d'une revue, avec
-un délai plafond (`REVIEW_WAIT_MAX`, **valeur à constater** sur la PR jetable — le temps de
-réponse de Codex n'est connu nulle part). Délai dépassé → journal, label `blocked`, arrêt.
-Revue sans remarque → `gh pr merge --auto`. Remarques → une passe de correction, repush, puis
-`gh pr merge --auto` ; la re-review de Codex, si elle bloque, laisse la PR à Jonathan (borne 2).
+**Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill
+possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Les opérations
+git sur la branche sont exécutées par **le propriétaire du checkout** (agent `dev` relancé,
+ou skill pour une PR née du checkout courant) ; jamais de `git -C`.
+
+**Une revue Codex par PR, à l'ouverture** — arbitré par Jonathan le 2026-08-29, après
+épuisement du quota de revues en une soirée (3 à 5 re-revues par PR). Le skill attend le
+verdict d'ouverture (revue ou réaction 👍 ; `@codex review` ne sert qu'aux re-revues
+exceptionnelles) avec `gh api --paginate` sur `…/reviews`, `…/comments` et
+`…/issues/{n}/reactions`, plafond `REVIEW_WAIT_MAX = 20 min` (valeur initiale d'après la PR
+#13 : revue reçue ≈ 12 min après le dernier push ; délais suivants consignés dans
+`docs/harness.md`). Puis **une passe de correction** qui traite toutes les remarques, **une
+réponse tracée par remarque** dans le fil de la PR (appliqué en `<sha>`, ou non appliqué et
+motif), rebase, et seulement alors `gh pr merge --auto`. **Rien ne s'arme avant le verdict
+d'ouverture** — c'est le point que Jonathan a fixé : GitHub ne merge jamais avant que Codex
+ait eu le temps de revoir. Re-revue jamais automatique : seulement si la correction change
+une décision de scoring, ou sur demande. Délai dépassé ou quota épuisé → journal, label
+`blocked`, arrêt.
+
+Historique : « une passe » (26 août) → « autant de passes que Codex en demande » (29 août,
+PR #15) → « une revue, une passe, réponses tracées » (29 août, quota). Chaque étape est au
+journal.
 
 **Iron rule** : une fois l'agent dev engagé sur une issue, le skill ne revient pas au routage ;
 il termine, ou s'arrête sur une borne.
@@ -84,15 +100,19 @@ Versionnés dans `.claude/settings.json` (sinon ils ne comptent pas), scripts da
 | Hook | Événement · matcher | Règle | Test de déclenchement (doute 7) |
 |---|---|---|---|
 | `guard-layers.js` | `PreToolUse` · `Edit\|Write` | fichier sous `src/Domain/` dont le contenu contient `use AiddLevel\Application` ou `use AiddLevel\Infrastructure` → exit 2 | écrire volontairement un `use` interdit, constater le refus |
-| `guard-commit.js` | `PreToolUse` · `Bash` (commande `git commit`) | `git diff --cached --name-only` touche `src/Domain/` **et** `src/Infrastructure/` → exit 2 ; touche `.brief/` → exit 2 | stager deux couches, constater le refus |
+| `guard-git.js` | `PreToolUse` · `Bash` (`git commit`, `git push`) | commit : fichiers (index, ou `-a`) touchant `src/Domain/` **et** `src/Infrastructure/` → exit 2 ; chemin déclaré dans `.worktreeinclude` → exit 2. Push : `--force` ou `-f` nu → exit 2 (`--force-with-lease` seul admis, pour le rebase) | stager deux couches ; `git push --force` ; constater les refus |
 | `format.js` | `PostToolUse` · `Edit\|Write` | fichier `*.php` → `make fmt FILE=…` (php-cs-fixer dans Docker, **version non vérifiée** pour PHP 8.5) | éditer un fichier mal indenté, constater la réécriture |
 | `journal.js` | `PostToolUseFailure` · `Bash` ; `SubagentStop` ; `Stop` (seulement hors `main` avec travail non committé) | ajoute une ligne à `docs/journal.md` (format § 6) avec `git rev-parse HEAD`, branche, et pour `PostToolUseFailure` la commande échouée — **le journal est alimenté par hook, pas par la bonne volonté du modèle** | faire échouer `make test`, constater la ligne |
 
 Un hook qui ne se déclenche pas au test est **retiré**, pas laissé mort.
 
-`permissions.deny` dans le même `settings.json` : `Read(./.brief/**)` est **exclu** (le brief
-doit rester lisible) ; `Bash(git push --force:*)`, `Bash(rm -rf:*)`, `Edit(./.brief/**)`,
-`Write(./.brief/**)`. `worktree.baseRef` reste `fresh` (branche depuis `origin/main`).
+`permissions` dans le même `settings.json` : `allow` sur `make`, `git` (status, diff, log,
+add, commit, push, fetch, rebase, checkout, switch), `gh` (pr, issue, api, run) et `sleep`
+(boucle d'attente) ; `deny` sur `rm -rf`, `Edit`/`Write` de `.brief/`. `Read(./.brief/**)`
+est **exclu** du deny (le brief doit rester lisible). Le `deny` `git push --force:*` posé au
+premier montage est **retiré** : il bloquait aussi `--force-with-lease`, requis par le rebase ;
+c'est le hook `guard-git` qui refuse `--force`, `-f` et les refspecs `+…`.
+`worktree.baseRef` reste `fresh` (branche depuis `origin/main`).
 
 ## 5. CI — `.github/workflows/ci.yml`
 
@@ -120,7 +140,8 @@ Conventions GenAI OpenTelemetry : connues, écartées (disproportionnées), cit�
 ## 7. Bornes — où la boucle s'arrête
 
 1. `maxTurns` par agent (§ 2) ;
-2. **une** passe de correction par PR ; ensuite label `blocked`, journal, arrêt ;
+2. **une** revue Codex par PR et **une** passe de correction, réponses tracées (2026-08-29,
+   après un passage par « autant de passes qu'il faut » qui a épuisé le quota) ;
 3. arrêt net : tuer les sessions, les worktrees gardent leur travail ; `enforce_admins: false`
    laisse Jonathan merger à la main.
 
@@ -134,7 +155,9 @@ Le degré se **calcule** depuis le graphe de dépendances de `ROADMAP.md` : deux
 simultanés si leurs specs ne partagent aucun fichier de sortie et qu'aucun ne dépend de
 l'autre. Attendu : noyau de domaine seul, puis quatre axes de front, puis sortie/robustesse.
 
-- Rebase sur `main`, jamais de merge de `main` dans la branche ; `required_linear_history`.
+- Rebase sur `main`, jamais de merge de `main` dans la branche ; `required_linear_history` ;
+  push par `--force-with-lease` uniquement (le check requis est `strict`, une branche en
+  retard ne merge pas — message GitHub constaté sur #15).
 - Branches courtes : une issue, une PR, squash au merge.
 - `ROADMAP.md` et `docs/journal.md` append-only ; `composer.json` par un seul chantier à la
   fois (dépendance déclarée dans la roadmap).
