@@ -14,7 +14,8 @@ const command = (input.tool_input && input.tool_input.command) || '';
 
 // Every git invocation of a chained command is checked: `git add -A && git commit`,
 // `git fetch origin && git push --force`.
-for (const git of parseGitAll(command)) {
+const invocations = parseGitAll(command);
+for (const [index, git] of invocations.entries()) {
   const root = git.cPath ? path.resolve(projectRoot(input), git.cPath) : projectRoot(input);
 
   // Bare --force, -f (alone or bundled), force-prefixed refspecs (`+HEAD:branch`), --mirror.
@@ -27,11 +28,14 @@ for (const git of parseGitAll(command)) {
   }
 
   if (git.subcommand !== 'commit') continue;
-  checkCommit(git, root);
+  // `git add … && git commit`: the index is still empty when the hook runs, so the files
+  // the preceding add would stage are simulated with `git add --dry-run`.
+  const priorAdds = invocations.slice(0, index).filter((g) => g.subcommand === 'add');
+  checkCommit(git, root, priorAdds);
 }
 process.exit(0);
 
-function checkCommit(git, root) {
+function checkCommit(git, root, priorAdds) {
   function gitLines(args) {
     try {
       return execSync(`git ${args}`, { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean);
@@ -44,6 +48,12 @@ function checkCommit(git, root) {
   const commitsAll = /(^|\s)(-a|--all|-[a-zA-Z]*a[a-zA-Z]*)(\s|$)/.test(git.args);
   const files = new Set(gitLines('diff --cached --name-only'));
   if (commitsAll) gitLines('diff --name-only').forEach((f) => files.add(f));
+  for (const add of priorAdds) {
+    gitLines(`add --dry-run ${add.args}`).forEach((line) => {
+      const m = /^add '(.+)'$/.exec(line);
+      if (m) files.add(m[1]);
+    });
+  }
 
   // Private prefixes come from both the working-tree declaration and the committed
   // baseline (HEAD), so a commit that edits or deletes .worktreeinclude cannot disable
