@@ -112,6 +112,41 @@ final class ParallelismEvaluatorTest extends TestCase
     }
 
     #[Test]
+    public function totalBelowFloorAddsANoteWithTheShortageAndItsPointer(): void
+    {
+        $verdict = new ParallelismEvaluator()->evaluate(self::profile(1.0, 1, 2));
+
+        self::assertCount(1, $verdict->notes);
+        self::assertSame(
+            'échantillon insuffisant, plancher 5 : 3 PR manquantes',
+            $verdict->notes[0]->text,
+        );
+        self::assertSame(
+            'git-activity.json › pull_requests.total = 2',
+            (string) $verdict->notes[0]->pointer,
+        );
+    }
+
+    #[Test]
+    public function greenClaimForExactlyOneReadsOneLaneAtATime(): void
+    {
+        $verdict = new ParallelismEvaluator()->evaluate(self::profile(1.0, 1, self::ABOVE_FLOOR_PR_TOTAL));
+
+        self::assertSame('un chantier à la fois', $verdict->evidences[0]->claim);
+    }
+
+    #[Test]
+    public function greenClaimForAMedianAboveOneNamesTheObservedValue(): void
+    {
+        $verdict = new ParallelismEvaluator()->evaluate(self::profile(2.0, 2, self::ABOVE_FLOOR_PR_TOTAL));
+
+        self::assertSame(
+            '2 chantiers de front en médiane, sous le seuil de 3 de Copper',
+            $verdict->evidences[0]->claim,
+        );
+    }
+
+    #[Test]
     public function evenSampleMedianHalfIsGreen(): void
     {
         $verdict = new ParallelismEvaluator()->evaluate(self::profile(0.5, 1, self::ABOVE_FLOOR_PR_TOTAL));

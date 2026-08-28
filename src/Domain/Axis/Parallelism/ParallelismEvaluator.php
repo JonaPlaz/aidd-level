@@ -60,7 +60,7 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
 
         $evidences = [
             new Evidence(
-                claim: self::claimForLevel($level),
+                claim: self::claimForMedian($level, $median),
                 pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.median_concurrent_branches', self::formatNumber($median)),
             ),
         ];
@@ -70,6 +70,11 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
         $total = $gitActivity->pullRequestsTotal;
         if (null === $total || $total < SampleFloors::PARALLELISM_MIN_PR) {
             $missing = SampleFloors::PARALLELISM_MIN_PR - ($total ?? 0);
+
+            $notes[] = new Note(
+                text: sprintf('échantillon insuffisant, plancher %d : %d PR manquantes', SampleFloors::PARALLELISM_MIN_PR, $missing),
+                pointer: new Pointer(self::ACTIVITY_FILE, 'pull_requests.total', self::formatNumber((float) ($total ?? 0))),
+            );
 
             return new AxisVerdict(
                 axis: Axis::Parallelism,
@@ -110,14 +115,32 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
         ];
     }
 
-    private static function claimForLevel(Level $level): string
+    /**
+     * The Green claim reflects the actual median (docs/specs/00-vue-ensemble.md § 4 —
+     * a claim must stay verifiable against its pointer), not just the level: exactly 1 reads
+     * as "one lane at a time", anything strictly between names the observed median so the
+     * claim never contradicts the pointer value it sits next to.
+     */
+    private static function claimForMedian(Level $level, float $median): string
     {
         return match ($level) {
             Level::White => 'aucun chantier concurrent',
-            Level::Green => 'un chantier à la fois',
+            Level::Green => self::greenClaim($median),
             Level::Gold => 'au moins trois chantiers de front, habituellement',
             default => 'médiane de chantiers concurrents observée',
         };
+    }
+
+    private static function greenClaim(float $median): string
+    {
+        if (1.0 === $median) {
+            return 'un chantier à la fois';
+        }
+
+        return sprintf(
+            '%s chantiers de front en médiane, sous le seuil de 3 de Copper',
+            self::formatNumber($median),
+        );
     }
 
     /**
