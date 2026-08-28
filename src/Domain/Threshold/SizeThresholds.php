@@ -46,6 +46,10 @@ final class SizeThresholds
     // XL band (lines fallback): above the Salesforce review-breakdown threshold.
     public const int LINES_XL_MIN = 1001;
 
+    // A zero median carries no size information; fall back to lines
+    // (docs/specs/01-axe-taille.md § Signal).
+    public const float FILES_SIGNAL_MIN = 0.0;
+
     /**
      * The band for `pull_requests.median_files_changed`, the primary signal
      * (docs/specs/01-axe-taille.md § Signal).
