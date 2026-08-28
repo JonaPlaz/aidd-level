@@ -15,7 +15,8 @@
       "Bash(gh pr:*)",
       "Bash(gh issue:*)",
       "Bash(gh api:*)",
-      "Bash(gh run:*)"
+      "Bash(gh run:*)",
+      "Bash(sleep:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
@@ -57,6 +58,13 @@
       }
     ],
     "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/journal.js\"" }
+        ]
+      }
+    ],
+    "Stop": [
       {
         "hooks": [
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/journal.js\"" }

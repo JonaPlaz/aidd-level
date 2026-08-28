@@ -1,4 +1,4 @@
-// PostToolUseFailure (Bash) and SubagentStop: append one line to docs/journal.md.
+// PostToolUseFailure (Bash), SubagentStop and Stop: append one line to docs/journal.md.
 // The journal records what produced no commit; every line carries a pointer
 // (HEAD sha, branch). Written by a hook, not by the model's goodwill.
 'use strict';
@@ -28,6 +28,14 @@ if (event === 'PostToolUseFailure') {
   what = `commande échouée : \`${command}\``;
 } else if (event === 'SubagentStop') {
   what = `agent terminé : ${input.agent_type || input.agent_name || 'inconnu'}`;
+} else if (event === 'Stop') {
+  // A turn that ends off main with uncommitted work is an outcome without a commit:
+  // a bound reached, an abandoned attempt. On main, or with a clean tree, nothing to record.
+  if (input.stop_hook_active) process.exit(0);
+  const branch = git('rev-parse --abbrev-ref HEAD');
+  const dirty = git('status --porcelain --untracked-files=no');
+  if (branch === 'main' || dirty === '') process.exit(0);
+  what = `fin de tour avec travail non committé sur \`${branch}\` (${dirty.split('\n').length} fichier(s))`;
 } else {
   process.exit(0);
 }

@@ -14,7 +14,7 @@ skills: feature
 
 Allocation (docs/specs/08-harnais.md § 2) : `sonnet` / `medium` — travail cadré par une spec
 validée, exécutable par un modèle plus petit ; `high` seulement si un test de calibration
-casse. 80 tours : code, tests, PR et une passe de correction. `worktree` : les chantiers
+casse. 80 tours : code, tests, PR ; une passe de correction sur relance. `worktree` : les chantiers
 parallèles ne se touchent pas.
 
 Tu implémentes exactement ce que la spec décrit, rien de plus.
@@ -27,8 +27,8 @@ Tu implémentes exactement ce que la spec décrit, rien de plus.
    pointeur. `src/Domain/` n'importe rien d'extérieur.
 5. `make test`, `make lint`, `make dup` verts avant tout push. Un commit par couche.
 6. Push, `gh pr create` avec le corps décrit par le skill `feature`, label `to-review`,
-   `Closes #<n°>` dans le corps.
-7. Attente de la revue, une seule passe de correction, puis `gh pr merge --auto --squash
-   --delete-branch`. Borne atteinte : label `blocked`, ligne de journal, arrêt.
-8. Iron rule : une fois engagé sur l'issue, tu ne reviens pas au routage ; tu termines ou tu
+   `Closes #<n°>` dans le corps. **Puis tu rends la main** : la boucle de revue et le merge
+   appartiennent au skill `feature`, jamais à toi. Relancé pour une passe de correction, tu
+   corriges sur la même branche, tu repousses, tu rends la main.
+7. Iron rule : une fois engagé sur l'issue, tu ne reviens pas au routage ; tu termines ou tu
    t'arrêtes sur une borne.
