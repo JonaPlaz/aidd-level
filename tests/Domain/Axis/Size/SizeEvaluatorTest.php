@@ -63,7 +63,7 @@ final class SizeEvaluatorTest extends TestCase
 
         self::assertCount(1, $verdict->evidences);
         $evidence = $verdict->evidences[0];
-        self::assertSame('L → satisfies Green to Gold', $evidence->claim);
+        self::assertSame('L → satisfait de Green à Gold', $evidence->claim);
         self::assertSame(
             'git-activity.json › pull_requests.median_files_changed = 13',
             (string) $evidence->pointer,
@@ -91,13 +91,20 @@ final class SizeEvaluatorTest extends TestCase
         );
 
         $fallbackNote = $verdict->notes[0];
-        self::assertStringContainsString('fallback to median_lines_changed', $fallbackNote->text);
+        self::assertStringContainsString('repli sur les lignes', $fallbackNote->text);
+        self::assertStringContainsString('median_files_changed = absent', $fallbackNote->text);
         self::assertStringContainsString(' › ', (string) $fallbackNote->pointer);
+        self::assertSame(
+            'git-activity.json › pull_requests.median_files_changed = absent',
+            (string) $fallbackNote->pointer,
+        );
     }
 
     #[Test]
     public function fallsBackToLinesWhenFileCountIsZero(): void
     {
+        // Codex review of PR #17: zero is a real value, not an absent field — the fallback
+        // note and its pointer must say "= 0", never "absent".
         $profile = $this->profileWith(
             pullRequestsTotal: 71,
             medianFilesChanged: 0.0,
@@ -107,11 +114,21 @@ final class SizeEvaluatorTest extends TestCase
         $verdict = new SizeEvaluator()->evaluate($profile);
 
         self::assertSame(Level::Red, $verdict->level);
+
+        $fallbackNote = $verdict->notes[0];
+        self::assertStringContainsString('median_files_changed = 0,', $fallbackNote->text);
+        self::assertStringNotContainsString('absent', $fallbackNote->text);
+        self::assertSame(
+            'git-activity.json › pull_requests.median_files_changed = 0',
+            (string) $fallbackNote->pointer,
+        );
     }
 
     #[Test]
     public function bothSignalsAbsentIsNotObservable(): void
     {
+        // docs/specs/05-robustesse.md § Signal absent: not a PR-count gap — missingSample is
+        // 0 and each absent field carries its own note and pointer.
         $profile = $this->profileWith(
             pullRequestsTotal: 71,
             medianFilesChanged: null,
@@ -124,11 +141,23 @@ final class SizeEvaluatorTest extends TestCase
         self::assertInstanceOf(Range::class, $verdict->confidence);
         self::assertSame(Level::White, $verdict->confidence->floor);
         self::assertSame(Level::Gold, $verdict->confidence->ceiling);
+        self::assertSame(0, $verdict->confidence->missingSample);
         self::assertSame([], $verdict->evidences);
-        self::assertNotEmpty($verdict->notes);
-        foreach ($verdict->notes as $note) {
-            self::assertStringContainsString(' › ', (string) $note->pointer);
-        }
+
+        self::assertCount(2, $verdict->notes);
+        [$filesNote, $linesNote] = $verdict->notes;
+
+        self::assertStringContainsString('median_files_changed absent', $filesNote->text);
+        self::assertSame(
+            'git-activity.json › pull_requests.median_files_changed = absent',
+            (string) $filesNote->pointer,
+        );
+
+        self::assertStringContainsString('median_lines_changed absent', $linesNote->text);
+        self::assertSame(
+            'git-activity.json › pull_requests.median_lines_changed = absent',
+            (string) $linesNote->pointer,
+        );
     }
 
     #[Test]

@@ -25,15 +25,18 @@ use AiddLevel\Domain\Threshold\SizeThresholds;
  * "multi-modules"), so file count fits the definition better than line volume. Falls back to
  * `median_lines_changed` only when the file count is absent or zero. Never a maximum, never
  * `size_distribution` (docs/specs/01-axe-taille.md § Signal).
+ *
+ * `Evidence` and `Note` text is rendered to the reader (docs/specs/06-sortie-et-progression.md),
+ * so it is written in French; identifiers, field names and pointers stay literal.
  */
 final readonly class SizeEvaluator implements AxisEvaluator
 {
     /**
-     * Neither signal is present: the axis cannot be observed at all, not merely under-sampled.
-     * The whole floor-to-Gold range is counted as missing (docs/specs/01-axe-taille.md, dev
-     * clarification: two absent signals are a distinct case from an insufficient PR sample).
+     * Signal absent (docs/specs/05-robustesse.md § Signal absent): the missing piece is a
+     * field, not a pull-request count, so nothing is counted out — each absent field is
+     * named in its own note instead.
      */
-    private const int MISSING_SAMPLE_WHEN_NOT_OBSERVABLE = SampleFloors::MIN_PR_SAMPLE;
+    private const int MISSING_SAMPLE_WHEN_SIGNAL_ABSENT = 0;
 
     public function axis(): Axis
     {
@@ -46,7 +49,7 @@ final readonly class SizeEvaluator implements AxisEvaluator
         $files = $gitActivity->medianFilesChanged;
         $lines = $gitActivity->medianLinesChanged;
 
-        if (null !== $files && 0.0 !== $files) {
+        if (null !== $files && $files > SizeThresholds::FILES_SIGNAL_MIN) {
             $band = SizeThresholds::bandForFiles($files);
             $signalEvidence = new Evidence(
                 claim: self::claimFor($band),
@@ -67,21 +70,23 @@ final readonly class SizeEvaluator implements AxisEvaluator
                     value: (string) $lines,
                 ),
             );
+            $filesValue = null === $files ? 'absent' : (string) $files;
             $notes = [
                 new Note(
                     text: sprintf(
-                        'median_files_changed absent, fallback to median_lines_changed = %s.',
+                        'repli sur les lignes : median_files_changed = %s, median_lines_changed = %s.',
+                        $filesValue,
                         (string) $lines,
                     ),
                     pointer: new Pointer(
                         file: 'git-activity.json',
                         field: 'pull_requests.median_files_changed',
-                        value: 'absent',
+                        value: $filesValue,
                     ),
                 ),
             ];
         } else {
-            return $this->notObservable();
+            return $this->signalAbsent($files);
         }
 
         $level = self::levelFor($band);
@@ -110,9 +115,9 @@ final readonly class SizeEvaluator implements AxisEvaluator
                     ...$fallbackNotes,
                     new Note(
                         text: sprintf(
-                            'pull_requests.total = %d (sufficient sample, floor %d).',
-                            $total,
+                            'échantillon suffisant (plancher %d) : pull_requests.total = %d.',
                             SampleFloors::MIN_PR_SAMPLE,
+                            $total,
                         ),
                         pointer: new Pointer(
                             file: 'git-activity.json',
@@ -135,9 +140,9 @@ final readonly class SizeEvaluator implements AxisEvaluator
                 ...$fallbackNotes,
                 new Note(
                     text: sprintf(
-                        'pull_requests.total = %d, below the %d floor: %d missing to confirm.',
-                        $total,
+                        'échantillon insuffisant (plancher %d) : pull_requests.total = %d, il manque %d.',
                         SampleFloors::MIN_PR_SAMPLE,
+                        $total,
                         $missing,
                     ),
                     pointer: new Pointer(
@@ -150,41 +155,58 @@ final readonly class SizeEvaluator implements AxisEvaluator
         );
     }
 
-    private function notObservable(): AxisVerdict
+    /**
+     * Both signals absent (docs/specs/05-robustesse.md § Signal absent): not observable at
+     * all, distinct from an under-sampled band. `missingSample` is 0 — the gap is a field to
+     * provide, not a pull-request count — and each absent field is named in its own note with
+     * its own pointer.
+     */
+    private function signalAbsent(?float $files): AxisVerdict
     {
+        $notes = [
+            new Note(
+                text: 'median_files_changed absent : fournir git-activity.json › pull_requests.median_files_changed.',
+                pointer: new Pointer(
+                    file: 'git-activity.json',
+                    field: 'pull_requests.median_files_changed',
+                    value: null === $files ? 'absent' : (string) $files,
+                ),
+            ),
+            new Note(
+                text: 'median_lines_changed absent : fournir git-activity.json › pull_requests.median_lines_changed.',
+                pointer: new Pointer(
+                    file: 'git-activity.json',
+                    field: 'pull_requests.median_lines_changed',
+                    value: 'absent',
+                ),
+            ),
+        ];
+
         return new AxisVerdict(
             axis: Axis::Size,
             level: Level::White,
             confidence: new Range(
                 floor: Level::White,
                 ceiling: Level::Gold,
-                missingSample: self::MISSING_SAMPLE_WHEN_NOT_OBSERVABLE,
+                missingSample: self::MISSING_SAMPLE_WHEN_SIGNAL_ABSENT,
             ),
             evidences: [],
-            notes: [
-                new Note(
-                    text: 'Size not observable: median_files_changed and median_lines_changed both absent.',
-                    pointer: new Pointer(
-                        file: 'git-activity.json',
-                        field: 'pull_requests.median_files_changed',
-                        value: 'absent',
-                    ),
-                ),
-            ],
+            notes: $notes,
         );
     }
 
     /**
      * The plain claim naming the band and the range of grid cells it satisfies
-     * (docs/specs/01-axe-taille.md § Correspondance palier → niveau).
+     * (docs/specs/01-axe-taille.md § Correspondance palier → niveau). Rendered to the reader,
+     * hence written in French (docs/specs/06-sortie-et-progression.md).
      */
     private static function claimFor(SizeBand $band): string
     {
         return match ($band) {
-            SizeBand::S => 'S → satisfies Red',
-            SizeBand::M => 'M → satisfies Blue',
-            SizeBand::L => 'L → satisfies Green to Gold',
-            SizeBand::XL => 'XL → satisfies Green to Gold',
+            SizeBand::S => 'S → satisfait Red',
+            SizeBand::M => 'M → satisfait Blue',
+            SizeBand::L => 'L → satisfait de Green à Gold',
+            SizeBand::XL => 'XL → satisfait de Green à Gold',
         };
     }
 
