@@ -13,8 +13,6 @@ use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Profile\ProfileIdentity;
-use AiddLevel\Domain\Profile\PullRequest;
-use AiddLevel\Domain\Profile\PullRequests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -204,51 +202,10 @@ final class InterventionEvaluatorTest extends TestCase
         self::assertSame([], $corroborationNotes);
     }
 
-    #[Test]
-    public function pullRequestsWithinTheContradictionGapAddNoInconsistencyNote(): void
-    {
-        // Aggregate median 0, last-page commit median 1: a one-commit gap is page-to-page
-        // noise, below InterventionThresholds::MEDIAN_CONTRADICTION_GAP (2).
-        $verdict = new InterventionEvaluator()->evaluate(
-            $this->profile(0.0, 30, pullRequestCommits: [1, 1, 1]),
-        );
-
-        self::assertSame([], array_filter(
-            $verdict->notes,
-            static fn (Note $note): bool => str_contains($note->text, 'incohérence'),
-        ));
-    }
-
-    #[Test]
-    public function aFlagrantGapBetweenTheAggregateAndLastPageMediansAddsANonDecisiveNote(): void
-    {
-        // Aggregate median 0, last-page commit median 3: a three-commit gap is flagrant.
-        $verdict = new InterventionEvaluator()->evaluate(
-            $this->profile(0.0, 30, pullRequestCommits: [2, 3, 4]),
-        );
-
-        $inconsistencyNotes = array_filter(
-            $verdict->notes,
-            static fn (Note $note): bool => str_contains($note->text, 'incohérence'),
-        );
-
-        self::assertCount(1, $inconsistencyNotes);
-        $note = array_values($inconsistencyNotes)[0];
-        self::assertSame('pull-requests.json', $note->pointer->file);
-        self::assertSame('commits (median of last page)', $note->pointer->field);
-        self::assertSame('3', $note->pointer->value);
-        // Non-decisive: the level still follows the aggregate median (0, n=30 → Silver).
-        self::assertSame(Level::Silver, $verdict->level);
-    }
-
-    /**
-     * @param list<int>|null $pullRequestCommits
-     */
     private function profile(
         ?float $median,
         ?int $total,
         ?int $mergedWithoutHumanEdit = null,
-        ?array $pullRequestCommits = null,
     ): Profile {
         return new Profile(
             identity: new ProfileIdentity('fixture', 'developer', [], []),
@@ -264,11 +221,6 @@ final class InterventionEvaluatorTest extends TestCase
                 medianConcurrentBranches: null,
                 contextFiles: null,
             ),
-            pullRequests: null === $pullRequestCommits ? null : new PullRequests(array_map(
-                static fn (int $index, int $commits): PullRequest => new PullRequest($index + 1, true, $commits),
-                array_keys($pullRequestCommits),
-                $pullRequestCommits,
-            )),
         );
     }
 }

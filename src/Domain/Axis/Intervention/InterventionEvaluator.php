@@ -16,7 +16,6 @@ use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
-use AiddLevel\Domain\Profile\PullRequests;
 use AiddLevel\Domain\Threshold\InterventionThresholds;
 use AiddLevel\Domain\Threshold\SampleFloors;
 
@@ -34,17 +33,18 @@ use AiddLevel\Domain\Threshold\SampleFloors;
  * (`SampleFloors::MIN_PR_SAMPLE`). The axis caps at Silver by construction — no piece supplied
  * distinguishes a human framing a task from an agent framing it — said in a systematic note.
  * `merged_without_human_edit_after_open` corroborates but never decides (docs/specs/03 §
- * Corroboration), because it is not monotone with the level across the four supplied profiles;
- * so does `pull-requests.json › commits` (last page), flagged only on a flagrant contradiction.
+ * Corroboration), because it is not monotone with the level across the four supplied profiles.
+ * `pull-requests.json › commits` is deliberately not compared to the aggregate median: it
+ * counts commits per PR, `median_correction_commits_after_open` counts correction commits
+ * after opening — different fields, not comparable (docs/specs/03-axe-intervention.md §
+ * Corroboration).
  */
 final class InterventionEvaluator implements AxisEvaluator
 {
     private const string ACTIVITY_FILE = 'git-activity.json';
-    private const string PULL_REQUESTS_FILE = 'pull-requests.json';
     private const string MEDIAN_FIELD = 'pull_requests.median_correction_commits_after_open';
     private const string TOTAL_FIELD = 'pull_requests.total';
     private const string MERGED_WITHOUT_EDIT_FIELD = 'pull_requests.merged_without_human_edit_after_open';
-    private const string LAST_PAGE_COMMITS_FIELD = 'commits (median of last page)';
 
     // Grid wording (docs/specs/00-vue-ensemble.md § 2, docs/specs/06 § Format de sortie), one
     // claim per level this axis can reach from the signal alone.
@@ -118,11 +118,6 @@ final class InterventionEvaluator implements AxisEvaluator
         $corroboration = $this->corroborationNote($activity);
         if (null !== $corroboration) {
             $notes[] = $corroboration;
-        }
-
-        $inconsistency = $this->inconsistencyNote($median, $profile->pullRequests);
-        if (null !== $inconsistency) {
-            $notes[] = $inconsistency;
         }
 
         return new AxisVerdict(
@@ -206,41 +201,6 @@ final class InterventionEvaluator implements AxisEvaluator
         );
     }
 
-    /**
-     * `pull-requests.json` is a short, last-page list: its `commits` distribution corroborates
-     * the aggregate median's order of magnitude, never decides it
-     * (docs/specs/03-axe-intervention.md § Corroboration, jamais décision). Only a flagrant
-     * gap — at least `InterventionThresholds::MEDIAN_CONTRADICTION_GAP` commits apart from the
-     * aggregate median — is worth a note; a smaller gap is page-to-page noise.
-     */
-    private function inconsistencyNote(float $aggregateMedian, ?PullRequests $pullRequests): ?Note
-    {
-        if (null === $pullRequests || [] === $pullRequests->items) {
-            return null;
-        }
-
-        $lastPageMedian = self::median(array_map(
-            static fn ($pullRequest): int => $pullRequest->commits,
-            $pullRequests->items,
-        ));
-
-        if (abs($lastPageMedian - $aggregateMedian) < InterventionThresholds::MEDIAN_CONTRADICTION_GAP) {
-            return null;
-        }
-
-        return $this->note(
-            sprintf(
-                'incohérence : médiane agrégée = %s, médiane des commits de la dernière page = %s '
-                    .'(pull-requests.json)',
-                self::formatNumber($aggregateMedian),
-                self::formatNumber($lastPageMedian),
-            ),
-            self::PULL_REQUESTS_FILE,
-            self::LAST_PAGE_COMMITS_FIELD,
-            self::formatNumber($lastPageMedian),
-        );
-    }
-
     private function note(string $text, string $file, string $field, string $value): Note
     {
         return new Note($text, $this->pointer($file, $field, $value));
@@ -254,21 +214,5 @@ final class InterventionEvaluator implements AxisEvaluator
     private static function formatNumber(float $value): string
     {
         return rtrim(rtrim(sprintf('%.4f', $value), '0'), '.');
-    }
-
-    /**
-     * @param list<int> $values
-     */
-    private static function median(array $values): float
-    {
-        sort($values);
-        $count = count($values);
-        $middle = intdiv($count, 2);
-
-        if (0 === $count % 2) {
-            return ($values[$middle - 1] + $values[$middle]) / 2;
-        }
-
-        return (float) $values[$middle];
     }
 }

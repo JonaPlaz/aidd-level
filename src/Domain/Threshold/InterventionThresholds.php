@@ -25,12 +25,6 @@ final class InterventionThresholds
     // Silver: "never, once the task is framed" — grid cell; requires SampleFloors::MIN_PR_SAMPLE_ABSENCE.
     public const int MEDIAN_NEVER = 0;
 
-    // The gap, in commits, past which the last pull-requests.json page's commit median is read
-    // as a "franche" (flagrant) contradiction of the aggregate median rather than page-to-page
-    // noise (docs/specs/03-axe-intervention.md § Corroboration, jamais décision). Assumed
-    // adaptation, not sourced — no supplied profile exercises this branch.
-    public const int MEDIAN_CONTRADICTION_GAP = 2;
-
     /**
      * The level for a given median, ignoring sample size: a median of 0 with a sample below
      * SampleFloors::MIN_PR_SAMPLE_ABSENCE must still be turned into a confidence Range by the
