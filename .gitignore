@@ -1,0 +1,7 @@
+.brief/
+vendor/
+.claude/worktrees/
+.claude/settings.local.json
+.phpunit.cache/
+composer.phar
+*.local

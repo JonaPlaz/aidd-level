@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+
+$application = new Application('aidd-level', '0.1.0');
+// Commands are registered by the Infrastructure layer (see docs/specs/00-vue-ensemble.md).
+$application->run();
