@@ -158,7 +158,23 @@ final class DirectoryProfileSourceTest extends TestCase
             self::fail('Expected ProfileNotAssessable.');
         } catch (ProfileNotAssessable $exception) {
             self::assertNotNull($exception->partialIdentity);
-            self::assertStringContainsString('pull_requests.total', $exception->missingPrerequisite);
+            self::assertStringContainsString('pull_requests.total = 0', $exception->missingPrerequisite);
+        }
+    }
+
+    #[Test]
+    public function refusesAMissingPullRequestTotalWithADifferentMessageThanZero(): void
+    {
+        file_put_contents($this->sandbox.'/profile.json', json_encode(['profile_id' => 'ghost']));
+        file_put_contents($this->sandbox.'/git-activity.json', json_encode(['pull_requests' => []]));
+
+        try {
+            new DirectoryProfileSource()->load($this->sandbox);
+            self::fail('Expected ProfileNotAssessable.');
+        } catch (ProfileNotAssessable $exception) {
+            self::assertNotNull($exception->partialIdentity);
+            self::assertStringContainsString('pull_requests.total est absent', $exception->missingPrerequisite);
+            self::assertStringNotContainsString('= 0', $exception->missingPrerequisite);
         }
     }
 
