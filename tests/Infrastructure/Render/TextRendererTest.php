@@ -68,6 +68,20 @@ final class TextRendererTest extends TestCase
     }
 
     #[Test]
+    public function everyAcquiredClaimCarriesItsOwnPointer(): void
+    {
+        $rendered = new TextRenderer()->render($this->evaluatedAssessment());
+
+        $section = substr($rendered, (int) strpos($rendered, 'Acquis pour'));
+        $section = substr($section, 0, (int) strpos($section, "\n\n"));
+
+        self::assertStringContainsString('Taille : XL', $section);
+        self::assertStringContainsString('git-activity.json › pull_requests.median_files_changed = 29', $section);
+        self::assertStringContainsString('En parallèle : 4 (médiane)', $section);
+        self::assertStringContainsString('git-activity.json › parallelism.median_concurrent_branches = 4', $section);
+    }
+
+    #[Test]
     public function recommendationsAreOrderedByActionability(): void
     {
         $rendered = new TextRenderer()->render($this->evaluatedAssessment());
@@ -78,6 +92,33 @@ final class TextRendererTest extends TestCase
         self::assertNotFalse($harnessPosition);
         self::assertNotFalse($interventionPosition);
         self::assertLessThan($interventionPosition, $harnessPosition);
+    }
+
+    #[Test]
+    public function theNextQuestNamesTheProofFieldAndTheCurrentEvidence(): void
+    {
+        $rendered = new TextRenderer()->render($this->evaluatedAssessment());
+
+        self::assertStringContainsString(
+            "champ à faire bouger : repo-context/ › bounded retry",
+            $rendered,
+        );
+        self::assertStringContainsString(
+            'preuve actuelle : git-activity.json › context_files.agents_md = true',
+            $rendered,
+        );
+    }
+
+    #[Test]
+    public function noPointerLineIsEverSplitByWrapping(): void
+    {
+        $rendered = new TextRenderer()->render($this->evaluatedAssessment());
+
+        foreach (explode("\n", $rendered) as $line) {
+            if (str_contains($line, '›')) {
+                self::assertStringContainsString(' › ', $line, sprintf('Pointer split by a wrap: "%s"', $line));
+            }
+        }
     }
 
     #[Test]
@@ -92,12 +133,29 @@ final class TextRendererTest extends TestCase
     }
 
     #[Test]
-    public function lowConfidenceNamesTheRangeAndTheMissingSample(): void
+    public function lowConfidenceIsLabelledExplicitly(): void
     {
         $rendered = new TextRenderer()->render($this->lowConfidenceAssessment());
 
+        self::assertStringContainsString('évalué, confiance basse', $rendered);
         self::assertStringContainsString('Niveau : entre Blue et Copper', $rendered);
         self::assertStringContainsString('4 PR de plus', $rendered);
+    }
+
+    #[Test]
+    public function everyRangedAxisIsNamedEvenWhenItDoesNotCapTheFloor(): void
+    {
+        $rendered = new TextRenderer()->render($this->lowConfidenceAssessment());
+
+        // Parallelism is a Range here but Harness alone holds the floor down: the
+        // uncertainty on Parallelism must still surface, not be folded into "Acquis".
+        self::assertStringContainsString('Incertitude sur les autres axes', $rendered);
+        self::assertStringContainsString('En parallèle : 1 (médiane)', $rendered);
+        self::assertStringContainsString('fourchette : entre Green et Gold (manque 2 PR)', $rendered);
+
+        $acquisSection = substr($rendered, (int) strpos($rendered, 'Acquis pour'));
+        $acquisSection = substr($acquisSection, 0, (int) strpos($acquisSection, "\n\n"));
+        self::assertStringNotContainsString('En parallèle', $acquisSection);
     }
 
     #[Test]
@@ -178,7 +236,8 @@ final class TextRendererTest extends TestCase
         );
 
         $cappingAxes = [Axis::Harness, Axis::Intervention];
-        $recommendations = new RecommendationPolicy()->recommend($cappingAxes, Level::Silver);
+        $verdicts = [$size, $harness, $intervention, $parallelism];
+        $recommendations = new RecommendationPolicy()->recommend($verdicts, $cappingAxes, Level::Silver);
 
         $notes = [
             new Note('pic observé, non retenu', new Pointer('git-activity.json', 'parallelism.max_concurrent_branches', '7')),
@@ -213,7 +272,7 @@ final class TextRendererTest extends TestCase
 
         $intervention = new AxisVerdict(
             axis: Axis::Intervention,
-            level: Level::Blue,
+            level: Level::Green,
             confidence: new Confirmed(),
             evidences: [
                 new Evidence('après coup, sur une partie', new Pointer('git-activity.json', 'pull_requests.median_correction_commits_after_open', '2')),
@@ -229,17 +288,20 @@ final class TextRendererTest extends TestCase
             ],
         );
 
+        // Not the capping axis (Harness alone holds the floor at Blue) but still a Range:
+        // its own uncertainty must surface too (docs/specs/06 § Raccord avec les statuts).
         $parallelism = new AxisVerdict(
             axis: Axis::Parallelism,
             level: Level::Green,
-            confidence: new Confirmed(),
+            confidence: new Range(Level::Green, Level::Gold, 2),
             evidences: [
                 new Evidence('1 (médiane)', new Pointer('git-activity.json', 'parallelism.median_concurrent_branches', '1')),
             ],
         );
 
         $cappingAxes = [Axis::Harness];
-        $recommendations = new RecommendationPolicy()->recommend($cappingAxes, Level::Green);
+        $verdicts = [$size, $harness, $intervention, $parallelism];
+        $recommendations = new RecommendationPolicy()->recommend($verdicts, $cappingAxes, Level::Green);
 
         $notes = [
             new Note('declaratif.md présent, non vérifié', new Pointer('profile.json', 'available', 'declaratif.md')),
@@ -262,10 +324,6 @@ final class TextRendererTest extends TestCase
         $identity = new ProfileIdentity('galahad', 'stagiaire', [], []);
 
         $notes = [
-            new Note(
-                "git-activity.json absent ou invalide — colonne vertébrale, aucun axe n'est calculable sans lui",
-                new Pointer('profiles/galahad/', 'git-activity.json', 'absent'),
-            ),
             new Note('profile.json lisible malgré tout', new Pointer('profiles/galahad/profile.json', 'id', 'galahad')),
         ];
 
@@ -278,6 +336,8 @@ final class TextRendererTest extends TestCase
             verdicts: [],
             recommendations: [],
             notes: $notes,
+            missingPrerequisite: "git-activity.json absent ou invalide — colonne vertébrale, aucun axe n'est calculable sans lui",
+            hint: 'fournir un git-activity.json valide à la racine du dossier de profil (profiles/galahad/)',
         );
     }
 }

@@ -10,7 +10,12 @@ Ce qui a mené là — l'axe qui plafonne : Harness et Intervention (ex æquo)
     repo-context/ › retry_pattern = aucune relance bornée trouvée
   Intervention : aux étapes clés
     git-activity.json › pull_requests.median_correction_commits_after_open = 1
-  Acquis pour Silver : Taille XL (median_files_changed = 29), En parallèle 4 (médiane)
+
+Acquis pour Silver
+  Taille : XL (median_files_changed = 29)
+    git-activity.json › pull_requests.median_files_changed = 29
+  En parallèle : 4 (médiane)
+    git-activity.json › parallelism.median_concurrent_branches = 4
 
 Comment monter d'un cran — vers Silver
   1. Harness : ajouter une relance automatique bornée (N essais visibles) dans la CI ou un script,
@@ -21,11 +26,13 @@ Comment monter d'un cran — vers Silver
 Prochaine quête
   Harness : ajouter une relance automatique bornée (N essais visibles) dans la CI ou un script, sur
             une commande du projet.
-  preuve attendue : git-activity.json › context_files.agents_md = true
+  champ à faire bouger : repo-context/ › bounded retry
+  preuve actuelle : git-activity.json › context_files.agents_md = true
 
 Notes
-  · pic observé, non retenu (git-activity.json › parallelism.max_concurrent_branches = 7)
-  · prérequis qualité : duplication 2,4 %, couverture 85 % (sonar-measures.json ›
-    duplicated_lines_density = 2.4)
-  · pièce annoncée absente (n'a pas répondu au questionnaire) (profile.json › note = declaratif.md
-    absent)
+  · pic observé, non retenu
+    (git-activity.json › parallelism.max_concurrent_branches = 7)
+  · prérequis qualité : duplication 2,4 %, couverture 85 %
+    (sonar-measures.json › duplicated_lines_density = 2.4)
+  · pièce annoncée absente (n'a pas répondu au questionnaire)
+    (profile.json › note = declaratif.md absent)

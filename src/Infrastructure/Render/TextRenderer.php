@@ -12,39 +12,27 @@ use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Pointer;
+use AiddLevel\Domain\Progression\RecommendationPolicy;
 
 /**
  * Renders an `Assessment` as plain text (docs/specs/06-sortie-et-progression.md § Format de
  * sortie) — no Symfony dependency, `render()` returns a plain string that the console command
  * of a later chantier prints as-is. Three distinct shapes, one per `AssessmentStatus`; never
  * the color alone (icon + word, colorblind reader among the readers). Every explanation line
- * quotes a real `Pointer` (`file › field = value`); pointer lines are never word-wrapped so
- * the `›` marker and the value stay on one line and remain copy-pasteable, unlike the
- * free-form sentences (gesture, claim, acquired summary) which are wrapped to stay within
- * `MAX_WIDTH` columns.
+ * quotes a real `Pointer` (`file › field = value`), always on its own physical line: pointer
+ * text is never word-wrapped together with the sentence that precedes it, so the `›` marker
+ * and the value can never be split across a wrap.
  *
  * `Recommendation::$gesture` is already French (docs/specs/00-vue-ensemble.md § 4: every
  * user-facing string is French) and printed as-is; this renderer does not translate or
- * reformulate it.
+ * reformulate it. Axis ordering by causal actionability is decided once, in
+ * `RecommendationPolicy::AXIS_ORDER` — this renderer reads that constant rather than keeping
+ * its own copy.
  */
 final class TextRenderer
 {
     /** Sortie tenue sous 100 colonnes (docs/specs/06 § Format de sortie). */
     private const int MAX_WIDTH = 100;
-
-    /**
-     * Same causal-actionability order as `RecommendationPolicy` (docs/specs/06 § Cinq
-     * règles, rule 5) — kept here too because the renderer needs it to order the "l'axe qui
-     * plafonne" headline the same way, independently of how the caller ordered `verdicts`.
-     *
-     * @var list<Axis>
-     */
-    private const array ACTIONABILITY_ORDER = [
-        Axis::Harness,
-        Axis::Parallelism,
-        Axis::Intervention,
-        Axis::Size,
-    ];
 
     public function render(Assessment $assessment): string
     {
@@ -77,7 +65,13 @@ final class TextRenderer
                 : sprintf('Niveau atteint : %s · niveau visé : déjà au maximum', $this->levelName($level)),
         ]);
 
-        $blocks = [$headerBlock, $this->cappingAxesBlock($assessment)];
+        $blocks = [$headerBlock];
+        $blocks[] = $this->cappingAxesBlock($assessment);
+
+        $acquired = $this->acquiredBlock($assessment, []);
+        if (null !== $acquired) {
+            $blocks[] = $acquired;
+        }
 
         if (null !== $target) {
             $blocks[] = $this->recommendationsBlock($assessment, $target);
@@ -110,14 +104,35 @@ final class TextRenderer
             $this->levelRangeBar($floor, $ceiling),
             $this->blockingAxisLine($assessment->cappingAxes),
             $this->header($assessment, sprintf('%s – %s', $floor->label(), $ceiling->label())),
+            'évalué, confiance basse',
             sprintf('Niveau : entre %s et %s', $this->levelName($floor), $this->levelName($ceiling)),
         ]);
 
-        $blocks = [$headerBlock, $this->cappingAxesBlock($assessment)];
+        $blocks = [$headerBlock];
+        $blocks[] = $this->cappingAxesBlock($assessment);
+
+        // Every axis whose sample was too small to settle gets its range and missing count
+        // named, whether or not it happens to be the one holding the global floor down
+        // (docs/specs/06 § Raccord avec les statuts — "fourchette et manque chiffré", not
+        // limited to the capping axis).
+        $rangedNonCapping = $this->rangedNonCappingAxes($assessment);
+        $uncertainty = $this->axisDetailBlock(
+            'Incertitude sur les autres axes',
+            $rangedNonCapping,
+            $this->verdictsByAxis($assessment),
+        );
+        if (null !== $uncertainty) {
+            $blocks[] = $uncertainty;
+        }
+
+        $acquired = $this->acquiredBlock($assessment, $rangedNonCapping);
+        if (null !== $acquired) {
+            $blocks[] = $acquired;
+        }
 
         $target = $floor->next();
         if (null !== $target) {
-            $blocks[] = $this->lowConfidenceRecommendationsBlock($assessment, $target);
+            $blocks[] = $this->recommendationsBlock($assessment, $target);
             $quest = $this->nextQuestBlock($assessment);
             if (null !== $quest) {
                 $blocks[] = $quest;
@@ -132,7 +147,163 @@ final class TextRenderer
         return $blocks;
     }
 
-    private function lowConfidenceRecommendationsBlock(Assessment $assessment, Level $targetLevel): string
+    /**
+     * @return list<Axis>
+     */
+    private function rangedNonCappingAxes(Assessment $assessment): array
+    {
+        $ranged = [];
+        foreach ($assessment->verdicts as $verdict) {
+            if ($verdict->confidence instanceof Range && !\in_array($verdict->axis, $assessment->cappingAxes, true)) {
+                $ranged[] = $verdict->axis;
+            }
+        }
+
+        return $this->orderedAxes($ranged);
+    }
+
+    // -- NotAssessable -----------------------------------------------------------------------
+
+    /**
+     * @return list<string>
+     */
+    private function notAssessableBlocks(Assessment $assessment): array
+    {
+        $header = null !== $assessment->missingPrerequisite
+            ? $this->wrapped('⛔ Non évaluable — ', $assessment->missingPrerequisite)
+            : '⛔ Non évaluable';
+
+        $identityBlock = implode("\n", [
+            'Ce qui a été lu',
+            null !== $assessment->identity
+                ? sprintf('  identité : %s (%s)', $assessment->identity->id, $assessment->identity->role)
+                : "  rien : le dossier ou profile.json n'a pas pu être lu",
+        ]);
+
+        $blocks = [$header, $identityBlock];
+
+        if (null !== $assessment->hint) {
+            $blocks[] = implode("\n", ['Piste technique', $this->wrapped('  ', $assessment->hint)]);
+        }
+
+        $notes = $this->notesBlock($assessment->notes);
+        if (null !== $notes) {
+            $blocks[] = $notes;
+        }
+
+        return $blocks;
+    }
+
+    // -- Shared building blocks --------------------------------------------------------------
+
+    private function cappingAxesBlock(Assessment $assessment): string
+    {
+        $ordered = $this->orderedAxes($assessment->cappingAxes);
+        $names = array_map(fn (Axis $axis): string => $this->axisLabel($axis), $ordered);
+
+        $heading = $this->wrapped(
+            "Ce qui a mené là — l'axe qui plafonne : ",
+            $this->joinFr($names).(\count($ordered) > 1 ? ' (ex æquo)' : ''),
+        );
+
+        $verdictsByAxis = $this->verdictsByAxis($assessment);
+        $lines = [$heading];
+        foreach ($ordered as $axis) {
+            $verdict = $verdictsByAxis[$axis->name] ?? null;
+            if (null === $verdict) {
+                continue;
+            }
+            array_push($lines, ...$this->axisDetailLines($axis, $verdict));
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @param list<Axis>                 $axes
+     * @param array<string, AxisVerdict> $verdictsByAxis
+     */
+    private function axisDetailBlock(string $heading, array $axes, array $verdictsByAxis): ?string
+    {
+        if ([] === $axes) {
+            return null;
+        }
+
+        $lines = [$heading];
+        foreach ($axes as $axis) {
+            $verdict = $verdictsByAxis[$axis->name] ?? null;
+            if (null === $verdict) {
+                continue;
+            }
+            array_push($lines, ...$this->axisDetailLines($axis, $verdict));
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * `axis : claim`, every evidence pointer indented and unwrapped below it, and — when the
+     * axis is a `Range` — the confirmed/observed interval and the counted-out missing sample
+     * (docs/specs/06 § Raccord avec les statuts).
+     *
+     * @return list<string>
+     */
+    private function axisDetailLines(Axis $axis, AxisVerdict $verdict): array
+    {
+        $headline = $verdict->evidences[0]->claim ?? '';
+        $lines = [$this->wrapped(sprintf('  %s : ', $this->axisLabel($axis)), $headline)];
+
+        foreach ($verdict->evidences as $evidence) {
+            $lines[] = sprintf('    %s', (string) $evidence->pointer);
+        }
+
+        if ($verdict->confidence instanceof Range) {
+            $lines[] = $this->wrapped(
+                '    fourchette : ',
+                sprintf(
+                    'entre %s et %s (manque %d PR)',
+                    $this->levelName($verdict->confidence->floor),
+                    $this->levelName($verdict->confidence->ceiling),
+                    $verdict->confidence->missingSample,
+                ),
+            );
+        }
+
+        return $lines;
+    }
+
+    /**
+     * "Acquis pour X" — every axis that neither caps the floor nor carries a `Range`
+     * (already displayed in detail elsewhere), each with its claim and pointer(s)
+     * (docs/specs/06 § Cinq règles, rule 4 — a claim is never shown without one).
+     *
+     * @param list<Axis> $alreadyDetailed
+     */
+    private function acquiredBlock(Assessment $assessment, array $alreadyDetailed): ?string
+    {
+        $verdictsByAxis = $this->verdictsByAxis($assessment);
+
+        $acquired = [];
+        foreach (Axis::cases() as $axis) {
+            if (\in_array($axis, $assessment->cappingAxes, true) || \in_array($axis, $alreadyDetailed, true)) {
+                continue;
+            }
+            if (null !== ($verdictsByAxis[$axis->name] ?? null)) {
+                $acquired[] = $axis;
+            }
+        }
+
+        if ([] === $acquired) {
+            return null;
+        }
+
+        $target = $assessment->level?->next() ?? $assessment->level;
+        \assert(null !== $target);
+
+        return $this->axisDetailBlock(sprintf('Acquis pour %s', $this->levelName($target)), $acquired, $verdictsByAxis);
+    }
+
+    private function recommendationsBlock(Assessment $assessment, Level $targetLevel): string
     {
         $verdictsByAxis = $this->verdictsByAxis($assessment);
 
@@ -155,113 +326,11 @@ final class TextRenderer
         return implode("\n", $lines);
     }
 
-    // -- NotAssessable -----------------------------------------------------------------------
-
     /**
-     * @return list<string>
+     * The next quest names the field the gesture must move (`Recommendation::$proofField`,
+     * docs/specs/06 § La preuve attendue) and, when one was already observed, the first
+     * `Evidence` pointer for that axis — the state the field is coming from.
      */
-    private function notAssessableBlocks(Assessment $assessment): array
-    {
-        // Assessment carries no dedicated field for "missing prerequisite" / "technical lead"
-        // (docs/specs/05-robustesse.md § Trois statuts de sortie): the only free-text channel
-        // available on a NotAssessable result is `notes`. Convention adopted here, signalled
-        // to the reviewer: notes[0] is the missing prerequisite (its text is the headline,
-        // its pointer is the technical lead); any further note is rendered normally below.
-        $notes = $assessment->notes;
-        $prerequisite = $notes[0] ?? null;
-
-        $header = null !== $prerequisite
-            ? $this->wrapped('⛔ Non évaluable — ', $prerequisite->text)
-            : '⛔ Non évaluable';
-
-        $identityBlock = implode("\n", [
-            'Ce qui a été lu',
-            null !== $assessment->identity
-                ? sprintf('  identité : %s (%s)', $assessment->identity->id, $assessment->identity->role)
-                : "  rien : le dossier ou profile.json n'a pas pu être lu",
-        ]);
-
-        $blocks = [$header, $identityBlock];
-
-        if (null !== $prerequisite) {
-            $blocks[] = implode("\n", ['Piste technique', sprintf('  %s', (string) $prerequisite->pointer)]);
-        }
-
-        $trailing = $this->notesBlock(\array_slice($notes, 1));
-        if (null !== $trailing) {
-            $blocks[] = $trailing;
-        }
-
-        return $blocks;
-    }
-
-    // -- Shared building blocks --------------------------------------------------------------
-
-    private function cappingAxesBlock(Assessment $assessment): string
-    {
-        $ordered = $this->orderedAxes($assessment->cappingAxes);
-        $names = array_map(fn (Axis $axis): string => $this->axisLabel($axis), $ordered);
-
-        $lines = [$this->wrapped(
-            "Ce qui a mené là — l'axe qui plafonne : ",
-            $this->joinFr($names).(\count($ordered) > 1 ? ' (ex æquo)' : ''),
-        )];
-
-        $verdictsByAxis = $this->verdictsByAxis($assessment);
-
-        foreach ($ordered as $axis) {
-            $verdict = $verdictsByAxis[$axis->name] ?? null;
-            if (null === $verdict) {
-                continue;
-            }
-
-            $headline = $verdict->evidences[0]->claim ?? '';
-            $lines[] = $this->wrapped(sprintf('  %s : ', $this->axisLabel($axis)), $headline);
-            foreach ($verdict->evidences as $evidence) {
-                $lines[] = sprintf('    %s', (string) $evidence->pointer);
-            }
-        }
-
-        $acquired = [];
-        foreach (Axis::cases() as $axis) {
-            if (\in_array($axis, $assessment->cappingAxes, true)) {
-                continue;
-            }
-
-            $verdict = $verdictsByAxis[$axis->name] ?? null;
-            if (null === $verdict) {
-                continue;
-            }
-
-            $claim = $verdict->evidences[0]->claim ?? '';
-            $acquired[] = sprintf('%s %s', $this->axisLabel($axis), $claim);
-        }
-
-        if ([] !== $acquired) {
-            $target = $assessment->level?->next() ?? $assessment->level;
-            \assert(null !== $target);
-            $lines[] = $this->wrapped(
-                sprintf('  Acquis pour %s : ', $this->levelName($target)),
-                implode(', ', $acquired),
-            );
-        }
-
-        return implode("\n", $lines);
-    }
-
-    private function recommendationsBlock(Assessment $assessment, Level $targetLevel): string
-    {
-        $lines = [sprintf("Comment monter d'un cran — vers %s", $this->levelName($targetLevel))];
-        foreach ($assessment->recommendations as $index => $recommendation) {
-            $lines[] = $this->wrapped(
-                sprintf('  %d. %s : ', $index + 1, $this->axisLabel($recommendation->axis)),
-                $recommendation->gesture,
-            );
-        }
-
-        return implode("\n", $lines);
-    }
-
     private function nextQuestBlock(Assessment $assessment): ?string
     {
         if ([] === $assessment->recommendations) {
@@ -270,14 +339,12 @@ final class TextRenderer
 
         $first = $assessment->recommendations[0];
         $lines = ['Prochaine quête'];
-        $lines[] = $this->wrapped(
-            sprintf('  %s : ', $this->axisLabel($first->axis)),
-            $first->gesture.'.',
-        );
+        $lines[] = $this->wrapped(sprintf('  %s : ', $this->axisLabel($first->axis)), $first->gesture.'.');
+        $lines[] = sprintf('  champ à faire bouger : %s', $first->proofField);
 
         $pointer = $this->firstPointerFor($assessment, $first->axis);
         if (null !== $pointer) {
-            $lines[] = sprintf('  preuve attendue : %s', (string) $pointer);
+            $lines[] = sprintf('  preuve actuelle : %s', (string) $pointer);
         }
 
         return implode("\n", $lines);
@@ -294,7 +361,8 @@ final class TextRenderer
 
         $lines = ['Notes'];
         foreach ($notes as $note) {
-            $lines[] = $this->wrapped('  · ', sprintf('%s (%s)', $note->text, (string) $note->pointer));
+            $lines[] = $this->wrapped('  · ', $note->text);
+            $lines[] = sprintf('    (%s)', (string) $note->pointer);
         }
 
         return implode("\n", $lines);
@@ -342,7 +410,7 @@ final class TextRenderer
     private function orderedAxes(array $axes): array
     {
         return array_values(array_filter(
-            self::ACTIONABILITY_ORDER,
+            RecommendationPolicy::AXIS_ORDER,
             static fn (Axis $axis): bool => \in_array($axis, $axes, true),
         ));
     }
@@ -435,8 +503,9 @@ final class TextRenderer
 
     /**
      * Word-wraps `$text` to `MAX_WIDTH` columns, indenting every continuation line under
-     * `$prefix`. Never used on a pointer line: a pointer must stay on one line so `›` and the
-     * value it precedes are always readable together (docs/specs/06 § Cinq règles, rule 4).
+     * `$prefix`. Never given a pointer to wrap: a pointer is always appended on its own,
+     * separate, unwrapped line by the caller, so `›` and the value it precedes can never be
+     * split by a line break (docs/specs/06 § Cinq règles, rule 4).
      */
     private function wrapped(string $prefix, string $text): string
     {

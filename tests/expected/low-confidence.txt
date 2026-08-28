@@ -1,13 +1,24 @@
 ❖ 🔺 [🔹 🟢 🥉] 🥈 🥇
 axe bloquant : Harness
 🔹 Blue – 🥉 Copper — perceval (développeur solo)
+évalué, confiance basse
 Niveau : entre Blue et Copper
 
 Ce qui a mené là — l'axe qui plafonne : Harness
   Harness : context engineering sans behavior
     git-activity.json › context_files.agents_md = true
-  Acquis pour Green : Taille S (median_files_changed = 2), Intervention après coup, sur une partie,
-                      En parallèle 1 (médiane)
+    fourchette : entre Blue et Copper (manque 4 PR)
+
+Incertitude sur les autres axes
+  En parallèle : 1 (médiane)
+    git-activity.json › parallelism.median_concurrent_branches = 1
+    fourchette : entre Green et Gold (manque 2 PR)
+
+Acquis pour Green
+  Taille : S (median_files_changed = 2)
+    git-activity.json › pull_requests.median_files_changed = 2
+  Intervention : après coup, sur une partie
+    git-activity.json › pull_requests.median_correction_commits_after_open = 2
 
 Comment monter d'un cran — vers Green
   1. Harness : ajouter au moins une règle, un agent ou un hook versionné, et câbler le hook dans la
@@ -17,7 +28,9 @@ Comment monter d'un cran — vers Green
 Prochaine quête
   Harness : ajouter au moins une règle, un agent ou un hook versionné, et câbler le hook dans la
             configuration pour qu'il s'exécute sans coopération du modèle.
-  preuve attendue : git-activity.json › context_files.agents_md = true
+  champ à faire bouger : context_files.rules_count, skills_count, hooks_count, agents_count
+  preuve actuelle : git-activity.json › context_files.agents_md = true
 
 Notes
-  · declaratif.md présent, non vérifié (profile.json › available = declaratif.md)
+  · declaratif.md présent, non vérifié
+    (profile.json › available = declaratif.md)
