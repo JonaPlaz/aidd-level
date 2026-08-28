@@ -1,33 +1,33 @@
 // PreToolUse (Bash): a `git commit` must not stage src/Domain and src/Infrastructure
 // together (AGENTS.md rule 7), and must never include a private path; a `git push` must
 // never use a bare --force (--force-with-lease is the only accepted form, for rebases).
-// Private paths are read from .worktreeinclude, which lists exactly the gitignored
-// files carried into worktrees; nothing private is spelled out in this file.
+// Git global options (`-C`, `-c`, `--exec-path`, …) are parsed, not pattern-matched.
 'use strict';
 
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
-const { readInput, projectRoot, block } = require('./lib');
+const { readInput, projectRoot, block, parseGit } = require('./lib');
 
 const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
+const git = parseGit(command);
+if (!git) process.exit(0);
+
+const root = git.cPath ? path.resolve(projectRoot(input), git.cPath) : projectRoot(input);
 
 // Bare --force, -f (alone or bundled), and force-prefixed refspecs (`+HEAD:branch`).
-// Git global options may precede the subcommand: `git -C <path> push`, `git -c k=v push`.
-const GIT_PUSH = /\bgit(?:\s+(?:-C\s+\S+|-c\s+\S+|--git-dir=\S+|--work-tree=\S+|--no-pager|-P))*\s+push\b/;
-const GIT_COMMIT = /\bgit(?:\s+(?:-C\s+\S+|-c\s+\S+|--git-dir=\S+|--work-tree=\S+|--no-pager|-P))*\s+commit\b/;
-
-if (GIT_PUSH.test(command) && /(\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+\S+)/.test(command)) {
-  block('guard-git: bare --force / -f / +refspec is refused; rebase then push with --force-with-lease (CLAUDE.md).');
+if (git.subcommand === 'push') {
+  const args = ` ${git.args} `;
+  if (/\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+\S+/.test(args)) {
+    block('guard-git: bare --force / -f / +refspec is refused; rebase then push with --force-with-lease (CLAUDE.md).');
+  }
+  process.exit(0);
 }
 
-if (!GIT_COMMIT.test(command)) process.exit(0);
+if (git.subcommand !== 'commit') process.exit(0);
 
-const cOption = command.match(/\bgit\s+-C\s+(\S+)/);
-const root = cOption ? cOption[1].replace(/^["']|["']$/g, '') : projectRoot(input);
-
-function git(args) {
+function gitLines(args) {
   try {
     return execSync(`git ${args}`, { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean);
   } catch {
@@ -36,9 +36,9 @@ function git(args) {
 }
 
 // `git commit -a` / `-am` / `--all` also commits modified tracked files not yet staged.
-const commitsAll = /\s(-a|--all|-a[a-zA-Z]+|-[a-zA-Z]*a[a-zA-Z]*)(\s|$)/.test(command);
-const files = new Set(git('diff --cached --name-only'));
-if (commitsAll) git('diff --name-only').forEach((f) => files.add(f));
+const commitsAll = /(^|\s)(-a|--all|-[a-zA-Z]*a[a-zA-Z]*)(\s|$)/.test(git.args);
+const files = new Set(gitLines('diff --cached --name-only'));
+if (commitsAll) gitLines('diff --name-only').forEach((f) => files.add(f));
 
 // Private prefixes come from both the working-tree declaration and the committed
 // baseline (HEAD), so a commit that edits or deletes .worktreeinclude cannot disable

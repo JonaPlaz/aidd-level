@@ -6,10 +6,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
-const { readInput, projectRoot } = require('./lib');
+const { readInput, projectRoot, parseGit } = require('./lib');
 
 const input = readInput();
-const root = projectRoot(input);
+const command = (input.tool_input && input.tool_input.command) || '';
+const parsedGit = parseGit(command);
+// A `git -C <worktree> …` failure is journaled against that worktree's HEAD and branch.
+const root = parsedGit && parsedGit.cPath ? path.resolve(projectRoot(input), parsedGit.cPath) : projectRoot(input);
 
 function git(args) {
   try {
@@ -22,10 +25,12 @@ function git(args) {
 const event = input.hook_event_name || 'unknown';
 let what;
 if (event === 'PostToolUseFailure') {
-  const command = ((input.tool_input && input.tool_input.command) || '').replace(/\|/g, '\\|').slice(0, 120);
-  // Only project commands matter; a failed `ls` is noise.
-  if (!/\b(make|git rebase|git push|gh pr|gh api|composer|docker)\b/.test(command)) process.exit(0);
-  what = `commande échouée : \`${command}\``;
+  const shown = command.replace(/\|/g, '\\|').slice(0, 120);
+  // Only project commands matter; a failed `ls` is noise. Git is matched on its parsed
+  // subcommand so `git -C <worktree> rebase` counts like `git rebase`.
+  const gitMatters = parsedGit && ['rebase', 'push', 'merge', 'cherry-pick'].includes(parsedGit.subcommand);
+  if (!gitMatters && !/\b(make|gh pr|gh api|composer|docker)\b/.test(command)) process.exit(0);
+  what = `commande échouée : \`${shown}\``;
 } else if (event === 'SubagentStop') {
   what = `agent terminé : ${input.agent_type || input.agent_name || 'inconnu'}`;
 } else if (event === 'Stop') {

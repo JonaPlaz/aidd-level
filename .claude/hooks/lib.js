@@ -29,4 +29,30 @@ function block(message) {
   process.exit(2);
 }
 
-module.exports = { readInput, projectRoot, relativePath, block };
+// Parses the first `git …` invocation of a shell command: skips every global option
+// (with or without a separate value) and returns the subcommand, its arguments and the
+// `-C <path>` if any. Global options taking a value, per `git --help`.
+const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--exec-path', '--namespace', '--super-prefix', '--config-env', '--list-cmds', '--attr-source']);
+
+function parseGit(command) {
+  const match = /(?:^|[;&|(]\s*)git\s+(.*)$/s.exec(command);
+  if (!match) return null;
+  const tokens = match[1].split(/\s+/).filter(Boolean);
+  let cPath = null;
+  let i = 0;
+  while (i < tokens.length && tokens[i].startsWith('-')) {
+    const [name, inlineValue] = tokens[i].split(/=(.*)/s);
+    if (GIT_VALUE_OPTIONS.has(name) && inlineValue === undefined) {
+      if (name === '-C') cPath = tokens[i + 1];
+      i += 2;
+    } else {
+      if (name === '-C') cPath = inlineValue;
+      i += 1;
+    }
+  }
+  const subcommand = tokens[i] || '';
+  const args = tokens.slice(i + 1).join(' ');
+  return { subcommand, args, cPath: cPath ? cPath.replace(/^["']|["']$/g, '') : null };
+}
+
+module.exports = { readInput, projectRoot, relativePath, block, parseGit };

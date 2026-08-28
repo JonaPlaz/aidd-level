@@ -44,16 +44,19 @@ corrige.** Arbitré par Jonathan le 2026-08-29 sur la PR #15, en remplacement de
 d'attente, et l'arrêt manuel.
 
 `W` est le checkout qui a créé la PR : le worktree de l'agent `dev` (chemin rapporté par
-l'agent), ou le checkout courant pour une PR `docs/spec-<n°>` ou `--trivial`. Le skill n'agit
-sur la branche que par `git -C W …` (autorisé par `settings.json`, et le hook `guard-git`
-lit les options globales de git avant de reconnaître `push`).
+l'agent), ou le checkout courant pour une PR `docs/spec-<n°>` ou `--trivial`. **Les
+opérations git sur la branche sont exécutées par le propriétaire de `W`** : l'agent `dev`,
+relancé avec l'instruction (« rebase sur origin/main, push --force-with-lease, rends la
+main »), ou le skill lui-même quand `W` est le checkout courant. Le skill ne passe jamais par
+`git -C` — `settings.json` n'autorise que les verbes git explicitement listés, et un
+`git -C W clean` ou `reset --hard` n'en fait pas partie.
 
 1. **Rebaser.** Le check `ci` est requis en mode `strict` : une branche en retard sur `main`
-   ne peut pas merger. `git -C W fetch origin && git -C W rebase origin/main`, puis
-   `git -C W push --force-with-lease` (seule forme admise ; `--force`, `-f` et les refspecs
-   `+…` sont refusés par le hook `guard-git`). Conflit → une seule tentative, puis label
-   `blocked`, journal, arrêt.
-2. **Demander le verdict sur ce SHA.** Relever `HEAD = git -C W rev-parse HEAD`, puis
+   ne peut pas merger. Dans `W` : `git fetch origin && git rebase origin/main`, puis
+   `git push --force-with-lease` (seule forme admise ; `--force`, `-f` et les refspecs `+…`
+   sont refusés par le hook `guard-git`, options globales de git comprises). Conflit → une
+   seule tentative, puis label `blocked`, journal, arrêt.
+2. **Demander le verdict sur ce SHA.** Relever `HEAD` (rapporté par le propriétaire de `W`), puis
    l'horodatage `T0`, puis commenter `@codex review` — dans cet ordre, toujours après le
    rebase (Codex ne re-revoit pas sur un push ; une demande faite avant le rebase porte sur
    un SHA qui n'existe plus). À l'ouverture de la PR, la revue part d'elle-même : si le
@@ -69,13 +72,17 @@ lit les options globales de git avant de reconnaître `push`).
 4. **Commentaires** → passe de correction : relancer l'agent `dev` sur la même branche avec
    les commentaires ; il corrige, repousse, rend la main. Retour à l'étape 1.
 5. **Réaction `+1` ou revue sans commentaire inline** → revérifier la base :
-   `git -C W fetch origin` ; si `origin/main` a avancé depuis le rebase de l'étape 1
-   (`git -C W merge-base --is-ancestor origin/main HEAD` faux), retour à l'étape 1 — le
-   verdict portait sur un SHA qui ne mergera pas. Sinon
+   `git fetch origin` puis `gh pr view <pr> --json mergeStateStatus` ; `BEHIND` → retour à
+   l'étape 1 — le verdict portait sur un SHA qui ne mergera pas. Sinon
    `gh pr merge <pr> --auto --squash --delete-branch`, puis attendre, toutes les 60 s et
    sous le même plafond `REVIEW_WAIT_MAX`, `gh pr view <pr> --json mergedAt,statusCheckRollup` :
-   `mergedAt` non nul → fini ; un check en échec, ou le plafond dépassé → label `blocked`,
-   journal, arrêt.
+   `mergedAt` non nul → fini ; un check en échec, ou le plafond dépassé →
+   **`gh pr merge <pr> --disable-auto`** d'abord (sinon un check tardif mergerait après
+   l'abandon), puis label `blocked`, journal, arrêt.
+6. **Après le merge**, quand `W` est un worktree d'agent : `git worktree remove W` puis
+   `git branch -D <branche>` — `--delete-branch` ne supprime pas une branche encore
+   extraite dans un worktree, et pour un merge différé le CLI n'est plus là quand il
+   survient.
    **`--auto` ne s'arme jamais avant le verdict ni sur une base périmée** : le merge auto
    GitHub ne connaît que la CI et ne rebase pas.
 
