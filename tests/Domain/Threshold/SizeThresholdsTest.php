@@ -13,23 +13,32 @@ use PHPUnit\Framework\TestCase;
 final class SizeThresholdsTest extends TestCase
 {
     /**
-     * @return iterable<string, array{int, SizeBand}>
+     * @return iterable<string, array{float, SizeBand}>
      */
     public static function fileBoundaries(): iterable
     {
-        yield 'S upper bound' => [2, SizeBand::S];
-        yield 'M lower bound' => [3, SizeBand::M];
-        yield 'M upper bound' => [8, SizeBand::M];
-        yield 'L lower bound' => [9, SizeBand::L];
-        yield 'L upper bound' => [20, SizeBand::L];
-        yield 'XL lower bound' => [21, SizeBand::XL];
+        yield 'S upper bound' => [2.0, SizeBand::S];
+        yield 'between S and M, an even-sample median' => [2.5, SizeBand::M];
+        yield 'M lower bound' => [3.0, SizeBand::M];
+        yield 'M upper bound' => [8.0, SizeBand::M];
+        yield 'L lower bound' => [9.0, SizeBand::L];
+        yield 'L upper bound' => [20.0, SizeBand::L];
+        yield 'XL lower bound' => [21.0, SizeBand::XL];
     }
 
     #[Test]
     #[DataProvider('fileBoundaries')]
-    public function bandForFilesPinsEachBoundary(int $files, SizeBand $expected): void
+    public function bandForFilesPinsEachBoundary(float $files, SizeBand $expected): void
     {
         self::assertSame($expected, SizeThresholds::bandForFiles($files));
+    }
+
+    #[Test]
+    public function bandForFilesAcceptsAFractionalMedianFromAnEvenSample(): void
+    {
+        // An even-sized PR sample can legitimately yield a fractional median
+        // (e.g. counts 2 and 3 → 2.5): median_files_changed must not crash on it.
+        self::assertSame(SizeBand::M, SizeThresholds::bandForFiles(2.5));
     }
 
     /**

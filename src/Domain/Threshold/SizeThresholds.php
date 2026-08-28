@@ -50,7 +50,7 @@ final class SizeThresholds
      * The band for `pull_requests.median_files_changed`, the primary signal
      * (docs/specs/01-axe-taille.md § Signal).
      */
-    public static function bandForFiles(int $files): SizeBand
+    public static function bandForFiles(float $files): SizeBand
     {
         return match (true) {
             $files <= self::FILES_S_MAX => SizeBand::S,

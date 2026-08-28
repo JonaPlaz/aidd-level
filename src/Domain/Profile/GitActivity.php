@@ -15,7 +15,7 @@ final readonly class GitActivity
     public function __construct(
         public ?Period $period,
         public ?int $pullRequestsTotal,
-        public ?int $medianFilesChanged,
+        public ?float $medianFilesChanged,
         public ?float $medianLinesChanged,
         public ?int $medianCorrectionCommitsAfterOpen,
         public ?int $mergedWithoutHumanEditAfterOpen,
