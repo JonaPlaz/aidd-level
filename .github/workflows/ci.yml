@@ -31,4 +31,5 @@ jobs:
         run: vendor/bin/phpstan analyse --no-progress
 
       - name: Duplication
+        if: hashFiles('src/**/*.php') != ''
         run: vendor/bin/phpcpd --min-lines=5 --min-tokens=70 src
