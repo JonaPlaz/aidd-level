@@ -1,0 +1,23 @@
+❖ 🔺 [🔹 🟢 🥉] 🥈 🥇
+axe bloquant : Harness
+🔹 Blue – 🥉 Copper — perceval (développeur solo)
+Niveau : entre Blue et Copper
+
+Ce qui a mené là — l'axe qui plafonne : Harness
+  Harness : context engineering sans behavior
+    git-activity.json › context_files.agents_md = true
+  Acquis pour Green : Taille S (median_files_changed = 2), Intervention après coup, sur une partie,
+                      En parallèle 1 (médiane)
+
+Comment monter d'un cran — vers Green
+  1. Harness : ajouter au moins une règle, un agent ou un hook versionné, et câbler le hook dans la
+               configuration pour qu'il s'exécute sans coopération du modèle
+     pour lever le doute : 4 PR de plus (échantillon insuffisant)
+
+Prochaine quête
+  Harness : ajouter au moins une règle, un agent ou un hook versionné, et câbler le hook dans la
+            configuration pour qu'il s'exécute sans coopération du modèle.
+  preuve attendue : git-activity.json › context_files.agents_md = true
+
+Notes
+  · declaratif.md présent, non vérifié (profile.json › available = declaratif.md)
