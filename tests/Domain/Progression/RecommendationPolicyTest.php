@@ -50,7 +50,7 @@ final class RecommendationPolicyTest extends TestCase
 
         self::assertCount(1, $recommendations);
         self::assertSame(Axis::Size, $recommendations[0]->axis);
-        self::assertStringContainsString('see Harness', $recommendations[0]->gesture);
+        self::assertStringContainsString('voir Harness', $recommendations[0]->gesture);
     }
 
     #[Test]

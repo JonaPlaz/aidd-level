@@ -23,11 +23,11 @@ final class RecommendationTableTest extends TestCase
         $toSilver = $table->gestureFor(Axis::Harness, Level::Silver);
         $toGold = $table->gestureFor(Axis::Harness, Level::Gold);
 
-        self::assertStringContainsString('memory file', $toBlue);
+        self::assertStringContainsString('fichier mémoire', $toBlue);
         self::assertSame($toGreen, $toCopper);
         self::assertStringContainsString('hook', $toCopper);
         self::assertSame($toSilver, $toGold);
-        self::assertStringContainsString('bounded automatic retry', $toSilver);
+        self::assertStringContainsString('relance automatique bornée', $toSilver);
     }
 
     #[Test]
@@ -35,7 +35,7 @@ final class RecommendationTableTest extends TestCase
     {
         $table = new RecommendationTable();
 
-        self::assertStringContainsString('workstream', $table->gestureFor(Axis::Parallelism, Level::Copper));
+        self::assertStringContainsString('chantier', $table->gestureFor(Axis::Parallelism, Level::Copper));
         self::assertSame(
             $table->gestureFor(Axis::Parallelism, Level::Copper),
             $table->gestureFor(Axis::Parallelism, Level::Silver),
@@ -50,12 +50,12 @@ final class RecommendationTableTest extends TestCase
     {
         $table = new RecommendationTable();
 
-        self::assertStringContainsString('expected', $table->gestureFor(Axis::Intervention, Level::Blue));
+        self::assertStringContainsString('ce qui est attendu', $table->gestureFor(Axis::Intervention, Level::Blue));
         self::assertSame(
             $table->gestureFor(Axis::Intervention, Level::Green),
             $table->gestureFor(Axis::Intervention, Level::Copper),
         );
-        self::assertStringContainsString('automate validation', $table->gestureFor(Axis::Intervention, Level::Silver));
+        self::assertStringContainsString('automatiser la validation', $table->gestureFor(Axis::Intervention, Level::Silver));
     }
 
     #[Test]
@@ -73,7 +73,10 @@ final class RecommendationTableTest extends TestCase
         $table = new RecommendationTable();
 
         foreach (Level::cases() as $level) {
-            self::assertSame('usual size follows the setup; see Harness', $table->gestureFor(Axis::Size, $level));
+            self::assertSame(
+                'ne rien décréter : la taille habituelle monte quand le dispositif tient ; voir Harness',
+                $table->gestureFor(Axis::Size, $level),
+            );
         }
     }
 }
