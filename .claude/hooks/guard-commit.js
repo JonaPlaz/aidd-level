@@ -28,18 +28,28 @@ const commitsAll = /\s(-a|--all|-a[a-zA-Z]+|-[a-zA-Z]*a[a-zA-Z]*)(\s|$)/.test(co
 const files = new Set(git('diff --cached --name-only'));
 if (commitsAll) git('diff --name-only').forEach((f) => files.add(f));
 
-let privatePrefixes = [];
-try {
-  privatePrefixes = fs
-    .readFileSync(path.join(root, '.worktreeinclude'), 'utf8')
+// Private prefixes come from both the working-tree declaration and the committed
+// baseline (HEAD), so a commit that edits or deletes .worktreeinclude cannot disable
+// the guard for itself.
+function parsePrefixes(text) {
+  return text
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'));
+}
+const privatePrefixes = new Set();
+try {
+  parsePrefixes(fs.readFileSync(path.join(root, '.worktreeinclude'), 'utf8')).forEach((p) => privatePrefixes.add(p));
 } catch {
-  // No .worktreeinclude: nothing declared private.
+  // Working-tree declaration missing: the committed one below still applies.
+}
+try {
+  parsePrefixes(execSync('git show HEAD:.worktreeinclude', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })).forEach((p) => privatePrefixes.add(p));
+} catch {
+  // No committed declaration yet (first commit).
 }
 for (const f of files) {
-  if (privatePrefixes.some((p) => f === p || f.startsWith(p.replace(/\/?$/, '/')))) {
+  if ([...privatePrefixes].some((p) => f === p || f.startsWith(p.replace(/\/?$/, '/')))) {
     block(`guard-commit: ${f} is declared private in .worktreeinclude and must never be committed.`);
   }
 }

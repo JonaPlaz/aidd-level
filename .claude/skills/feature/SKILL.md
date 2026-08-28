@@ -16,9 +16,11 @@ l'agent `dev` rend la main dès la PR ouverte.**
 - `gh issue view <n°>` : lire le titre, le corps, la spec citée.
 - Spec citée présente dans `docs/specs/` **et committée sur `origin/main`** → étape 2.
 - Présente mais non committée (validée à l'invocation précédente) → branche
-  `docs/spec-<n°>`, commit, push, PR `docs:` avec label `to-review`, boucle de l'étape 3,
-  puis étape 2 une fois mergée. Le worktree de l'agent `dev` part d'`origin/main` : une spec
-  qui n'y est pas n'existe pas pour lui.
+  `docs/spec-<n°>`, commit, push, PR `docs:` avec label `to-review`, boucle de l'étape 3.
+  `--auto` n'est pas un merge synchrone : **attendre `gh pr view <pr> --json mergedAt`
+  non nul** (toutes les 60 s, même plafond), puis `git fetch origin main`, puis étape 2. Le
+  worktree de l'agent `dev` part d'`origin/main` : une spec qui n'y est pas n'existe pas
+  pour lui.
 - Absente → lancer l'agent `spec`, puis **s'arrêter** : « spec écrite, à valider ». Ne pas
   poursuivre dans la même invocation.
 - `--trivial` : pas d'agent, une ligne ajoutée au README, PR ouverte, étape 3.
@@ -37,9 +39,12 @@ touchées et le test qui les fige, commandes passées (`make test lint dup`).
 ≈ 12 min après le dernier push) ; `docs/harness.md` enregistre les délais constatés ensuite.
 
 1. Toutes les 60 s (`sleep 60`, autorisé par `settings.json`), lire
-   `gh api repos/{owner}/{repo}/pulls/<pr>/reviews` et `…/comments`, jusqu'à une revue de
-   `chatgpt-codex-connector[bot]` ou `REVIEW_WAIT_MAX`.
-2. Revue sans commentaire inline (Codex réagit 👍) → `gh pr merge <pr> --auto --squash
+   `gh api repos/{owner}/{repo}/pulls/<pr>/reviews`, `…/pulls/<pr>/comments` **et
+   `…/issues/<pr>/reactions`** (le 👍 « rien à signaler » de Codex est une réaction sur la
+   PR, pas une revue), jusqu'à une revue ou une réaction `+1` de
+   `chatgpt-codex-connector[bot]`, ou `REVIEW_WAIT_MAX`. Une réaction `eyes` signifie « pris
+   en charge », elle ne termine pas l'attente.
+2. Réaction `+1`, ou revue sans commentaire inline → `gh pr merge <pr> --auto --squash
    --delete-branch`.
 3. Commentaires → **une** passe de correction : relancer l'agent `dev` sur la même branche
    avec les commentaires, repush, puis `gh pr merge <pr> --auto --squash --delete-branch`.

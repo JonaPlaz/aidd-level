@@ -33,7 +33,7 @@ if (event === 'PostToolUseFailure') {
   // a bound reached, an abandoned attempt. On main, or with a clean tree, nothing to record.
   if (input.stop_hook_active) process.exit(0);
   const branch = git('rev-parse --abbrev-ref HEAD');
-  const dirty = git('status --porcelain --untracked-files=no');
+  const dirty = git('status --porcelain --untracked-files=all');
   if (branch === 'main' || dirty === '') process.exit(0);
   what = `fin de tour avec travail non committé sur \`${branch}\` (${dirty.split('\n').length} fichier(s))`;
 } else {
