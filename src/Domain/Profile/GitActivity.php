@@ -16,7 +16,7 @@ final readonly class GitActivity
         public ?Period $period,
         public ?int $pullRequestsTotal,
         public ?int $medianFilesChanged,
-        public ?int $medianLinesChanged,
+        public ?float $medianLinesChanged,
         public ?int $medianCorrectionCommitsAfterOpen,
         public ?int $mergedWithoutHumanEditAfterOpen,
         public ?float $aiCoauthoredRatio,

@@ -45,4 +45,32 @@ final class SizeThresholds
 
     // XL band (lines fallback): above the Salesforce review-breakdown threshold.
     public const int LINES_XL_MIN = 1001;
+
+    /**
+     * The band for `pull_requests.median_files_changed`, the primary signal
+     * (docs/specs/01-axe-taille.md § Signal).
+     */
+    public static function bandForFiles(int $files): SizeBand
+    {
+        return match (true) {
+            $files <= self::FILES_S_MAX => SizeBand::S,
+            $files <= self::FILES_M_MAX => SizeBand::M,
+            $files <= self::FILES_L_MAX => SizeBand::L,
+            default => SizeBand::XL,
+        };
+    }
+
+    /**
+     * The band for `pull_requests.median_lines_changed`, the fallback signal used only when
+     * the file count is absent or zero (docs/specs/01-axe-taille.md § Signal).
+     */
+    public static function bandForLines(float $lines): SizeBand
+    {
+        return match (true) {
+            $lines <= self::LINES_S_MAX => SizeBand::S,
+            $lines <= self::LINES_M_MAX => SizeBand::M,
+            $lines <= self::LINES_L_MAX => SizeBand::L,
+            default => SizeBand::XL,
+        };
+    }
 }

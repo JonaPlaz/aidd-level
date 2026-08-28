@@ -64,6 +64,21 @@ final class LevelRuleTest extends TestCase
     }
 
     #[Test]
+    public function isNotConfirmedWhenARangeIsMaskedByALowerConfirmedBottleneck(): void
+    {
+        $result = new LevelRule()->apply([
+            $this->range(Axis::Size, floor: Level::Blue, ceiling: Level::Gold, missingSample: 2),
+            $this->confirmed(Axis::Harness, Level::Blue),
+        ]);
+
+        // Floor and ceiling both collapse to Blue (Harness masks the Size range)...
+        self::assertSame(Level::Blue, $result->floor);
+        self::assertSame(Level::Blue, $result->ceiling);
+        // ...yet the sample on Size was still insufficient: LowConfidence, never Evaluated.
+        self::assertFalse($result->isConfirmed());
+    }
+
+    #[Test]
     public function theGlobalFloorAndCeilingEachTakeTheMinimumAcrossDistinctRanges(): void
     {
         $result = new LevelRule()->apply([

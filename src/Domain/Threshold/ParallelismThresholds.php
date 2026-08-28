@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AiddLevel\Domain\Threshold;
 
+use AiddLevel\Domain\Level;
+
 /**
  * Median `parallelism.median_concurrent_branches` boundaries for the Parallelism axis
  * (docs/specs/04-axe-parallele.md § Seuils). The maximum is never read here — a peak is
@@ -21,4 +23,18 @@ final class ParallelismThresholds
 
     // Gold: "3" is a minimum, satisfied from Copper to Gold (§ 2, "chaque cellule est un minimum").
     public const int MEDIAN_HABITUAL_MIN = 3;
+
+    /**
+     * The level for a given median, ignoring sample size (docs/specs/04-axe-parallele.md §
+     * Seuils/Confiance) — a sample below SampleFloors::PARALLELISM_MIN_PR must still be
+     * turned into a confidence Range by the evaluator.
+     */
+    public static function levelForMedian(int $median): Level
+    {
+        return match (true) {
+            $median >= self::MEDIAN_HABITUAL_MIN => Level::Gold,
+            $median >= self::MEDIAN_SOME_MIN => Level::Green,
+            default => Level::White,
+        };
+    }
 }

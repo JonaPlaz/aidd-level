@@ -14,6 +14,8 @@ use AiddLevel\Domain\Confidence\Range;
  * When a verdict carries a Range confidence, its own floor and ceiling are used instead of
  * its single level; the result floor is the minimum of every axis floor, the result ceiling
  * the minimum of every axis ceiling (docs/specs/05-robustesse.md § Trois statuts de sortie).
+ * The result is confirmed only when no verdict carries a Range at all — a Range masked by a
+ * lower Confirmed bottleneck still means the sample was insufficient somewhere.
  */
 final class LevelRule
 {
@@ -27,7 +29,12 @@ final class LevelRule
         }
 
         $floor = null;
+        $confirmed = true;
         foreach ($verdicts as $verdict) {
+            if ($verdict->confidence instanceof Range) {
+                $confirmed = false;
+            }
+
             $verdictFloor = $this->floorOf($verdict);
             if (null === $floor || $verdictFloor->rank() < $floor->rank()) {
                 $floor = $verdictFloor;
@@ -49,7 +56,7 @@ final class LevelRule
             }
         }
 
-        return new LevelRuleResult($floor, $ceiling, $cappingAxes);
+        return new LevelRuleResult($floor, $ceiling, $cappingAxes, $confirmed);
     }
 
     private function floorOf(AxisVerdict $verdict): Level
