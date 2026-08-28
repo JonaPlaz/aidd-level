@@ -9,6 +9,7 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
+      "Bash(git fetch:*)",
       "Bash(git rebase:*)",
       "Bash(git checkout:*)",
       "Bash(git switch:*)",
@@ -19,8 +20,6 @@
       "Bash(sleep:*)"
     ],
     "deny": [
-      "Bash(git push --force:*)",
-      "Bash(git push -f:*)",
       "Bash(rm -rf:*)",
       "Edit(./.brief/**)",
       "Write(./.brief/**)"
@@ -37,7 +36,7 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-commit.js\"" }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-git.js\"" }
         ]
       }
     ],

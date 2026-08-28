@@ -1,5 +1,6 @@
 // PreToolUse (Bash): a `git commit` must not stage src/Domain and src/Infrastructure
-// together (AGENTS.md rule 7), and must never include a private path.
+// together (AGENTS.md rule 7), and must never include a private path; a `git push` must
+// never use a bare --force (--force-with-lease is the only accepted form, for rebases).
 // Private paths are read from .worktreeinclude, which lists exactly the gitignored
 // files carried into worktrees; nothing private is spelled out in this file.
 'use strict';
@@ -11,6 +12,11 @@ const { readInput, projectRoot, block } = require('./lib');
 
 const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
+
+if (/\bgit\s+push\b/.test(command) && /(\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$))/.test(command)) {
+  block('guard-git: bare --force / -f is refused; rebase then push with --force-with-lease (CLAUDE.md).');
+}
+
 if (!/\bgit\s+commit\b/.test(command)) process.exit(0);
 
 const root = projectRoot(input);
@@ -50,13 +56,13 @@ try {
 }
 for (const f of files) {
   if ([...privatePrefixes].some((p) => f === p || f.startsWith(p.replace(/\/?$/, '/')))) {
-    block(`guard-commit: ${f} is declared private in .worktreeinclude and must never be committed.`);
+    block(`guard-git: ${f} is declared private in .worktreeinclude and must never be committed.`);
   }
 }
 
 const touchesDomain = [...files].some((f) => f.startsWith('src/Domain/'));
 const touchesInfra = [...files].some((f) => f.startsWith('src/Infrastructure/'));
 if (touchesDomain && touchesInfra) {
-  block('guard-commit: a commit must not touch src/Domain and src/Infrastructure together (AGENTS.md rule 7). Split the commit.');
+  block('guard-git: a commit must not touch src/Domain and src/Infrastructure together (AGENTS.md rule 7). Split the commit.');
 }
 process.exit(0);

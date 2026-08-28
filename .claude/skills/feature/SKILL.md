@@ -38,22 +38,29 @@ touchées et le test qui les fige, commandes passées (`make test lint dup`).
 `REVIEW_WAIT_MAX = 20 min` — valeur initiale posée d'après la PR #13 (revue Codex reçue
 ≈ 12 min après le dernier push) ; `docs/harness.md` enregistre les délais constatés ensuite.
 
-1. Toutes les 60 s (`sleep 60`, autorisé par `settings.json`), lire
-   `gh api repos/{owner}/{repo}/pulls/<pr>/reviews`, `…/pulls/<pr>/comments` **et
-   `…/issues/<pr>/reactions`** (le 👍 « rien à signaler » de Codex est une réaction sur la
-   PR, pas une revue), jusqu'à une revue ou une réaction `+1` de
-   `chatgpt-codex-connector[bot]`, ou `REVIEW_WAIT_MAX`. Une réaction `eyes` signifie « pris
-   en charge », elle ne termine pas l'attente.
-2. Réaction `+1`, ou revue sans commentaire inline → `gh pr merge <pr> --auto --squash
-   --delete-branch`.
-3. Commentaires → **une** passe de correction : relancer l'agent `dev` sur la même branche
-   avec les commentaires, repush, puis **commenter `@codex review`** sur la PR — Codex ne
-   re-revoit pas sur un push (constaté sur #14). Reprendre l'attente de l'étape 1 sur le
-   nouveau SHA. Réaction `+1` ou revue sans commentaire → `gh pr merge <pr> --auto --squash
-   --delete-branch`. Nouveaux commentaires → la PR reste : label `blocked`, ligne de journal,
-   arrêt. Pas de seconde passe. **`--auto` ne s'arme jamais avant le verdict de Codex** : le
-   merge auto GitHub ne connaît que la CI.
-4. Délai dépassé → label `blocked`, ligne de journal avec l'URL de la PR, arrêt.
+**Autant de passes de correction qu'il en faut : tant que Codex ne valide pas, Claude Code
+corrige.** Arbitré par Jonathan le 2026-08-29 sur la PR #15, en remplacement de la borne
+« une passe » de la spec 08 § 7. Les bornes restantes : `maxTurns` par relance, le plafond
+d'attente, et l'arrêt manuel.
+
+1. **Rebaser d'abord.** Le check `ci` est requis en mode `strict` : une branche en retard sur
+   `main` ne peut pas merger. `git fetch origin && git rebase origin/main`, puis
+   `git push --force-with-lease` (autorisé ; `--force` nu est refusé par le hook
+   `guard-git`). Conflit → une seule tentative, puis label `blocked`, journal, arrêt.
+2. **Attendre le verdict sur le SHA courant.** Relever `HEAD` et l'horodatage `T0` de la
+   demande. Toutes les 60 s (`sleep 60`), lire `gh api repos/{owner}/{repo}/pulls/<pr>/reviews`,
+   `…/pulls/<pr>/comments` et `…/issues/<pr>/reactions`, en ne retenant que : les revues de
+   `chatgpt-codex-connector[bot]` dont `commit_id` = `HEAD`, les commentaires rattachés à
+   ces revues, et les réactions du bot créées après `T0`. Tout ce qui précède est du verdict
+   périmé et ne compte pas. Une réaction `eyes` signifie « pris en charge », elle ne termine
+   pas l'attente. Plafond : `REVIEW_WAIT_MAX`.
+3. Réaction `+1`, ou revue sans commentaire inline → `gh pr merge <pr> --auto --squash
+   --delete-branch`. **`--auto` ne s'arme jamais avant le verdict** : le merge auto GitHub
+   ne connaît que la CI.
+4. Commentaires → passe de correction : relancer l'agent `dev` sur la même branche avec les
+   commentaires, repush, **commenter `@codex review`** (Codex ne re-revoit pas sur un push,
+   constaté sur #14), puis revenir à l'étape 1 avec le nouveau `HEAD` et un nouveau `T0`.
+5. Délai dépassé → label `blocked`, ligne de journal avec l'URL de la PR, arrêt.
 
 ## 4. Après le merge
 
