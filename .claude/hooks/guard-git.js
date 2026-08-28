@@ -14,13 +14,18 @@ const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
 
 // Bare --force, -f (alone or bundled), and force-prefixed refspecs (`+HEAD:branch`).
-if (/\bgit\s+push\b/.test(command) && /(\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+\S+)/.test(command)) {
+// Git global options may precede the subcommand: `git -C <path> push`, `git -c k=v push`.
+const GIT_PUSH = /\bgit(?:\s+(?:-C\s+\S+|-c\s+\S+|--git-dir=\S+|--work-tree=\S+|--no-pager|-P))*\s+push\b/;
+const GIT_COMMIT = /\bgit(?:\s+(?:-C\s+\S+|-c\s+\S+|--git-dir=\S+|--work-tree=\S+|--no-pager|-P))*\s+commit\b/;
+
+if (GIT_PUSH.test(command) && /(\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+\S+)/.test(command)) {
   block('guard-git: bare --force / -f / +refspec is refused; rebase then push with --force-with-lease (CLAUDE.md).');
 }
 
-if (!/\bgit\s+commit\b/.test(command)) process.exit(0);
+if (!GIT_COMMIT.test(command)) process.exit(0);
 
-const root = projectRoot(input);
+const cOption = command.match(/\bgit\s+-C\s+(\S+)/);
+const root = cOption ? cOption[1].replace(/^["']|["']$/g, '') : projectRoot(input);
 
 function git(args) {
   try {

@@ -43,8 +43,10 @@ corrige.** Arbitré par Jonathan le 2026-08-29 sur la PR #15, en remplacement de
 « une passe » de la spec 08 § 7. Les bornes restantes : `maxTurns` par relance, le plafond
 d'attente, et l'arrêt manuel.
 
-La branche vit dans le worktree de l'agent `dev` (`W`, chemin rapporté par l'agent) ; le skill
-n'agit dessus que par `git -C W …`, jamais depuis le checkout principal.
+`W` est le checkout qui a créé la PR : le worktree de l'agent `dev` (chemin rapporté par
+l'agent), ou le checkout courant pour une PR `docs/spec-<n°>` ou `--trivial`. Le skill n'agit
+sur la branche que par `git -C W …` (autorisé par `settings.json`, et le hook `guard-git`
+lit les options globales de git avant de reconnaître `push`).
 
 1. **Rebaser.** Le check `ci` est requis en mode `strict` : une branche en retard sur `main`
    ne peut pas merger. `git -C W fetch origin && git -C W rebase origin/main`, puis
@@ -54,8 +56,9 @@ n'agit dessus que par `git -C W …`, jamais depuis le checkout principal.
 2. **Demander le verdict sur ce SHA.** Relever `HEAD = git -C W rev-parse HEAD`, puis
    l'horodatage `T0`, puis commenter `@codex review` — dans cet ordre, toujours après le
    rebase (Codex ne re-revoit pas sur un push ; une demande faite avant le rebase porte sur
-   un SHA qui n'existe plus). À l'ouverture de la PR, la revue part d'elle-même : `T0` =
-   heure d'ouverture, pas de commentaire.
+   un SHA qui n'existe plus). À l'ouverture de la PR, la revue part d'elle-même : si le
+   rebase de l'étape 1 n'a pas changé le SHA d'ouverture, `T0` = heure d'ouverture et pas de
+   commentaire ; s'il l'a changé, commenter comme pour toute autre passe.
 3. **Attendre.** Toutes les 60 s (`sleep 60`), lire avec `gh api --paginate`
    `repos/{owner}/{repo}/pulls/<pr>/reviews`, `…/pulls/<pr>/comments` et
    `…/issues/<pr>/reactions`, en ne retenant que : les revues de
@@ -69,7 +72,10 @@ n'agit dessus que par `git -C W …`, jamais depuis le checkout principal.
    `git -C W fetch origin` ; si `origin/main` a avancé depuis le rebase de l'étape 1
    (`git -C W merge-base --is-ancestor origin/main HEAD` faux), retour à l'étape 1 — le
    verdict portait sur un SHA qui ne mergera pas. Sinon
-   `gh pr merge <pr> --auto --squash --delete-branch`, puis attendre `mergedAt` non nul.
+   `gh pr merge <pr> --auto --squash --delete-branch`, puis attendre, toutes les 60 s et
+   sous le même plafond `REVIEW_WAIT_MAX`, `gh pr view <pr> --json mergedAt,statusCheckRollup` :
+   `mergedAt` non nul → fini ; un check en échec, ou le plafond dépassé → label `blocked`,
+   journal, arrêt.
    **`--auto` ne s'arme jamais avant le verdict ni sur une base périmée** : le merge auto
    GitHub ne connaît que la CI et ne rebase pas.
 
