@@ -26,6 +26,8 @@ jobs:
         run: vendor/bin/phpunit
 
       - name: Static analysis
+        # PHPStan errors on an empty tree; the guard disappears with chantier 1.
+        if: hashFiles('src/**/*.php') != ''
         run: vendor/bin/phpstan analyse --no-progress
 
       - name: Duplication
