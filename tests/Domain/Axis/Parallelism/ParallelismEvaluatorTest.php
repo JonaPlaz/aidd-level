@@ -60,7 +60,7 @@ final class ParallelismEvaluatorTest extends TestCase
 
         self::assertSame(Level::Green, $verdict->level);
         self::assertCount(1, $verdict->notes);
-        self::assertSame('peak observed, not retained', $verdict->notes[0]->text);
+        self::assertSame('pic observé : max 3, non retenu', $verdict->notes[0]->text);
         self::assertSame(
             'git-activity.json › parallelism.max_concurrent_branches = 3',
             (string) $verdict->notes[0]->pointer,
@@ -74,7 +74,7 @@ final class ParallelismEvaluatorTest extends TestCase
 
         self::assertSame(Level::Green, $verdict->level);
         self::assertCount(1, $verdict->notes);
-        self::assertSame('peak observed, not retained', $verdict->notes[0]->text);
+        self::assertSame('pic observé : max 6, non retenu', $verdict->notes[0]->text);
         self::assertSame(
             'git-activity.json › parallelism.max_concurrent_branches = 6',
             (string) $verdict->notes[0]->pointer,
@@ -140,7 +140,7 @@ final class ParallelismEvaluatorTest extends TestCase
         self::assertSame([], $verdict->evidences);
         self::assertCount(1, $verdict->notes);
         self::assertSame(
-            'not observable — median concurrent branches missing, provide it',
+            'médiane absente : fournir parallelism.median_concurrent_branches',
             $verdict->notes[0]->text,
         );
     }

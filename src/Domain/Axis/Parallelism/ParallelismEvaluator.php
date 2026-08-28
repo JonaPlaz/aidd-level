@@ -40,7 +40,8 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
         if (null === $median) {
             // Absent signal, not a short sample: docs/specs/05-robustesse.md § Signal absent —
             // the gap is the field itself, not a PR count, so missingSample is 0, not
-            // SampleFloors::PARALLELISM_MIN_PR.
+            // SampleFloors::PARALLELISM_MIN_PR. User-facing text in French, pointer identifier
+            // unchanged (docs/specs/00-vue-ensemble.md § 4, commit 8106bbf).
             return new AxisVerdict(
                 axis: Axis::Parallelism,
                 level: Level::White,
@@ -48,7 +49,7 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
                 evidences: [],
                 notes: [
                     new Note(
-                        text: 'not observable — median concurrent branches missing, provide it',
+                        text: 'médiane absente : fournir parallelism.median_concurrent_branches',
                         pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.median_concurrent_branches', 'absent'),
                     ),
                 ],
@@ -99,10 +100,12 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
             return [];
         }
 
+        $maxAsString = self::formatNumber((float) $max);
+
         return [
             new Note(
-                text: 'peak observed, not retained',
-                pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.max_concurrent_branches', self::formatNumber((float) $max)),
+                text: sprintf('pic observé : max %s, non retenu', $maxAsString),
+                pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.max_concurrent_branches', $maxAsString),
             ),
         ];
     }
@@ -110,10 +113,10 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
     private static function claimForLevel(Level $level): string
     {
         return match ($level) {
-            Level::White => 'no concurrent branch at all',
-            Level::Green => 'one lane at a time; the "3" cell of Copper is not met',
-            Level::Gold => '3 is a minimum, satisfied from Copper to Gold',
-            default => 'median concurrent branches observed',
+            Level::White => 'aucun chantier concurrent',
+            Level::Green => 'un chantier à la fois',
+            Level::Gold => 'au moins trois chantiers de front, habituellement',
+            default => 'médiane de chantiers concurrents observée',
         };
     }
 
