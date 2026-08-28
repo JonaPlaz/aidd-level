@@ -47,14 +47,25 @@ Complété le 2026-08-29 (remarque Codex sur la PR #22) : la table couvre désor
 paires (axe, niveau visé) que la règle du minimum peut produire ; aucune ne lève d'exception.
 
 **La preuve attendue.** Chaque geste porte le **champ qui devra bouger** pour le valider —
-c'est le pointeur de la « prochaine quête » : Harness → Blue : `context_files.agents_md` ;
-→ Green/Copper : `context_files.{rules,skills,hooks,agents}` ; → Silver/Gold :
-`repo-context/ › bounded retry` ; En parallèle : `parallelism.median_concurrent_branches` ;
-Intervention : `pull_requests.median_correction_commits_after_open` ; Taille :
-`pull_requests.median_files_changed`. `Recommendation` porte ce champ (`proofField`).
+c'est le pointeur de la « prochaine quête », avec les identifiants JSON exacts :
 
-Les gestes reprennent le vocabulaire de la grille et des pratiques constatées dans les
-profils fournis (`bohort`, `leodagan`, `arthur`), pas un guide externe.
+| Geste | `proofField` |
+|---|---|
+| Harness → Red (depuis White), Intervention → Red (depuis White) | `commits.ai_coauthored_ratio` |
+| Harness → Blue | `context_files.agents_md` |
+| Harness → Green/Copper | `context_files.rules_count`, `skills_count`, `hooks_count`, `agents_count` (le premier non nul suffit) |
+| Harness → Silver/Gold | `repo-context/ › bounded retry` |
+| En parallèle | `parallelism.median_concurrent_branches` |
+| Intervention (Blue et au-delà) | `pull_requests.median_correction_commits_after_open` |
+| Taille | le signal **qui a décidé** : `pull_requests.median_files_changed`, ou `median_lines_changed` en repli — c'est le verdict qui le dit, pas la table |
+
+`Recommendation` porte ce champ (`proofField`).
+
+**Signal absent d'abord.** Une paire (axe, Red) ne vient pas toujours du filtre White : un
+axe dont le signal est absent rend `Range(White, …)` et la règle du minimum vise Red. Dans ce
+cas la recommandation n'est pas le geste de la table, c'est **« fournir le champ »** (spec 05
+§ *Signal absent*) : le geste s'adresse à celui qui constitue le dossier, pas au développeur.
+La table ne s'applique qu'aux verdicts confirmés ou en fourchette par échantillon court.
 
 ## Format de sortie
 

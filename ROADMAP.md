@@ -28,7 +28,7 @@ de commencer à trois (doute 6 du brief : trois worktrees simultanés jamais ép
 2–6 ; 9 attend 7 et 8 ; 10 et 11 ferment.
 
 | 0 | Harnais | 07, 08 | — | — | — | **mergé** : #13 `5e9a65c`, corrections #14 `27feb20`, #16 `1cedbfe` (règles de boucle révisées deux fois, cf. journal) |
-| 1 | Noyau de domaine | 00 § 4.1 | — | — | #2 | **mergé** : #15 `30062a0` (3 passes Codex) |
+| 1 | Noyau de domaine | 00 § 4.1 | 0 | — | #2 | **mergé** : #15 `30062a0` (3 passes Codex) |
 | 2 | Évaluateur Taille | 01 | 1 | — | #3 | **mergé** : #17 `30ec31a` |
 | 3 | Évaluateur Harness | 02 | 1 | — | #4 | **mergé** : #19 `2a83301` (borne `maxTurns` atteinte une fois) |
 | 4 | Évaluateur Intervention | 03 | 1 | — | #5 | **mergé** : #18 `d51c8e9` |
