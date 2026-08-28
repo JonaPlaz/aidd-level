@@ -18,3 +18,5 @@ geste vers le niveau suivant. Aucune clé d'API, aucun réseau.
 Projet du hackathon [LAIVEL UP](https://github.com/ai-driven-dev/laivel-up) (28–31 août 2026).
 Les spécifications sont dans `docs/specs/`, la preuve de calibration dans
 `docs/calibration.md`, le plan dans `ROADMAP.md`. Le détail de ce README arrive avec le code.
+
+<!-- PR jetable : ligne triviale pour éprouver la liaison Codex ↔ Claude Code -->
