@@ -12,8 +12,11 @@ const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
 const gitInvocations = parseGitAll(command);
 const parsedGit = gitInvocations.find((g) => ['rebase', 'push', 'merge', 'cherry-pick'].includes(g.subcommand)) || gitInvocations[0] || null;
-// A `git -C <worktree> …` failure is journaled against that worktree's HEAD and branch.
+// Git facts (HEAD, branch) are read where the command ran: the `-C` path, else `cwd`.
+// The journal file itself always lives in the main checkout (CLAUDE_PROJECT_DIR): writing
+// into an agent worktree would leave it dirty and break the next rebase.
 const root = parsedGit && parsedGit.cPath ? path.resolve(projectRoot(input), parsedGit.cPath) : projectRoot(input);
+const journalRoot = process.env.CLAUDE_PROJECT_DIR || root;
 
 function git(args) {
   try {
@@ -48,7 +51,7 @@ if (event === 'PostToolUseFailure') {
 
 const line = `| ${new Date().toISOString().slice(0, 16)}Z | ${git('rev-parse --abbrev-ref HEAD')} | hook \`journal.js\` (${event}) | ${what} | \`${git('rev-parse --short HEAD')}\` | — |\n`;
 try {
-  fs.appendFileSync(path.join(root, 'docs', 'journal.md'), line);
+  fs.appendFileSync(path.join(journalRoot, 'docs', 'journal.md'), line);
 } catch {
   // Journal unwritable: nothing to do, git history still records commits.
 }

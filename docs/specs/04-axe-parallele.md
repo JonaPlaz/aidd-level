@@ -21,7 +21,7 @@ meilleure précision ni source.
 | Médiane | Niveau |
 |---|---|
 | 0 | White (avec le filtre d'entrée, § 05) |
-| 1–2 | Green (satisfait « 1 » de Red à Green ; « 3 » de Copper non atteint) |
+| > 0 et < 3 (1, 2, 2,5…) | Green (satisfait « 1 » de Red à Green ; « 3 » de Copper non atteint) |
 | ≥ 3 | Gold (« 3 » est un minimum, satisfait de Copper à Gold) |
 
 Validés sur les quatre profils (1, 1, 1, 4 → Green, Green, Green, Gold).

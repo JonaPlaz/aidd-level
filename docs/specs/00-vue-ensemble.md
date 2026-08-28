@@ -52,7 +52,7 @@ jamais toutes présentes (`profiles/README.md`) :
 | `repo-context/` | cite la preuve de l'axe Harness ; détection des boucles (§ 02) |
 | `sonar-measures.json` | note de prérequis qualité, hors calcul |
 | `declaratif.md` | hors calcul ; mesure l'écart dit / constaté, sert le plan de progression |
-| `pull-requests.json` | corrobore (12 PR, dernière page) ; ne tranche pas |
+| `pull-requests.json` | inventorié (cohérence `available`), **hors calcul** : ses champs ne se comparent à aucune médiane (spec 03, 2026-08-29) |
 | `code/` · `session.md` | non lus par le calcul |
 
 Trois avertissements de la source à respecter : les autres profils n'auront pas les mêmes

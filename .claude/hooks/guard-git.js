@@ -21,7 +21,8 @@ for (const [index, git] of invocations.entries()) {
   // Bare --force, -f (alone or bundled), force-prefixed refspecs (`+HEAD:branch`), --mirror.
   if (git.subcommand === 'push') {
     const args = ` ${git.args} `;
-    if (/\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+\S+|\s--mirror(\s|$)/.test(args)) {
+    // Refspecs may be shell-quoted: '+HEAD:branch' — the shell strips the quotes before git.
+    if (/\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s["']?\+\S+|\s--mirror(\s|$)/.test(args)) {
       block('guard-git: bare --force / -f / +refspec / --mirror is refused; rebase then push with --force-with-lease (CLAUDE.md).');
     }
     continue;
