@@ -1,0 +1,38 @@
+❖ 🔺 🔹 🟢 [🥉] 🥈 🥇
+axe bloquant : Harness et Intervention (ex æquo)
+🥉 Copper — arthur (développeur indépendant)
+Niveau atteint : Copper · niveau visé : Silver
+
+Ce qui a mené là — l'axe qui plafonne : Harness et Intervention (ex æquo)
+  Harness : behavior sans boucles
+    git-activity.json › context_files.agents_md = true
+    git-activity.json › context_files.rules_count+skills_count+hooks_count+agents_count = 6
+    repo-context/ › retry_pattern = aucune relance bornée trouvée
+  Intervention : aux étapes clés
+    git-activity.json › pull_requests.median_correction_commits_after_open = 1
+
+Acquis pour Silver
+  Taille : XL (median_files_changed = 29)
+    git-activity.json › pull_requests.median_files_changed = 29
+  En parallèle : 4 (médiane)
+    git-activity.json › parallelism.median_concurrent_branches = 4
+
+Comment monter d'un cran — vers Silver
+  1. Harness : ajouter une relance automatique bornée (N essais visibles) dans la CI ou un script,
+               sur une commande du projet
+  2. Intervention : automatiser la validation (tests, lint, duplication) pour qu'aucune reprise
+                    humaine ne soit nécessaire après ouverture
+
+Prochaine quête
+  Harness : ajouter une relance automatique bornée (N essais visibles) dans la CI ou un script, sur
+            une commande du projet.
+  champ à faire bouger : repo-context/ › bounded retry
+  preuve actuelle : git-activity.json › context_files.agents_md = true
+
+Notes
+  · pic observé, non retenu
+    (git-activity.json › parallelism.max_concurrent_branches = 7)
+  · prérequis qualité : duplication 2,4 %, couverture 85 %
+    (sonar-measures.json › duplicated_lines_density = 2.4)
+  · pièce annoncée absente (n'a pas répondu au questionnaire)
+    (profile.json › note = declaratif.md absent)
