@@ -12,7 +12,6 @@ use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Pointer;
-use AiddLevel\Domain\Recommendation;
 
 /**
  * Renders an `Assessment` as plain text (docs/specs/06-sortie-et-progression.md § Format de
@@ -24,12 +23,9 @@ use AiddLevel\Domain\Recommendation;
  * free-form sentences (gesture, claim, acquired summary) which are wrapped to stay within
  * `MAX_WIDTH` columns.
  *
- * `Recommendation::$gesture` is written in English in the domain table
- * (`AiddLevel\Domain\Progression\RecommendationTable`, the project's code language). The
- * jury reads French output (docs/specs/06 § Format de sortie), so this renderer keeps its
- * own French wording of the very same fixed table — a presentation-layer translation, not a
- * second decision: the axis and target level a `Recommendation` carries are what decide,
- * `frenchGesture()` only chooses how to say the same fixed sentence in French.
+ * `Recommendation::$gesture` is already French (docs/specs/00-vue-ensemble.md § 4: every
+ * user-facing string is French) and printed as-is; this renderer does not translate or
+ * reformulate it.
  */
 final class TextRenderer
 {
@@ -144,7 +140,7 @@ final class TextRenderer
         foreach ($assessment->recommendations as $index => $recommendation) {
             $lines[] = $this->wrapped(
                 sprintf('  %d. %s : ', $index + 1, $this->axisLabel($recommendation->axis)),
-                $this->frenchGesture($recommendation),
+                $recommendation->gesture,
             );
 
             $verdict = $verdictsByAxis[$recommendation->axis->name] ?? null;
@@ -259,7 +255,7 @@ final class TextRenderer
         foreach ($assessment->recommendations as $index => $recommendation) {
             $lines[] = $this->wrapped(
                 sprintf('  %d. %s : ', $index + 1, $this->axisLabel($recommendation->axis)),
-                $this->frenchGesture($recommendation),
+                $recommendation->gesture,
             );
         }
 
@@ -276,7 +272,7 @@ final class TextRenderer
         $lines = ['Prochaine quête'];
         $lines[] = $this->wrapped(
             sprintf('  %s : ', $this->axisLabel($first->axis)),
-            $this->frenchGesture($first).'.',
+            $first->gesture.'.',
         );
 
         $pointer = $this->firstPointerFor($assessment, $first->axis);
@@ -379,40 +375,6 @@ final class TextRenderer
             Axis::Intervention => 'Intervention',
             Axis::Parallelism => 'En parallèle',
             Axis::Size => 'Taille',
-        };
-    }
-
-    /**
-     * The gesture wording the jury reads, in French, for the same fixed (axis, target level)
-     * decision `Recommendation` already carries (docs/specs/06 § Table des gestes). See the
-     * class docblock for why this is not the same string as `Recommendation::$gesture`.
-     */
-    private function frenchGesture(Recommendation $recommendation): string
-    {
-        return match ($recommendation->axis) {
-            Axis::Harness => match ($recommendation->targetLevel) {
-                Level::Blue => 'écrire et versionner un fichier mémoire à la racine du dépôt '
-                    ."(conventions, architecture, ce qu'il ne faut pas toucher) et le tenir à "
-                    .'jour à chaque erreur répétée',
-                Level::Green, Level::Copper => 'ajouter au moins une règle, un agent ou un hook '
-                    .'versionné, et câbler le hook dans la configuration pour qu\'il s\'exécute '
-                    .'sans coopération du modèle',
-                default => 'ajouter une relance automatique bornée (N essais visibles) dans la '
-                    .'CI ou un script, sur une commande du projet',
-            },
-            Axis::Parallelism => 'isoler chaque chantier (worktree ou équivalent) et mener au '
-                .'moins trois fronts en même temps, habituellement — après le harness',
-            Axis::Intervention => match ($recommendation->targetLevel) {
-                Level::Blue => "écrire ce qui est attendu avant de générer (cas limites inclus) "
-                    .'pour que les corrections après ouverture diminuent',
-                Level::Green, Level::Copper => 'tests avant le code et validation de la '
-                    .'compréhension avant la première ligne ; remonter une correction répétée '
-                    .'dans les règles plutôt que dans le code',
-                default => 'automatiser la validation (tests, lint, duplication) pour '
-                    ."qu'aucune reprise humaine ne soit nécessaire après ouverture",
-            },
-            Axis::Size => 'ne rien décréter : la taille habituelle monte quand le dispositif '
-                .'tient ; voir Harness',
         };
     }
 
