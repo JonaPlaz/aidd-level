@@ -9,6 +9,7 @@ use AiddLevel\Domain\Profile\Declarative;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Profile\ProfileIdentity;
 use AiddLevel\Domain\ProfileSource;
+use AiddLevel\Domain\Threshold\SampleFloors;
 
 /**
  * Reads a profile folder from disk (docs/specs/00-vue-ensemble.md § 4.3), enforcing the gate
@@ -24,7 +25,8 @@ final class DirectoryProfileSource implements ProfileSource
     private const string PREREQUISITE_READABLE_DIRECTORY = '%s n\'est pas un dossier lisible — fournir un chemin de dossier de profil existant';
     private const string PREREQUISITE_PROFILE_JSON = 'profile.json absent ou illisible dans %s — fournir un profile.json valide';
     private const string PREREQUISITE_GIT_ACTIVITY_JSON = 'git-activity.json absent ou illisible dans %s — fournir un git-activity.json valide (colonne vertébrale de l\'évaluation)';
-    private const string PREREQUISITE_AT_LEAST_ONE_PULL_REQUEST = 'git-activity.json › pull_requests.total est nul ou absent dans %s — fournir un profil avec au moins une pull request';
+    private const string PREREQUISITE_PULL_REQUEST_TOTAL_MISSING = 'git-activity.json › pull_requests.total est absent dans %s — fournir ce champ';
+    private const string PREREQUISITE_PULL_REQUEST_TOTAL_ZERO = 'git-activity.json › pull_requests.total = %d dans %s — aucune PR sur la période, rien à mesurer';
 
     /** Piece names as declared by `profile.json › available` and checked against the real inventory. */
     private const array KNOWN_PIECES = [
@@ -57,8 +59,16 @@ final class DirectoryProfileSource implements ProfileSource
 
         $gitActivity = GitActivityReader::read($gitActivityData);
 
-        if (null === $gitActivity->pullRequestsTotal || $gitActivity->pullRequestsTotal < 1) {
-            throw new ProfileNotAssessable(sprintf(self::PREREQUISITE_AT_LEAST_ONE_PULL_REQUEST, $path), $path, $identity);
+        if (null === $gitActivity->pullRequestsTotal) {
+            throw new ProfileNotAssessable(sprintf(self::PREREQUISITE_PULL_REQUEST_TOTAL_MISSING, $path), $path, $identity);
+        }
+
+        if ($gitActivity->pullRequestsTotal < SampleFloors::GATE_MIN_PR) {
+            throw new ProfileNotAssessable(
+                sprintf(self::PREREQUISITE_PULL_REQUEST_TOTAL_ZERO, $gitActivity->pullRequestsTotal, $path),
+                $path,
+                $identity,
+            );
         }
 
         $sonarData = JsonFile::decode($path.'/sonar-measures.json');

@@ -11,7 +11,9 @@ use AiddLevel\Domain\Profile\RepoFile;
  * Reads `repo-context/` recursively, hidden files included (`.claude/…` is a legitimate proof
  * of harness, not something to filter out — docs/specs/00-vue-ensemble.md § 3: « détecter
  * `.claude/` serait une faute »). Paths are relative to `repo-context/` itself; content is
- * read as-is, the pieces here are small (docs/specs/05-robustesse.md).
+ * read as-is, the pieces here are small (docs/specs/05-robustesse.md). An unreadable
+ * subdirectory is skipped rather than failing the whole read: the adaptor does not judge, it
+ * just inventories what it could actually reach.
  */
 final class RepoContextReader
 {
@@ -22,6 +24,7 @@ final class RepoContextReader
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($repoContextDir, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::LEAVES_ONLY,
+            \RecursiveIteratorIterator::CATCH_GET_CHILD,
         );
 
         $paths = [];

@@ -66,9 +66,22 @@ final class GitActivityReader
         return is_string($value) ? $value : null;
     }
 
+    /**
+     * A field declared an integer must actually be one: `2.0` (a whole number encoded as a
+     * JSON float) is accepted as `2`, but `1.9` is malformed — truncating it would silently
+     * invent a count that was never in the source, so it becomes `null` instead.
+     */
     private static function intOrNull(mixed $value): ?int
     {
-        return is_int($value) ? $value : (is_float($value) ? (int) $value : null);
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value) && 0.0 === fmod($value, 1.0)) {
+            return (int) $value;
+        }
+
+        return null;
     }
 
     private static function floatOrNull(mixed $value): ?float
