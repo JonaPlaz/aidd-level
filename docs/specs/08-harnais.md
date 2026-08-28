@@ -69,8 +69,11 @@ adaptation assumée, revue au journal si une borne est atteinte.
 `gh api repos/{o}/{r}/pulls/{n}/reviews` et `…/comments` jusqu'à apparition d'une revue, avec
 un délai plafond (`REVIEW_WAIT_MAX`, **valeur à constater** sur la PR jetable — le temps de
 réponse de Codex n'est connu nulle part). Délai dépassé → journal, label `blocked`, arrêt.
-Revue sans remarque → `gh pr merge --auto`. Remarques → une passe de correction, repush, puis
-`gh pr merge --auto` ; la re-review de Codex, si elle bloque, laisse la PR à Jonathan (borne 2).
+Revue sans remarque (ou réaction 👍) → `gh pr merge --auto`. Remarques → une passe de
+correction, repush, **commentaire `@codex review`** (Codex ne re-revoit pas sur push,
+constaté sur #14 le 2026-08-28), nouvelle attente ; 👍 ou revue vide → `--auto` ; nouvelles
+remarques → la PR reste à Jonathan (borne 2). **`--auto` ne s'arme jamais avant le verdict**
+— le merge auto GitHub ne connaît que la CI, le verrou Codex n'existe que dans le skill.
 
 **Iron rule** : une fois l'agent dev engagé sur une issue, le skill ne revient pas au routage ;
 il termine, ou s'arrête sur une borne.

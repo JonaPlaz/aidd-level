@@ -47,9 +47,12 @@ touchées et le test qui les fige, commandes passées (`make test lint dup`).
 2. Réaction `+1`, ou revue sans commentaire inline → `gh pr merge <pr> --auto --squash
    --delete-branch`.
 3. Commentaires → **une** passe de correction : relancer l'agent `dev` sur la même branche
-   avec les commentaires, repush, puis `gh pr merge <pr> --auto --squash --delete-branch`.
-   Codex re-revoit la PR ; s'il commente encore, la PR reste : label `blocked`, ligne de
-   journal, arrêt. Pas de seconde passe.
+   avec les commentaires, repush, puis **commenter `@codex review`** sur la PR — Codex ne
+   re-revoit pas sur un push (constaté sur #14). Reprendre l'attente de l'étape 1 sur le
+   nouveau SHA. Réaction `+1` ou revue sans commentaire → `gh pr merge <pr> --auto --squash
+   --delete-branch`. Nouveaux commentaires → la PR reste : label `blocked`, ligne de journal,
+   arrêt. Pas de seconde passe. **`--auto` ne s'arme jamais avant le verdict de Codex** : le
+   merge auto GitHub ne connaît que la CI.
 4. Délai dépassé → label `blocked`, ligne de journal avec l'URL de la PR, arrêt.
 
 ## 4. Après le merge

@@ -63,6 +63,12 @@ inutilisables avec `--source` : `LICENSE` est écrit en local (étape 1).
 `gh label create to-review --color FBCA04 --description "PR ouverte, en attente de review"` ·
 `gh label create blocked --color B60205 --description "Borne atteinte, décision humaine"`.
 
+## Étape 4 bis — réglages du dépôt
+
+`gh repo edit --enable-auto-merge --delete-branch-on-merge`. Constaté le 2026-08-28 sur la
+PR #14 : sans ce réglage, `gh pr merge --auto` répond « Auto merge is not allowed for this
+repository ». Ajouté après coup à l'amorçage.
+
 ## Étape 5 — protection de `main`
 
 `gh ruleset` est en lecture seule (vérifié) ; l'API classique s'emploie :
