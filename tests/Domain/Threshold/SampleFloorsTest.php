@@ -16,5 +16,6 @@ final class SampleFloorsTest extends TestCase
         self::assertSame(5, SampleFloors::MIN_PR_SAMPLE);
         self::assertSame(12, SampleFloors::MIN_PR_SAMPLE_ABSENCE);
         self::assertSame(5, SampleFloors::PARALLELISM_MIN_PR);
+        self::assertSame(1, SampleFloors::GATE_MIN_PR);
     }
 }

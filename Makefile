@@ -15,8 +15,11 @@ build:
 test:
 	$(RUN) vendor/bin/phpunit
 
+# --memory-limit above the container's 128M php.ini default: analysing src/ and tests/
+# together already crosses that ceiling with the infrastructure layer in place, unrelated
+# to any single file's size (docs/specs/08-harnais.md § chantier 6).
 lint:
-	$(RUN) vendor/bin/phpstan analyse --no-progress
+	$(RUN) vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 
 dup:
 	$(RUN) vendor/bin/phpcpd --min-lines=5 --min-tokens=70 src

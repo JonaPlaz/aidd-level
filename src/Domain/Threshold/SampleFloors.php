@@ -22,4 +22,9 @@ final class SampleFloors
 
     // assumed adaptation, not sourced — Parallelism.
     public const int PARALLELISM_MIN_PR = 5;
+
+    // docs/specs/05-robustesse.md § Gate, step 4: at least one pull request or nothing can be
+    // measured — the gate cutoff, not a confidence floor, but named here alongside the other
+    // pull-request sample sizes.
+    public const int GATE_MIN_PR = 1;
 }
