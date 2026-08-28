@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Démarre un chantier depuis une issue GitHub — spec si absente (arrêt humain pour validation), puis implémentation, PR, attente de la revue Codex, une passe de correction, merge automatique. Spec : docs/specs/08-harnais.md.
+description: Démarre un chantier depuis une issue GitHub — spec si absente (arrêt humain pour validation), puis implémentation, PR, revue Codex, passes de correction jusqu'à validation, merge automatique. Spec : docs/specs/08-harnais.md.
 argument-hint: [issue-number] [--trivial]
 disable-model-invocation: true
 ---
@@ -43,24 +43,35 @@ corrige.** Arbitré par Jonathan le 2026-08-29 sur la PR #15, en remplacement de
 « une passe » de la spec 08 § 7. Les bornes restantes : `maxTurns` par relance, le plafond
 d'attente, et l'arrêt manuel.
 
-1. **Rebaser d'abord.** Le check `ci` est requis en mode `strict` : une branche en retard sur
-   `main` ne peut pas merger. `git fetch origin && git rebase origin/main`, puis
-   `git push --force-with-lease` (autorisé ; `--force` nu est refusé par le hook
-   `guard-git`). Conflit → une seule tentative, puis label `blocked`, journal, arrêt.
-2. **Attendre le verdict sur le SHA courant.** Relever `HEAD` et l'horodatage `T0` de la
-   demande. Toutes les 60 s (`sleep 60`), lire `gh api repos/{owner}/{repo}/pulls/<pr>/reviews`,
-   `…/pulls/<pr>/comments` et `…/issues/<pr>/reactions`, en ne retenant que : les revues de
+La branche vit dans le worktree de l'agent `dev` (`W`, chemin rapporté par l'agent) ; le skill
+n'agit dessus que par `git -C W …`, jamais depuis le checkout principal.
+
+1. **Rebaser.** Le check `ci` est requis en mode `strict` : une branche en retard sur `main`
+   ne peut pas merger. `git -C W fetch origin && git -C W rebase origin/main`, puis
+   `git -C W push --force-with-lease` (seule forme admise ; `--force`, `-f` et les refspecs
+   `+…` sont refusés par le hook `guard-git`). Conflit → une seule tentative, puis label
+   `blocked`, journal, arrêt.
+2. **Demander le verdict sur ce SHA.** Relever `HEAD = git -C W rev-parse HEAD`, puis
+   l'horodatage `T0`, puis commenter `@codex review` — dans cet ordre, toujours après le
+   rebase (Codex ne re-revoit pas sur un push ; une demande faite avant le rebase porte sur
+   un SHA qui n'existe plus). À l'ouverture de la PR, la revue part d'elle-même : `T0` =
+   heure d'ouverture, pas de commentaire.
+3. **Attendre.** Toutes les 60 s (`sleep 60`), lire avec `gh api --paginate`
+   `repos/{owner}/{repo}/pulls/<pr>/reviews`, `…/pulls/<pr>/comments` et
+   `…/issues/<pr>/reactions`, en ne retenant que : les revues de
    `chatgpt-codex-connector[bot]` dont `commit_id` = `HEAD`, les commentaires rattachés à
-   ces revues, et les réactions du bot créées après `T0`. Tout ce qui précède est du verdict
-   périmé et ne compte pas. Une réaction `eyes` signifie « pris en charge », elle ne termine
-   pas l'attente. Plafond : `REVIEW_WAIT_MAX`.
-3. Réaction `+1`, ou revue sans commentaire inline → `gh pr merge <pr> --auto --squash
-   --delete-branch`. **`--auto` ne s'arme jamais avant le verdict** : le merge auto GitHub
-   ne connaît que la CI.
-4. Commentaires → passe de correction : relancer l'agent `dev` sur la même branche avec les
-   commentaires, repush, **commenter `@codex review`** (Codex ne re-revoit pas sur un push,
-   constaté sur #14), puis revenir à l'étape 1 avec le nouveau `HEAD` et un nouveau `T0`.
-5. Délai dépassé → label `blocked`, ligne de journal avec l'URL de la PR, arrêt.
+   ces revues, et les réactions du bot créées après `T0`. Tout ce qui précède est périmé. Une
+   réaction `eyes` signifie « pris en charge », elle ne termine pas l'attente. Plafond :
+   `REVIEW_WAIT_MAX` ; dépassé → label `blocked`, ligne de journal avec l'URL, arrêt.
+4. **Commentaires** → passe de correction : relancer l'agent `dev` sur la même branche avec
+   les commentaires ; il corrige, repousse, rend la main. Retour à l'étape 1.
+5. **Réaction `+1` ou revue sans commentaire inline** → revérifier la base :
+   `git -C W fetch origin` ; si `origin/main` a avancé depuis le rebase de l'étape 1
+   (`git -C W merge-base --is-ancestor origin/main HEAD` faux), retour à l'étape 1 — le
+   verdict portait sur un SHA qui ne mergera pas. Sinon
+   `gh pr merge <pr> --auto --squash --delete-branch`, puis attendre `mergedAt` non nul.
+   **`--auto` ne s'arme jamais avant le verdict ni sur une base périmée** : le merge auto
+   GitHub ne connaît que la CI et ne rebase pas.
 
 ## 4. Après le merge
 

@@ -13,8 +13,9 @@ const { readInput, projectRoot, block } = require('./lib');
 const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
 
-if (/\bgit\s+push\b/.test(command) && /(\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$))/.test(command)) {
-  block('guard-git: bare --force / -f is refused; rebase then push with --force-with-lease (CLAUDE.md).');
+// Bare --force, -f (alone or bundled), and force-prefixed refspecs (`+HEAD:branch`).
+if (/\bgit\s+push\b/.test(command) && /(\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s\+\S+)/.test(command)) {
+  block('guard-git: bare --force / -f / +refspec is refused; rebase then push with --force-with-lease (CLAUDE.md).');
 }
 
 if (!/\bgit\s+commit\b/.test(command)) process.exit(0);

@@ -20,7 +20,7 @@ issue `to-implement`
         ├─► agent dev (worktree) : branche, code, tests, `make test lint dup`, push, PR, label `to-review`
         ├─► CI : tests + analyse statique + duplication
         ├─► Codex : revue automatique à l'ouverture (réglage cloud, seul geste manuel)
-        ├─► agent dev : attend la revue, UNE passe de correction, repush
+        ├─► skill : rebase, revue Codex, passes de correction jusqu'à validation
         └─► `gh pr merge --auto --squash --delete-branch` — merge quand les verrous sont verts
 ```
 
@@ -66,16 +66,17 @@ adaptation assumée, revue au journal si une borne est atteinte.
 | `feature` | `argument-hint: [issue-number]`, `disable-model-invocation: true` | enchaîne spec → validation → dev → PR → attente de review → correction → merge auto, sans intervention après validation. Mode `--trivial` pour la PR jetable |
 
 **Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill
-possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Après ouverture
-de la PR, le skill rebase la branche sur `origin/main` (check `ci` requis en mode `strict`)
-avec `git push --force-with-lease`, puis interroge `gh api repos/{o}/{r}/pulls/{n}/reviews`,
+possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13) et agit sur la
+branche par `git -C <worktree>`. Après ouverture de la PR, le skill rebase la branche sur
+`origin/main` (check `ci` requis en mode `strict`) avec `git push --force-with-lease`, demande
+le verdict **après** le rebase (`@codex review`), puis interroge avec `--paginate` `gh api repos/{o}/{r}/pulls/{n}/reviews`,
 `…/pulls/{n}/comments` **et `…/issues/{n}/reactions`** (le 👍 « rien à signaler » de Codex
 est une réaction, pas une revue), en ne retenant que le verdict portant sur le SHA courant
 et postérieur à la demande — le verdict précédent est périmé. Délai plafond
 `REVIEW_WAIT_MAX = 20 min` (valeur initiale posée d'après la PR #13 : revue reçue ≈ 12 min
 après le dernier push ; les délais suivants sont consignés dans `docs/harness.md`). Délai
-dépassé → journal, label `blocked`, arrêt. 👍 ou revue sans remarque → `gh pr merge --auto`.
-Remarques → passe de correction, repush, **commentaire `@codex review`** (Codex ne re-revoit
+dépassé → journal, label `blocked`, arrêt. 👍 ou revue sans remarque → revérifier que `origin/main` n'a pas avancé
+(sinon rebase et nouvelle demande), puis `gh pr merge --auto`. Remarques → passe de correction, repush, **commentaire `@codex review`** (Codex ne re-revoit
 pas sur push, constaté sur #14 le 2026-08-28), nouvelle attente sur le nouveau SHA. **Autant
 de passes qu'il en faut** : tant que Codex ne valide pas, Claude Code corrige — arbitré par
 Jonathan le 2026-08-29 sur la PR #15, en remplacement de la borne « une passe ». **`--auto`
@@ -100,9 +101,13 @@ Versionnés dans `.claude/settings.json` (sinon ils ne comptent pas), scripts da
 
 Un hook qui ne se déclenche pas au test est **retiré**, pas laissé mort.
 
-`permissions.deny` dans le même `settings.json` : `Read(./.brief/**)` est **exclu** (le brief
-doit rester lisible) ; `Bash(git push --force:*)`, `Bash(rm -rf:*)`, `Edit(./.brief/**)`,
-`Write(./.brief/**)`. `worktree.baseRef` reste `fresh` (branche depuis `origin/main`).
+`permissions` dans le même `settings.json` : `allow` sur `make`, `git` (status, diff, log,
+add, commit, push, fetch, rebase, checkout, switch), `gh` (pr, issue, api, run) et `sleep`
+(boucle d'attente) ; `deny` sur `rm -rf`, `Edit`/`Write` de `.brief/`. `Read(./.brief/**)`
+est **exclu** du deny (le brief doit rester lisible). Le `deny` `git push --force:*` posé au
+premier montage est **retiré** : il bloquait aussi `--force-with-lease`, requis par le rebase ;
+c'est le hook `guard-git` qui refuse `--force`, `-f` et les refspecs `+…`.
+`worktree.baseRef` reste `fresh` (branche depuis `origin/main`).
 
 ## 5. CI — `.github/workflows/ci.yml`
 
