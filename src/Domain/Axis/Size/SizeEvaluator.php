@@ -70,18 +70,21 @@ final readonly class SizeEvaluator implements AxisEvaluator
                     value: (string) $lines,
                 ),
             );
-            $filesValue = null === $files ? 'absent' : (string) $files;
             $notes = [
                 new Note(
-                    text: sprintf(
-                        'repli sur les lignes : median_files_changed = %s, median_lines_changed = %s.',
-                        $filesValue,
-                        (string) $lines,
-                    ),
+                    text: sprintf('repli sur les lignes : %s.', self::filesWording($files)),
                     pointer: new Pointer(
                         file: 'git-activity.json',
                         field: 'pull_requests.median_files_changed',
-                        value: $filesValue,
+                        value: null === $files ? 'absent' : (string) $files,
+                    ),
+                ),
+                new Note(
+                    text: sprintf('repli sur les lignes : median_lines_changed = %s.', (string) $lines),
+                    pointer: new Pointer(
+                        file: 'git-activity.json',
+                        field: 'pull_requests.median_lines_changed',
+                        value: (string) $lines,
                     ),
                 ),
             ];
@@ -165,7 +168,7 @@ final readonly class SizeEvaluator implements AxisEvaluator
     {
         $notes = [
             new Note(
-                text: 'median_files_changed absent : fournir git-activity.json › pull_requests.median_files_changed.',
+                text: sprintf('%s.', self::filesWording($files)),
                 pointer: new Pointer(
                     file: 'git-activity.json',
                     field: 'pull_requests.median_files_changed',
@@ -193,6 +196,19 @@ final readonly class SizeEvaluator implements AxisEvaluator
             evidences: [],
             notes: $notes,
         );
+    }
+
+    /**
+     * The files-field wording, distinguishing a real zero (present, uninformative — falls
+     * back to lines) from a genuinely absent field (missing, needs to be provided). Reused by
+     * both the lines-fallback note and the signal-absent note so the two never disagree
+     * (Codex review of PR #17: `= 0` is never reported as `absent`).
+     */
+    private static function filesWording(?float $files): string
+    {
+        return null === $files
+            ? 'median_files_changed absent : fournir git-activity.json › pull_requests.median_files_changed'
+            : sprintf('median_files_changed = %s, aucune information de taille', (string) $files);
     }
 
     /**

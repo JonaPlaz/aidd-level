@@ -90,13 +90,22 @@ final class SizeEvaluatorTest extends TestCase
             (string) $evidence->pointer,
         );
 
-        $fallbackNote = $verdict->notes[0];
-        self::assertStringContainsString('repli sur les lignes', $fallbackNote->text);
-        self::assertStringContainsString('median_files_changed = absent', $fallbackNote->text);
-        self::assertStringContainsString(' › ', (string) $fallbackNote->pointer);
+        // Codex review of PR #17: one assertion per pointer — the files note and the lines
+        // note are separate, each citing its own field.
+        [$filesNote, $linesNote] = $verdict->notes;
+
+        self::assertStringContainsString('repli sur les lignes', $filesNote->text);
+        self::assertStringContainsString('median_files_changed absent', $filesNote->text);
         self::assertSame(
             'git-activity.json › pull_requests.median_files_changed = absent',
-            (string) $fallbackNote->pointer,
+            (string) $filesNote->pointer,
+        );
+
+        self::assertStringContainsString('repli sur les lignes', $linesNote->text);
+        self::assertStringContainsString('median_lines_changed = 300', $linesNote->text);
+        self::assertSame(
+            'git-activity.json › pull_requests.median_lines_changed = 300',
+            (string) $linesNote->pointer,
         );
     }
 
@@ -115,12 +124,12 @@ final class SizeEvaluatorTest extends TestCase
 
         self::assertSame(Level::Red, $verdict->level);
 
-        $fallbackNote = $verdict->notes[0];
-        self::assertStringContainsString('median_files_changed = 0,', $fallbackNote->text);
-        self::assertStringNotContainsString('absent', $fallbackNote->text);
+        $filesNote = $verdict->notes[0];
+        self::assertStringContainsString('median_files_changed = 0,', $filesNote->text);
+        self::assertStringNotContainsString('absent', $filesNote->text);
         self::assertSame(
             'git-activity.json › pull_requests.median_files_changed = 0',
-            (string) $fallbackNote->pointer,
+            (string) $filesNote->pointer,
         );
     }
 
