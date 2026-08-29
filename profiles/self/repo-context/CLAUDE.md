@@ -13,7 +13,6 @@
   s'arrêter et journaliser.
 - `ROADMAP.md` et `docs/journal.md` : ajouter des lignes en fin de fichier, ne jamais
   réécrire. Une ligne de journal sans pointeur (SHA, PR, run, chemin) ne vaut rien.
-- Ne jamais écrire dans `.brief/`, ne jamais le committer, ne jamais le citer dans le code
   ou la documentation publique.
 - Les commandes du projet passent par `make` (Docker). Ne pas lancer `php`, `composer` ni
   `vendor/bin/*` directement.

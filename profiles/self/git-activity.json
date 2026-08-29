@@ -1,0 +1,38 @@
+{
+  "period": {
+    "from": "2026-08-28",
+    "to": "2026-08-29"
+  },
+  "repositories": 1,
+  "pull_requests": {
+    "total": 15,
+    "median_files_changed": 6,
+    "median_lines_changed": 458,
+    "median_correction_commits_after_open": 2,
+    "merged_without_human_edit_after_open": 2
+  },
+  "commits": {
+    "total": 64,
+    "median_per_pr": 4,
+    "ai_coauthored_ratio": 0.48
+  },
+  "parallelism": {
+    "max_concurrent_branches": 7,
+    "median_concurrent_branches": 1.5
+  },
+  "context_files": {
+    "agents_md": true,
+    "rules_count": 0,
+    "skills_count": 2,
+    "hooks_count": 4,
+    "agents_count": 2,
+    "last_updated": "2026-08-29"
+  },
+  "assistant_usage": {
+    "declared_tools": [
+      "claude-code",
+      "codex"
+    ],
+    "editor_integration": true
+  }
+}

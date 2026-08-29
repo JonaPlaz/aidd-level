@@ -40,3 +40,7 @@ de commencer à trois (doute 6 du brief : trois worktrees simultanés jamais ép
 6, 7), comme le graphe le prévoyait ; l'intégration s'est faite en cascade séquentielle
 (check `ci` requis en mode `strict` : chaque merge remet les autres en retard, rebase à
 chaque fois).
+| 8 | Use case et robustesse | 05 | 2–6 | — | #9 | **mergé** : #24 `c81173a` — les quatre profils réels tombent juste de bout en bout |
+| 9 | Console, demo, calibration, README | 00 § 6 | 7, 8 | — | #10 | **mergé** : #25 `dd06334` — épreuve du clone propre réussie |
+| 10 | Fixtures maison | 02–05 | 9 | — | #11 | **mergé** : #26 `53acee1` — 10 fixtures, 👍 Codex sans remarque |
+| 11 | Profil self, méthode, harness.md | 00 § 7–8 | 9, 10 | — | #12 | en revue — reste : passe de refactor, vidéo (Jonathan) |

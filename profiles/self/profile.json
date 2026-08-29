@@ -1,0 +1,15 @@
+{
+  "profile_id": "self",
+  "role": "ce dépôt, évalué par son propre outil",
+  "stack": [
+    "PHP",
+    "symfony/console",
+    "Docker"
+  ],
+  "team_size": 1,
+  "available": [
+    "git-activity.json",
+    "repo-context/"
+  ],
+  "note": "Profil fabriqué par scripts/self-profile.py depuis l'API GitHub et le dossier .claude/ ; aucune pièce déclarative, aucune analyse Sonar."
+}
