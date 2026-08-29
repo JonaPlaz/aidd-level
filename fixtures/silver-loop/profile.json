@@ -1,0 +1,14 @@
+{
+  "profile_id": "silver-loop",
+  "role": "développeuse indépendante",
+  "experience_years": 6,
+  "stack": [
+    "TypeScript",
+    "Node.js"
+  ],
+  "team_size": 1,
+  "available": [
+    "git-activity.json",
+    "repo-context/"
+  ]
+}

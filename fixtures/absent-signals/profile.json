@@ -1,0 +1,12 @@
+{
+  "profile_id": "absent-signals",
+  "role": "développeur",
+  "experience_years": 4,
+  "stack": [
+    "Python"
+  ],
+  "team_size": 2,
+  "available": [
+    "git-activity.json"
+  ]
+}

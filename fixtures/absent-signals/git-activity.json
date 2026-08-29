@@ -1,0 +1,23 @@
+{
+  "period": {
+    "from": "2026-01-01",
+    "to": "2026-06-30"
+  },
+  "pull_requests": {
+    "total": 20,
+    "merged_without_human_edit_after_open": 8
+  },
+  "commits": {
+    "ai_coauthored_ratio": 0.5
+  },
+  "parallelism": {
+    "max_concurrent_branches": 3
+  },
+  "context_files": {
+    "agents_md": true,
+    "rules_count": 1,
+    "skills_count": 0,
+    "hooks_count": 0,
+    "agents_count": 0
+  }
+}

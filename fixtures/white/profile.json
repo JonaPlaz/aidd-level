@@ -1,0 +1,12 @@
+{
+  "profile_id": "white",
+  "role": "développeur débutant",
+  "experience_years": 1,
+  "stack": [
+    "PHP"
+  ],
+  "team_size": 1,
+  "available": [
+    "git-activity.json"
+  ]
+}
