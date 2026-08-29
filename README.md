@@ -5,13 +5,47 @@
 
 ## Lancer
 
+**Hors du conteneur** :
+
 ```
-docker build -t aidd-level .
-docker run --rm aidd-level evaluate profiles/arthur
+make up
+make exec
 ```
 
-Sortie : le niveau, l'axe qui plafonne avec chaque fait et l'endroit où il se constate, puis le
-geste vers le niveau suivant. Aucune clé d'API, aucun réseau.
+**Dans le conteneur** (après `make exec`) :
+
+```
+make evaluate arthur
+```
+
+Sortie :
+
+```
+❖ 🔺 🔹 🟢 [🥉] 🥈 🥇
+axe bloquant : Harness et Intervention (ex æquo)
+🥉 Copper — arthur (développeur indépendant)
+Niveau atteint : Copper · niveau visé : Silver
+...
+```
+
+(sortie complète : voir « Exemple de sortie réelle » ci-dessous). Aucune clé d'API, aucun réseau.
+`make evaluate` accepte plusieurs noms (`make evaluate arthur bohort`) ; le nom d'un profil est
+résolu dans `profiles/`, puis `fixtures/`, sinon pris comme chemin tel quel. Tapée hors du
+conteneur, la même commande fonctionne aussi (elle repasse par `docker compose exec`).
+
+**Sans `make`** :
+
+```
+UID=$(id -u) GID=$(id -g) docker compose up -d --build
+docker compose exec php composer install --no-interaction --no-progress
+docker compose exec php bin/aidd-level evaluate profiles/arthur
+```
+
+**Image autonome** (sans conteneur vivant) :
+
+```
+docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur
+```
 
 ## Ce que fait l'outil
 
@@ -124,17 +158,23 @@ docs/                   specs/ (les décisions produit), calibration.md, journal
 
 ## Commandes `make`
 
-Tout tourne dans Docker (PHP local insuffisant : PHPUnit 13 exige PHP ≥ 8.4.1).
+Tout tourne dans un conteneur de développement vivant (PHP local insuffisant : PHPUnit 13
+exige PHP ≥ 8.4.1). `make up` le construit et le lance ; les autres commandes (sauf `up`,
+`down` et `evaluate`) échouent avec « Lance d'abord : make up » s'il ne tourne pas.
 
 | Commande | Rôle |
 |---|---|
-| `make build` | construit l'image et installe les dépendances |
+| `make up` | construit l'image, la lance (`sleep infinity`), installe les dépendances |
+| `make build` | alias de `make up` |
+| `make exec` | shell interactif dans le conteneur |
+| `make evaluate arthur [bohort ...]` | lance `bin/aidd-level evaluate` sur les profils nommés ; tapée dans le conteneur comme hors du conteneur |
+| `make down` | arrête le conteneur |
 | `make test` | PHPUnit |
 | `make lint` | PHPStan |
 | `make dup` | détection de duplication |
-| `make demo` | évalue les quatre profils de `profiles/` |
+| `make demo` | évalue les quatre profils fournis (contrat de `docs/calibration.md`) |
+| `make self` | évalue `profiles/self` |
 | `make fmt FILE=…` | formate un fichier PHP |
-| `make shell` | shell dans le conteneur |
 
 ## Attribution des profils
 

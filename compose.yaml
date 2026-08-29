@@ -3,6 +3,17 @@ services:
     build: .
     image: aidd-level
     working_dir: /app
+    command: ["sleep", "infinity"]
+    entrypoint: []
+    # Host uid:gid so files Composer writes into the bind mount belong to the
+    # developer, not root (docs/specs/00-vue-ensemble.md § 6).
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      # Composer's default home (/root/.composer or similar) is not writable
+      # by an unprivileged uid; point it at a scratch dir instead.
+      COMPOSER_HOME: /tmp/composer
+      # Lets `make evaluate` run bin/aidd-level directly instead of re-shelling
+      # into docker compose exec when it is already typed inside the container.
+      IN_CONTAINER: "1"
     volumes:
       - .:/app
-    entrypoint: []

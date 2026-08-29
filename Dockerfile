@@ -1,7 +1,7 @@
 FROM php:8.5-cli-alpine
 
 COPY --from=composer:2.10 /usr/bin/composer /usr/bin/composer
-RUN apk add --no-cache git unzip
+RUN apk add --no-cache git unzip make
 
 WORKDIR /app
 COPY composer.json composer.lock* ./
