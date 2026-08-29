@@ -133,12 +133,26 @@ bin/aidd-level evaluate <dossier-profil> [<dossier-profil>...]
 ```
 
 Un profil qui échoue au gate n'arrête pas l'évaluation des autres. Sans argument, la commande
-liste les profils livrés dans `profiles/`. Lancement de référence pour le jury :
+liste les profils livrés dans `profiles/`.
 
-```
-docker build -t aidd-level .
-docker run --rm aidd-level evaluate profiles/arthur
-```
+**Lancement de référence — arbitré par Jonathan le 2026-08-29** (remplace `docker build` +
+`docker run`, jugé moins lisible qu'un conteneur qui tourne) : un conteneur de développement
+qui reste vivant, piloté par `make` :
+
+| Commande | Derrière |
+|---|---|
+| `make up` | `docker compose up -d --build` **puis** `docker compose exec php composer install` — le montage `.:/app` cache le `vendor/` construit dans l'image, les dépendances s'installent donc dans l'espace de travail monté (remarque Codex, PR #30) ; le service `php` reste vivant (`command: sleep infinity`) |
+| `make demo` | les quatre profils fournis puis `profiles/self` |
+| `make exec` | `docker compose exec php sh` — **on entre dans le conteneur** |
+| `make evaluate arthur` | **tapée dans le conteneur** : `bin/aidd-level evaluate profiles/arthur`, sans Docker — le **nom du profil** suffit (résolu dans `profiles/`, puis `fixtures/`, puis pris comme chemin) ; plusieurs noms acceptés. `make` est installé dans l'image ; tapée hors du conteneur, la cible passe par `docker compose exec` pour que ça marche aussi |
+| `make down` | `docker compose down` |
+| `make test` · `lint` · `dup` · `fmt` | `docker compose exec php …` (le conteneur doit tourner ; message clair sinon) |
+
+Notice du README, trois lignes en deux blocs explicitement titrés **« hors du conteneur »**
+(`make up`, `make exec`) et **« dans le conteneur »** (`make evaluate arthur`). Repli sans `make`, dans
+le README sous la notice : les deux commandes `docker compose` équivalentes, et l'image
+autonome `docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur`
+(le `Dockerfile` garde son `ENTRYPOINT`).
 
 Les quatre profils fournis sont recopiés dans `profiles/` avec attribution MIT
 (`profiles/ATTRIBUTION.md` → `ai-driven-dev/laivel-up`, commit `89b9e35`).
