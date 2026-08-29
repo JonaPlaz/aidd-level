@@ -18,6 +18,3 @@
 - Les commandes du projet passent par `make` (Docker). Ne pas lancer `php`, `composer` ni
   `vendor/bin/*` directement.
 - Messages de commit en anglais, Conventional Commits, un sujet de 72 caractères maximum.
-- **Tout commit produit par un agent porte le trailer** `Co-Authored-By: Claude <noreply@anthropic.com>`
-  — c'est le signal que la grille lit (« commit signé par un assistant ») ; sans lui, le dépôt
-  se note lui-même à tort (constaté : ratio 0,48 sur `profiles/self`).

@@ -147,3 +147,7 @@ sont copiés tels quels depuis [`ai-driven-dev/laivel-up`](https://github.com/ai
 Projet du hackathon [LAIVEL UP](https://github.com/ai-driven-dev/laivel-up) (28–31 août 2026).
 Les spécifications sont dans `docs/specs/`, la preuve de calibration dans
 `docs/calibration.md`, le plan dans `ROADMAP.md`.
+
+## L'outil sur son propre dépôt
+
+`profiles/self/` est fabriqué depuis l'API GitHub (`python3 scripts/self-profile.py`) ; `docker run --rm aidd-level evaluate profiles/self` rend le verdict du dépôt sur lui-même. Le résultat et sa lecture sont dans [`docs/methode.md`](docs/methode.md) ; le flow réellement suivi dans [`docs/harness.md`](docs/harness.md).
