@@ -13,10 +13,10 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Bout en bout: real profile folder → `ApplicationFactory`'s handler → `TextRenderer` →
+ * End to end: real profile folder → `ApplicationFactory`'s handler → `TextRenderer` →
  * rendered text. Fixes the four verdicts `docs/calibration.md` proves against the
  * organizers' attributed levels, so a repreneur who moves a threshold sees immediately what
- * bascule (docs/calibration.md § Reproduction). Duplicates `EvaluateProfileHandlerTest`'s
+ * breaks (docs/calibration.md § Reproduction). Duplicates `EvaluateProfileHandlerTest`'s
  * calibrated cases on purpose: that test proves the `Assessment`, this one proves the whole
  * wiring (`ApplicationFactory`) plus the rendered text a jury actually reads.
  */
@@ -42,9 +42,11 @@ final class CalibrationTest extends TestCase
 
         self::assertStringContainsString($expectedLevel->label(), $rendered);
 
-        foreach ($this->pointerLines($rendered) as $line) {
-            self::assertStringContainsString(' › ', $line, sprintf('Ligne sans pointeur : "%s"', $line));
-        }
+        self::assertGreaterThan(
+            0,
+            $this->pointedLineCount($rendered),
+            'Le bloc "Ce qui a mené là" ne cite aucune ligne de preuve pointée.',
+        );
     }
 
     /**
@@ -67,22 +69,36 @@ final class CalibrationTest extends TestCase
     }
 
     /**
-     * Lines that carry an `Evidence`/`Note` pointer are always indented (docs/specs/06 §
-     * Format de sortie: the pointer sits on its own line under the claim it supports); the
-     * level bar, headings and prose lines are not. Filtering on indentation keeps this test
-     * from asserting a pointer on lines that were never meant to carry one (the header, the
-     * level bar, the blocking-axis line).
-     *
-     * @return list<string>
+     * Counts the pointer-bearing lines inside the "Ce qui a mené là" block (docs/specs/06 §
+     * Format de sortie): every axis headline sits at a two-space indent, every `Evidence`
+     * pointer under it one level deeper, at four spaces. Candidate lines are selected by that
+     * indentation alone, never by the presence of `›` (Codex review of PR #25, remark 3 — a
+     * selection that already required `›` would make the assertion that follows tautological);
+     * only the count of the ones that do carry `›` is asserted, since a same-indent line can
+     * legitimately carry none (e.g. a `Range` confidence's "fourchette : entre … et …" line).
      */
-    private function pointerLines(string $rendered): array
+    private function pointedLineCount(string $rendered): int
     {
-        $lines = explode("\n", $rendered);
+        $section = $this->cappingAxesSection($rendered);
+        $lines = explode("\n", $section);
 
-        return array_values(array_filter(
-            $lines,
-            static fn (string $line): bool => str_starts_with($line, '    ') && str_contains($line, '›'),
-        ));
+        $indented = array_filter($lines, static fn (string $line): bool => str_starts_with($line, '    '));
+
+        return \count(array_filter($indented, static fn (string $line): bool => str_contains($line, '›')));
     }
 
+    /**
+     * The "Ce qui a mené là" block only, up to the blank line that ends it
+     * (`TextRenderer::render()` joins its blocks with a blank line).
+     */
+    private function cappingAxesSection(string $rendered): string
+    {
+        $heading = 'Ce qui a mené là';
+        $start = strpos($rendered, $heading);
+        self::assertNotFalse($start, sprintf('Bloc "%s" absent du rendu.', $heading));
+
+        $end = strpos($rendered, "\n\n", $start);
+
+        return false !== $end ? substr($rendered, $start, $end - $start) : substr($rendered, $start);
+    }
 }

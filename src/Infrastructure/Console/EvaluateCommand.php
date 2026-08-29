@@ -23,10 +23,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  * the process exit code from the resulting statuses.
  *
  * Without an argument, the command lists the profile folders shipped in `profiles/`
- * (docs/specs/00-vue-ensemble.md § 6), looked up relative to the working directory first,
- * then relative to the project root — so `docker run --rm aidd-level evaluate` (WORKDIR
- * `/app`, § 6 lancement de référence) and a plain `bin/aidd-level evaluate` run from the
- * repository root both find it, without hard-coding either path.
+ * (docs/specs/00-vue-ensemble.md § 6). The project's own `profiles/` (next to `bin/`) wins
+ * over the working directory's: the shipped four profiles are what the reference launch (§
+ * 6: `docker run --rm aidd-level evaluate`, WORKDIR `/app`) and the jury actually expect to
+ * see, so a `bin/aidd-level evaluate` run from an unrelated working directory that happens to
+ * contain its own unrelated `profiles/` folder must not shadow them (Codex review of PR #25,
+ * remark 2).
  */
 #[AsCommand(name: 'evaluate', description: "Évalue le niveau AIDD d'un ou plusieurs profils")]
 final class EvaluateCommand extends Command
@@ -70,7 +72,11 @@ final class EvaluateCommand extends Command
             }
 
             $assessment = $this->handler->handle(new EvaluateProfile($path));
-            $output->write($this->renderer->render($assessment));
+            // OUTPUT_RAW: a profile's own text (identity, note, claims) can contain a `<`
+            // sequence that Symfony's default OUTPUT_NORMAL would try to read as a formatting
+            // tag (e.g. `<info>`) and silently drop — the rendered text must reach the
+            // terminal exactly as `TextRenderer` built it (Codex review of PR #25, remark 1).
+            $output->write($this->renderer->render($assessment), false, OutputInterface::OUTPUT_RAW);
 
             if (AssessmentStatus::NotAssessable !== $assessment->status) {
                 ++$evaluatedCount;
@@ -110,14 +116,15 @@ final class EvaluateCommand extends Command
     }
 
     /**
-     * Working directory first, project root second (docs/specs/00-vue-ensemble.md § 6). The
-     * project root is derived from this file's own location (`src/Infrastructure/Console/` is
-     * three levels below it) rather than `getcwd()`, so it stays correct however the command
-     * is invoked.
+     * The project root first, the working directory second (docs/specs/00-vue-ensemble.md §
+     * 6, Codex review of PR #25, remark 2). The project root is derived from this file's own
+     * location (`src/Infrastructure/Console/` is three levels below it) rather than
+     * `getcwd()`, so the four shipped profiles are found however the command is invoked, and
+     * a same-named `profiles/` folder under an unrelated working directory never shadows them.
      */
     private function locateProfilesDirectory(): ?string
     {
-        $candidates = ['profiles', \dirname(__DIR__, 3).'/profiles'];
+        $candidates = [\dirname(__DIR__, 3).'/profiles', 'profiles'];
 
         foreach ($candidates as $candidate) {
             if (is_dir($candidate)) {
