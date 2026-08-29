@@ -20,7 +20,11 @@ OUT = ROOT / "profiles" / "self"
 
 
 def gh(path):
-    return json.loads(subprocess.check_output(["gh", "api", "--paginate", path], text=True))
+    # --slurp wraps every page in one array; a paginated list is flattened, a single object kept.
+    pages = json.loads(subprocess.check_output(["gh", "api", "--paginate", "--slurp", path], text=True))
+    if pages and isinstance(pages[0], list):
+        return [item for page in pages for item in page]
+    return pages[0] if pages else {}
 
 
 def parse(ts):
@@ -35,15 +39,19 @@ def main():
         d = gh(f"repos/{REPO}/pulls/{p['number']}")
         commits = gh(f"repos/{REPO}/pulls/{p['number']}/commits")
         created = parse(p["created_at"])
-        corrections.append(sum(1 for c in commits if parse(c["commit"]["committer"]["date"]) > created))
+        # author.date survives a rebase; committer.date is rewritten by every replay and
+        # would count the whole rebased series as corrections.
+        authored = [parse(c["commit"]["author"]["date"]) for c in commits]
+        corrections.append(sum(1 for a in authored if a > created))
         ai_commits += sum(1 for c in commits if "Co-Authored-By: Claude" in c["commit"]["message"])
         total_commits += len(commits)
         details.append(d)
-        intervals.append((created, parse(p["merged_at"])))
+        # A branch advances from its first commit, not from the PR opening.
+        intervals.append((min(authored + [created]), parse(p["merged_at"])))
     files = [d["changed_files"] for d in details]
     lines = [d["additions"] + d["deletions"] for d in details]
     per_pr = [d["commits"] for d in details]
-    # Concurrency: open pull requests sampled every 30 minutes over the active period.
+    # Concurrency: branches alive (first commit -> merge) sampled every 30 minutes.
     t0, t1 = min(a for a, _ in intervals), max(b for _, b in intervals)
     samples, t = [], t0
     while t <= t1:
@@ -96,13 +104,17 @@ def main():
     (OUT / "git-activity.json").write_text(json.dumps(activity, ensure_ascii=False, indent=2) + "\n")
     rc = OUT / "repo-context"
     shutil.rmtree(rc, ignore_errors=True)
+    # Private paths (declared in .worktreeinclude) are never spelled out in the public copy:
+    # any line naming one is redacted.
+    private = [l.strip() for l in (ROOT / ".worktreeinclude").read_text().splitlines() if l.strip() and not l.startswith("#")]
     for src in [".claude/agents", ".claude/hooks", ".claude/skills", ".claude/settings.json", ".github/workflows", "AGENTS.md", "CLAUDE.md", "Makefile"]:
         s = ROOT / src
-        if s.is_dir():
-            shutil.copytree(s, rc / src)
-        elif s.exists():
-            (rc / src).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(s, rc / src)
+        for f in ([s] if s.is_file() else [x for x in s.rglob("*") if x.is_file()]):
+            target = rc / f.relative_to(ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            text = f.read_text()
+            kept = [line for line in text.splitlines() if not any(p.rstrip("/") in line for p in private)]
+            target.write_text("\n".join(kept) + ("\n" if text.endswith("\n") else ""))
     print(json.dumps(activity["pull_requests"] | activity["parallelism"] | {"ai_ratio": activity["commits"]["ai_coauthored_ratio"]}))
 
 

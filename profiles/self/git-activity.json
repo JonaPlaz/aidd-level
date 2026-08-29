@@ -8,7 +8,7 @@
     "total": 15,
     "median_files_changed": 6,
     "median_lines_changed": 458,
-    "median_correction_commits_after_open": 4,
+    "median_correction_commits_after_open": 2,
     "merged_without_human_edit_after_open": 2
   },
   "commits": {

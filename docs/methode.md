@@ -48,11 +48,14 @@ chiffré, « fournir le champ » avant tout geste) ; **évalué**.
 ## Ce que l'outil dit de son propre dépôt
 
 `profiles/self/` est fabriqué depuis l'API GitHub par `scripts/self-profile.py`. Verdict :
-**Red, par Intervention** — 4 commits correctifs après ouverture en médiane. Ces commits sont
-ceux de la boucle de revue : Codex commente, Claude Code corrige, aucune main humaine. Le
-proxy agrégé ne le voit pas ; seule la signature commit par commit le verrait, et
-`git-activity.json` ne la livre pas. C'est la limite assumée de l'axe (spec 03), constatée en
-vrai, et la raison pour laquelle le dépôt porte désormais le trailer sur chaque commit d'agent.
+**Blue, par Intervention et Taille ex æquo** — 2 commits correctifs après ouverture en
+médiane, 6 fichiers par PR. Les commits correctifs sont ceux de la boucle de revue : Codex
+commente, Claude Code corrige, aucune main humaine. Le proxy agrégé ne le voit pas ; seule la
+signature commit par commit le verrait, et `git-activity.json` ne la livre pas. C'est la limite
+assumée de l'axe (spec 03), constatée en vrai — et la première version du script se trompait
+encore plus : elle datait les commits par `committer.date`, que chaque rebase réécrit, et lisait
+Red ; Codex l'a vu, `author.date` a corrigé. Le dépôt porte désormais le trailer sur chaque
+commit d'agent.
 
 ## Comment ça a été construit
 

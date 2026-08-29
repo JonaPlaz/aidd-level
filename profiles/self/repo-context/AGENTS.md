@@ -51,7 +51,6 @@ PHP 8.5, `symfony/console ^7.4`, PHPUnit 13. Tout tourne dans Docker (PHP local 
 - Conventional Commits. Une PR = une issue. Rebase sur `main`, jamais de merge de `main`.
 - `ROADMAP.md` et `docs/journal.md` sont **append-only**.
 - `composer.json` n'est modifié que par un chantier à la fois.
-- `.brief/` est privé : jamais lu par la CI, jamais committé, jamais cité dans le code.
 
 ## Définition de fini
 
@@ -70,6 +69,5 @@ Points à vérifier sur chaque pull request, dans cet ordre :
 4. **Chaque décision de scoring modifiée a un test** qui la fige (profil de référence → niveau
    attendu, ou cas dégradé → statut).
 5. **La médiane, jamais le maximum**, sur Taille et En parallèle.
-6. **Aucune clé, jeton ou secret** dans le diff, ni référence à `.brief/`.
 7. **Pas de duplication** de blocs : préférer une fonction commune.
 8. Signaler, sans bloquer, ce qui contredit `docs/specs/`.

@@ -11,11 +11,8 @@ Refuser de tourner si `.git` existe déjà. Suivre `docs/specs/07-amorcage.md` �
 lire le code retour de chaque commande externe, journaliser chaque étape dans
 `docs/journal.md` avec son pointeur.
 
-1. Vérifier les préconditions : `docs/specs/` validé, pas de `.git`, `.brief/` présent.
-2. Écrire les fichiers racine listés dans la spec (étape 1). `.brief/` en première ligne du
    `.gitignore`, déclaré dans `.worktreeinclude`.
 3. `make build` pour générer `composer.lock` dans Docker.
-4. `git init -b main` · `git add -A` · vérifier `git ls-files | grep -c '^\.brief/'` = 0 ·
    commit `chore: bootstrap repository from validated specs`.
 5. `gh repo create aidd-level --public --source=. --remote=origin --push`.
 6. Labels `to-implement`, `to-review`, `blocked`.

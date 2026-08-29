@@ -13,8 +13,10 @@
   s'arrêter et journaliser.
 - `ROADMAP.md` et `docs/journal.md` : ajouter des lignes en fin de fichier, ne jamais
   réécrire. Une ligne de journal sans pointeur (SHA, PR, run, chemin) ne vaut rien.
-- Ne jamais écrire dans `.brief/`, ne jamais le committer, ne jamais le citer dans le code
   ou la documentation publique.
 - Les commandes du projet passent par `make` (Docker). Ne pas lancer `php`, `composer` ni
   `vendor/bin/*` directement.
 - Messages de commit en anglais, Conventional Commits, un sujet de 72 caractères maximum.
+- **Tout commit produit par un agent porte le trailer** `Co-Authored-By: Claude <noreply@anthropic.com>`
+  — c'est le signal que la grille lit (« commit signé par un assistant ») ; sans lui, le dépôt
+  se note lui-même à tort (constaté : ratio 0,48 sur `profiles/self`).

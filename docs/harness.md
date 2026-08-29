@@ -17,8 +17,9 @@ La spec 08 décrit l'intention ; ce fichier décrit le fait. Les pointeurs sont 
 - **Parallélisme calculé** : six fronts ouverts après le noyau (chantiers 2–7), sans conflit
   de fichiers — le découpage par axe a tenu. Intégration en cascade séquentielle (check
   `strict`), ~3 min par PR.
-- **Le tool sur lui-même** : `profiles/self/` régénéré par script, verdict Red par
-  Intervention (voir `docs/methode.md`).
+- **Le tool sur lui-même** : `profiles/self/` régénéré par script, verdict Blue par
+  Intervention et Taille (voir `docs/methode.md`) — après une première lecture Red due à un
+  script qui comptait les rebases comme des corrections, corrigée sur remarque Codex.
 
 ## Ce qui a été coupé ou revu
 
@@ -31,6 +32,7 @@ La spec 08 décrit l'intention ; ce fichier décrit le fait. Les pointeurs sont 
 | `maxTurns = 80` | Atteint deux fois (chantiers 3 et 7) en passe de correction ; relance resserrée, fini en < 10 tours | journal |
 | Agents chargés à la création | La session démarrée avant `.claude/agents/` ne les voyait pas : chantier 1 sur un agent générique ; chargés à chaud ensuite | journal |
 | Trailer `Co-Authored-By` sur chaque commit | Absent des commits d'agents (ratio 0,48 mesuré sur `self`) : règle ajoutée après coup | `CLAUDE.md` |
+| Cascade en fond faisant `checkout main` dans le checkout principal | Un commit du chantier 11 a atterri sur `main` local pendant que le fond changeait de branche ; réparé par `reset`, script corrigé pour ne jamais toucher au checkout principal | journal |
 | Suppression des worktrees | Refusée (`vendor/` créé en root par Docker) : nettoyage via conteneur | journal |
 | Correction en CI (`claude-code-action`) | Jamais montée : correction en local, aucun secret dans le dépôt | spec 08 |
 
