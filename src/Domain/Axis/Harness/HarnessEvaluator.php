@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AiddLevel\Domain\Axis\Harness;
 
 use AiddLevel\Domain\Axis;
+use AiddLevel\Domain\Axis\Support\GitActivityPointer;
 use AiddLevel\Domain\AxisEvaluator;
 use AiddLevel\Domain\AxisVerdict;
 use AiddLevel\Domain\Confidence\Confirmed;
@@ -32,8 +33,6 @@ use AiddLevel\Domain\Profile\RepoFile;
  */
 final class HarnessEvaluator implements AxisEvaluator
 {
-    private const string SOURCE_FILE = 'git-activity.json';
-
     // Verbatim quote from docs/specs/02-axe-harness.md § Règle.
     private const string COUNTERS_WITHOUT_MEMORY_NOTE =
         'des règles/agents sont comptés sans fichier mémoire ; la grille cumule, le niveau '
@@ -83,7 +82,7 @@ final class HarnessEvaluator implements AxisEvaluator
                 evidences: [],
                 notes: [new Note(
                     'agents_md : donnée absente, axe non observable',
-                    new Pointer(self::SOURCE_FILE, 'context_files.agents_md', 'absent'),
+                    GitActivityPointer::of('context_files.agents_md', 'absent'),
                 )],
             );
         }
@@ -116,7 +115,7 @@ final class HarnessEvaluator implements AxisEvaluator
             $evidences[] = $this->agentsMdEvidence();
             $notes[] = new Note(
                 'behavior non observable : au moins un compteur de contexte absent',
-                new Pointer(self::SOURCE_FILE, self::COUNTER_FIELD_NAMES[$firstNullCounter], 'absent'),
+                GitActivityPointer::of(self::COUNTER_FIELD_NAMES[$firstNullCounter], 'absent'),
             );
         } elseif ($agentsMd) {
             $level = HarnessLevel::ContextEngineering;
@@ -129,19 +128,19 @@ final class HarnessEvaluator implements AxisEvaluator
             );
             $notes[] = new Note(
                 self::COUNTERS_WITHOUT_MEMORY_NOTE,
-                new Pointer(self::SOURCE_FILE, 'context_files.agents_md', 'false'),
+                GitActivityPointer::of('context_files.agents_md', 'false'),
             );
         } elseif ($ratio > 0.0) {
             $level = HarnessLevel::Prompts;
             $evidences[] = new Evidence(
                 "prompts : commits co-écrits avec l'IA, aucun fichier de contexte",
-                new Pointer(self::SOURCE_FILE, 'commits.ai_coauthored_ratio', (string) $ratio),
+                GitActivityPointer::of('commits.ai_coauthored_ratio', (string) $ratio),
             );
         } else {
             $level = HarnessLevel::None;
             $evidences[] = new Evidence(
                 "rien : aucun commit co-écrit avec l'IA, aucun compteur de contexte",
-                new Pointer(self::SOURCE_FILE, 'commits.ai_coauthored_ratio', (string) $ratio),
+                GitActivityPointer::of('commits.ai_coauthored_ratio', (string) $ratio),
             );
         }
 
@@ -240,7 +239,7 @@ final class HarnessEvaluator implements AxisEvaluator
     {
         return new Evidence(
             'context engineering : fichier mémoire présent',
-            new Pointer(self::SOURCE_FILE, 'context_files.agents_md', 'true'),
+            GitActivityPointer::of('context_files.agents_md', 'true'),
         );
     }
 
@@ -249,8 +248,7 @@ final class HarnessEvaluator implements AxisEvaluator
      */
     private function countersPointer(array $counters): Pointer
     {
-        return new Pointer(
-            self::SOURCE_FILE,
+        return GitActivityPointer::of(
             'context_files',
             sprintf(
                 '{rules:%s, skills:%s, hooks:%s, agents:%s}',

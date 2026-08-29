@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace AiddLevel\Domain\Axis\Intervention;
 
 use AiddLevel\Domain\Axis;
+use AiddLevel\Domain\Axis\Support\GitActivityPointer;
+use AiddLevel\Domain\Axis\Support\SampleCheck;
 use AiddLevel\Domain\AxisEvaluator;
 use AiddLevel\Domain\AxisVerdict;
 use AiddLevel\Domain\Confidence\Confidence;
-use AiddLevel\Domain\Confidence\Confirmed;
 use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Evidence;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Note;
-use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Threshold\InterventionThresholds;
@@ -41,7 +41,6 @@ use AiddLevel\Domain\Threshold\SampleFloors;
  */
 final class InterventionEvaluator implements AxisEvaluator
 {
-    private const string ACTIVITY_FILE = 'git-activity.json';
     private const string MEDIAN_FIELD = 'pull_requests.median_correction_commits_after_open';
     private const string TOTAL_FIELD = 'pull_requests.total';
     private const string MERGED_WITHOUT_EDIT_FIELD = 'pull_requests.merged_without_human_edit_after_open';
@@ -82,7 +81,6 @@ final class InterventionEvaluator implements AxisEvaluator
                     $this->note(
                         'aucun signal de commits correctifs après ouverture pour cet axe : '
                             .'fournir pull_requests.median_correction_commits_after_open',
-                        self::ACTIVITY_FILE,
                         self::MEDIAN_FIELD,
                         'absent',
                     ),
@@ -98,7 +96,7 @@ final class InterventionEvaluator implements AxisEvaluator
         $evidences = [
             new Evidence(
                 claim: $this->claimFor($level),
-                pointer: $this->pointer(self::ACTIVITY_FILE, self::MEDIAN_FIELD, self::formatNumber($median)),
+                pointer: GitActivityPointer::of(self::MEDIAN_FIELD, self::formatNumber($median)),
             ),
         ];
 
@@ -109,7 +107,7 @@ final class InterventionEvaluator implements AxisEvaluator
                     SampleFloors::MIN_PR_SAMPLE,
                     SampleFloors::MIN_PR_SAMPLE_ABSENCE,
                 ),
-                pointer: $this->pointer(self::ACTIVITY_FILE, self::TOTAL_FIELD, (string) $total),
+                pointer: GitActivityPointer::of(self::TOTAL_FIELD, (string) $total),
             );
         }
 
@@ -140,18 +138,10 @@ final class InterventionEvaluator implements AxisEvaluator
         $sample = $total ?? 0;
 
         if (Level::Silver === $level) {
-            if ($sample >= SampleFloors::MIN_PR_SAMPLE_ABSENCE) {
-                return new Confirmed();
-            }
-
-            return new Range(Level::Copper, Level::Silver, SampleFloors::MIN_PR_SAMPLE_ABSENCE - $sample);
+            return SampleCheck::confidence($sample, SampleFloors::MIN_PR_SAMPLE_ABSENCE, Level::Copper, Level::Silver);
         }
 
-        if ($sample >= SampleFloors::MIN_PR_SAMPLE) {
-            return new Confirmed();
-        }
-
-        return new Range($level, Level::Silver, SampleFloors::MIN_PR_SAMPLE - $sample);
+        return SampleCheck::confidence($sample, SampleFloors::MIN_PR_SAMPLE, $level, Level::Silver);
     }
 
     private function claimFor(Level $level): string
@@ -174,7 +164,7 @@ final class InterventionEvaluator implements AxisEvaluator
             ? 'absent'
             : self::formatNumber($activity->medianCorrectionCommitsAfterOpen);
 
-        return $this->note(self::CEILING_NOTE, self::ACTIVITY_FILE, self::MEDIAN_FIELD, $value);
+        return $this->note(self::CEILING_NOTE, self::MEDIAN_FIELD, $value);
     }
 
     /**
@@ -195,20 +185,14 @@ final class InterventionEvaluator implements AxisEvaluator
 
         return $this->note(
             sprintf('merged_without_human_edit_after_open = %s (corrobore, ne décide pas)', $ratio),
-            self::ACTIVITY_FILE,
             self::MERGED_WITHOUT_EDIT_FIELD,
             (string) $merged,
         );
     }
 
-    private function note(string $text, string $file, string $field, string $value): Note
+    private function note(string $text, string $field, string $value): Note
     {
-        return new Note($text, $this->pointer($file, $field, $value));
-    }
-
-    private function pointer(string $file, string $field, string $value): Pointer
-    {
-        return new Pointer($file, $field, $value);
+        return new Note($text, GitActivityPointer::of($field, $value));
     }
 
     private static function formatNumber(float $value): string

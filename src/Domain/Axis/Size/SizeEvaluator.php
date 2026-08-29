@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AiddLevel\Domain\Axis\Size;
 
 use AiddLevel\Domain\Axis;
+use AiddLevel\Domain\Axis\Support\GitActivityPointer;
+use AiddLevel\Domain\Axis\Support\SampleCheck;
 use AiddLevel\Domain\AxisEvaluator;
 use AiddLevel\Domain\AxisVerdict;
-use AiddLevel\Domain\Confidence\Confirmed;
 use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Evidence;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Note;
-use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Threshold\SampleFloors;
@@ -53,39 +53,26 @@ final readonly class SizeEvaluator implements AxisEvaluator
             $band = SizeThresholds::bandForFiles($files);
             $signalEvidence = new Evidence(
                 claim: self::claimFor($band),
-                pointer: new Pointer(
-                    file: 'git-activity.json',
-                    field: 'pull_requests.median_files_changed',
-                    value: (string) $files,
-                ),
+                pointer: GitActivityPointer::of('pull_requests.median_files_changed', (string) $files),
             );
             $notes = [];
         } elseif (null !== $lines) {
             $band = SizeThresholds::bandForLines($lines);
             $signalEvidence = new Evidence(
                 claim: self::claimFor($band),
-                pointer: new Pointer(
-                    file: 'git-activity.json',
-                    field: 'pull_requests.median_lines_changed',
-                    value: (string) $lines,
-                ),
+                pointer: GitActivityPointer::of('pull_requests.median_lines_changed', (string) $lines),
             );
             $notes = [
                 new Note(
                     text: sprintf('repli sur les lignes : %s.', self::filesWording($files)),
-                    pointer: new Pointer(
-                        file: 'git-activity.json',
-                        field: 'pull_requests.median_files_changed',
-                        value: null === $files ? 'absent' : (string) $files,
+                    pointer: GitActivityPointer::of(
+                        'pull_requests.median_files_changed',
+                        null === $files ? 'absent' : (string) $files,
                     ),
                 ),
                 new Note(
                     text: sprintf('repli sur les lignes : median_lines_changed = %s.', (string) $lines),
-                    pointer: new Pointer(
-                        file: 'git-activity.json',
-                        field: 'pull_requests.median_lines_changed',
-                        value: (string) $lines,
-                    ),
+                    pointer: GitActivityPointer::of('pull_requests.median_lines_changed', (string) $lines),
                 ),
             ];
         } else {
@@ -107,54 +94,33 @@ final readonly class SizeEvaluator implements AxisEvaluator
         GitActivity $gitActivity,
     ): AxisVerdict {
         $total = $gitActivity->pullRequestsTotal ?? 0;
+        $confidence = SampleCheck::confidence($total, SampleFloors::MIN_PR_SAMPLE, $level, Level::Gold);
 
-        if ($total >= SampleFloors::MIN_PR_SAMPLE) {
-            return new AxisVerdict(
-                axis: Axis::Size,
-                level: $level,
-                confidence: new Confirmed(),
-                evidences: [$signalEvidence],
-                notes: [
-                    ...$fallbackNotes,
-                    new Note(
-                        text: sprintf(
-                            'échantillon suffisant (plancher %d) : pull_requests.total = %d.',
-                            SampleFloors::MIN_PR_SAMPLE,
-                            $total,
-                        ),
-                        pointer: new Pointer(
-                            file: 'git-activity.json',
-                            field: 'pull_requests.total',
-                            value: (string) $total,
-                        ),
-                    ),
-                ],
+        $sampleNote = $confidence instanceof Range
+            ? new Note(
+                text: sprintf(
+                    'échantillon insuffisant (plancher %d) : pull_requests.total = %d, il manque %d.',
+                    SampleFloors::MIN_PR_SAMPLE,
+                    $total,
+                    $confidence->missingSample,
+                ),
+                pointer: GitActivityPointer::of('pull_requests.total', (string) $total),
+            )
+            : new Note(
+                text: sprintf(
+                    'échantillon suffisant (plancher %d) : pull_requests.total = %d.',
+                    SampleFloors::MIN_PR_SAMPLE,
+                    $total,
+                ),
+                pointer: GitActivityPointer::of('pull_requests.total', (string) $total),
             );
-        }
-
-        $missing = SampleFloors::MIN_PR_SAMPLE - $total;
 
         return new AxisVerdict(
             axis: Axis::Size,
             level: $level,
-            confidence: new Range(floor: $level, ceiling: Level::Gold, missingSample: $missing),
+            confidence: $confidence,
             evidences: [$signalEvidence],
-            notes: [
-                ...$fallbackNotes,
-                new Note(
-                    text: sprintf(
-                        'échantillon insuffisant (plancher %d) : pull_requests.total = %d, il manque %d.',
-                        SampleFloors::MIN_PR_SAMPLE,
-                        $total,
-                        $missing,
-                    ),
-                    pointer: new Pointer(
-                        file: 'git-activity.json',
-                        field: 'pull_requests.total',
-                        value: (string) $total,
-                    ),
-                ),
-            ],
+            notes: [...$fallbackNotes, $sampleNote],
         );
     }
 
@@ -169,19 +135,14 @@ final readonly class SizeEvaluator implements AxisEvaluator
         $notes = [
             new Note(
                 text: sprintf('%s.', self::filesWording($files)),
-                pointer: new Pointer(
-                    file: 'git-activity.json',
-                    field: 'pull_requests.median_files_changed',
-                    value: null === $files ? 'absent' : (string) $files,
+                pointer: GitActivityPointer::of(
+                    'pull_requests.median_files_changed',
+                    null === $files ? 'absent' : (string) $files,
                 ),
             ),
             new Note(
                 text: 'median_lines_changed absent : fournir git-activity.json › pull_requests.median_lines_changed.',
-                pointer: new Pointer(
-                    file: 'git-activity.json',
-                    field: 'pull_requests.median_lines_changed',
-                    value: 'absent',
-                ),
+                pointer: GitActivityPointer::of('pull_requests.median_lines_changed', 'absent'),
             ),
         ];
 

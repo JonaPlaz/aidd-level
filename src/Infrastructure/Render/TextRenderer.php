@@ -73,20 +73,7 @@ final class TextRenderer
             $blocks[] = $acquired;
         }
 
-        if (null !== $target) {
-            $blocks[] = $this->recommendationsBlock($assessment, $target);
-            $quest = $this->nextQuestBlock($assessment);
-            if (null !== $quest) {
-                $blocks[] = $quest;
-            }
-        }
-
-        $notes = $this->notesBlock($assessment->notes);
-        if (null !== $notes) {
-            $blocks[] = $notes;
-        }
-
-        return $blocks;
+        return $this->withProgressionAndNotes($blocks, $assessment, $target);
     }
 
     // -- LowConfidence ---------------------------------------------------------------------
@@ -130,21 +117,7 @@ final class TextRenderer
             $blocks[] = $acquired;
         }
 
-        $target = $floor->next();
-        if (null !== $target) {
-            $blocks[] = $this->recommendationsBlock($assessment, $target);
-            $quest = $this->nextQuestBlock($assessment);
-            if (null !== $quest) {
-                $blocks[] = $quest;
-            }
-        }
-
-        $notes = $this->notesBlock($assessment->notes);
-        if (null !== $notes) {
-            $blocks[] = $notes;
-        }
-
-        return $blocks;
+        return $this->withProgressionAndNotes($blocks, $assessment, $floor->next());
     }
 
     /**
@@ -195,6 +168,33 @@ final class TextRenderer
     }
 
     // -- Shared building blocks --------------------------------------------------------------
+
+    /**
+     * The tail shared by `evaluatedBlocks()` and `lowConfidenceBlocks()`: the recommendations
+     * towards `$target` (when there is one to reach), the next-quest block that follows them,
+     * and the notes block — appended in this fixed order regardless of status.
+     *
+     * @param list<string> $blocks
+     *
+     * @return list<string>
+     */
+    private function withProgressionAndNotes(array $blocks, Assessment $assessment, ?Level $target): array
+    {
+        if (null !== $target) {
+            $blocks[] = $this->recommendationsBlock($assessment, $target);
+            $quest = $this->nextQuestBlock($assessment);
+            if (null !== $quest) {
+                $blocks[] = $quest;
+            }
+        }
+
+        $notes = $this->notesBlock($assessment->notes);
+        if (null !== $notes) {
+            $blocks[] = $notes;
+        }
+
+        return $blocks;
+    }
 
     private function cappingAxesBlock(Assessment $assessment): string
     {

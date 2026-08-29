@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AiddLevel\Domain\Axis\Parallelism;
 
 use AiddLevel\Domain\Axis;
+use AiddLevel\Domain\Axis\Support\GitActivityPointer;
+use AiddLevel\Domain\Axis\Support\SampleCheck;
 use AiddLevel\Domain\AxisEvaluator;
 use AiddLevel\Domain\AxisVerdict;
-use AiddLevel\Domain\Confidence\Confirmed;
 use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Evidence;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Note;
-use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Threshold\ParallelismThresholds;
@@ -25,8 +25,6 @@ use AiddLevel\Domain\Threshold\SampleFloors;
  */
 final readonly class ParallelismEvaluator implements AxisEvaluator
 {
-    private const string ACTIVITY_FILE = 'git-activity.json';
-
     public function axis(): Axis
     {
         return Axis::Parallelism;
@@ -50,7 +48,7 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
                 notes: [
                     new Note(
                         text: 'médiane absente : fournir parallelism.median_concurrent_branches',
-                        pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.median_concurrent_branches', 'absent'),
+                        pointer: GitActivityPointer::of('parallelism.median_concurrent_branches', 'absent'),
                     ),
                 ],
             );
@@ -61,34 +59,30 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
         $evidences = [
             new Evidence(
                 claim: self::claimForMedian($level, $median),
-                pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.median_concurrent_branches', self::formatNumber($median)),
+                pointer: GitActivityPointer::of('parallelism.median_concurrent_branches', self::formatNumber($median)),
             ),
         ];
 
         $notes = self::peakNote($gitActivity, $median);
 
-        $total = $gitActivity->pullRequestsTotal;
-        if (null === $total || $total < SampleFloors::PARALLELISM_MIN_PR) {
-            $missing = SampleFloors::PARALLELISM_MIN_PR - ($total ?? 0);
+        $total = $gitActivity->pullRequestsTotal ?? 0;
+        $confidence = SampleCheck::confidence($total, SampleFloors::PARALLELISM_MIN_PR, $level, Level::Gold);
 
+        if ($confidence instanceof Range) {
             $notes[] = new Note(
-                text: sprintf('échantillon insuffisant, plancher %d : %d PR manquantes', SampleFloors::PARALLELISM_MIN_PR, $missing),
-                pointer: new Pointer(self::ACTIVITY_FILE, 'pull_requests.total', self::formatNumber((float) ($total ?? 0))),
-            );
-
-            return new AxisVerdict(
-                axis: Axis::Parallelism,
-                level: $level,
-                confidence: new Range($level, Level::Gold, $missing),
-                evidences: $evidences,
-                notes: $notes,
+                text: sprintf(
+                    'échantillon insuffisant, plancher %d : %d PR manquantes',
+                    SampleFloors::PARALLELISM_MIN_PR,
+                    $confidence->missingSample,
+                ),
+                pointer: GitActivityPointer::of('pull_requests.total', self::formatNumber((float) $total)),
             );
         }
 
         return new AxisVerdict(
             axis: Axis::Parallelism,
             level: $level,
-            confidence: new Confirmed(),
+            confidence: $confidence,
             evidences: $evidences,
             notes: $notes,
         );
@@ -110,7 +104,7 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
         return [
             new Note(
                 text: sprintf('pic observé : max %s, non retenu', $maxAsString),
-                pointer: new Pointer(self::ACTIVITY_FILE, 'parallelism.max_concurrent_branches', $maxAsString),
+                pointer: GitActivityPointer::of('parallelism.max_concurrent_branches', $maxAsString),
             ),
         ];
     }
