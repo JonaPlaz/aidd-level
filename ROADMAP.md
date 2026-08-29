@@ -45,3 +45,4 @@ chaque fois).
 | 10 | Fixtures maison | 02–05 | 9 | — | #11 | **mergé** : #26 `53acee1` — 10 fixtures, 👍 Codex sans remarque |
 | 11 | Profil self, méthode, harness.md | 00 § 7–8 | 9, 10 | — | #12 | en revue — reste : passe de refactor, vidéo (Jonathan) |
 | 11 | Profil self, méthode, harness.md, refactor | 00 § 7–8 | 9, 10 | — | #12 | **mergé** : #27 `2eee192` (self, méthode, harness.md), #28 `4da3e0f` (refactor, −128/+65 lignes, tests inchangés) — reste la vidéo (Jonathan) |
+| 12 | Lancement par conteneur vivant — `make up` / `make evaluate` / `make exec` / `make down`, Compose `sleep infinity`, README refait | 00 § 6 (amendée 2026-08-29) | 9, 11 | `compose.yaml`, `Makefile`, `README.md`, `.github/workflows/ci.yml` | #30 | à faire |
