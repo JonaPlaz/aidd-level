@@ -143,13 +143,13 @@ qui reste vivant, piloté par `make` :
 |---|---|
 | `make up` | `docker compose up -d --build` — construit l'image, installe les dépendances, laisse le service `php` tourner (`command: sleep infinity`) |
 | `make demo` | les quatre profils fournis puis `profiles/self` |
-| `make exec` | `docker compose exec php sh` — on est dans le conteneur, l'outil s'y lance aussi tel quel : `bin/aidd-level evaluate profiles/arthur` |
-| `make evaluate arthur` | `docker compose exec php bin/aidd-level evaluate profiles/arthur` — le **nom du profil** suffit (résolu dans `profiles/`, puis `fixtures/`, puis pris comme chemin) ; plusieurs noms acceptés |
+| `make exec` | `docker compose exec php sh` — **on entre dans le conteneur** |
+| `make evaluate arthur` | **tapée dans le conteneur** : `bin/aidd-level evaluate profiles/arthur`, sans Docker — le **nom du profil** suffit (résolu dans `profiles/`, puis `fixtures/`, puis pris comme chemin) ; plusieurs noms acceptés. `make` est installé dans l'image ; tapée hors du conteneur, la cible passe par `docker compose exec` pour que ça marche aussi |
 | `make down` | `docker compose down` |
 | `make test` · `lint` · `dup` · `fmt` | `docker compose exec php …` (le conteneur doit tourner ; message clair sinon) |
 
-Notice du README, deux lignes : `make up` puis `make evaluate arthur` ; `make exec` pour
-entrer dans le conteneur et y taper l'outil soi-même. Repli sans `make`, dans
+Notice du README, trois lignes en deux blocs explicitement titrés **« hors du conteneur »**
+(`make up`, `make exec`) et **« dans le conteneur »** (`make evaluate arthur`). Repli sans `make`, dans
 le README sous la notice : les deux commandes `docker compose` équivalentes, et l'image
 autonome `docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur`
 (le `Dockerfile` garde son `ENTRYPOINT`).
