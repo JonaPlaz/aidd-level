@@ -5,13 +5,20 @@
 
 ## Lancer
 
+**Hors du conteneur** :
+
 ```
 make up
 make exec
-bin/aidd-level evaluate profiles/arthur
 ```
 
-Sortie (dans le conteneur, après `make exec`) :
+**Dans le conteneur** (après `make exec`) :
+
+```
+make evaluate arthur
+```
+
+Sortie :
 
 ```
 ❖ 🔺 🔹 🟢 [🥉] 🥈 🥇
@@ -22,6 +29,9 @@ Niveau atteint : Copper · niveau visé : Silver
 ```
 
 (sortie complète : voir « Exemple de sortie réelle » ci-dessous). Aucune clé d'API, aucun réseau.
+`make evaluate` accepte plusieurs noms (`make evaluate arthur bohort`) ; le nom d'un profil est
+résolu dans `profiles/`, puis `fixtures/`, sinon pris comme chemin tel quel. Tapée hors du
+conteneur, la même commande fonctionne aussi (elle repasse par `docker compose exec`).
 
 **Sans `make`** :
 
@@ -148,14 +158,15 @@ docs/                   specs/ (les décisions produit), calibration.md, journal
 ## Commandes `make`
 
 Tout tourne dans un conteneur de développement vivant (PHP local insuffisant : PHPUnit 13
-exige PHP ≥ 8.4.1). `make up` le construit et le lance ; les autres commandes (sauf `up` et
-`down`) échouent avec « Lance d'abord : make up » s'il ne tourne pas.
+exige PHP ≥ 8.4.1). `make up` le construit et le lance ; les autres commandes (sauf `up`,
+`down` et `evaluate`) échouent avec « Lance d'abord : make up » s'il ne tourne pas.
 
 | Commande | Rôle |
 |---|---|
 | `make up` | construit l'image, la lance (`sleep infinity`), installe les dépendances |
 | `make build` | alias de `make up` |
 | `make exec` | shell interactif dans le conteneur |
+| `make evaluate arthur [bohort ...]` | lance `bin/aidd-level evaluate` sur les profils nommés ; tapée dans le conteneur comme hors du conteneur |
 | `make down` | arrête le conteneur |
 | `make test` | PHPUnit |
 | `make lint` | PHPStan |
