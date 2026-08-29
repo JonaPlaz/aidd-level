@@ -4,11 +4,17 @@
 COMPOSE := docker compose
 EXEC    := $(COMPOSE) exec -T php
 
+# Bash's $$UID isn't exported and $$GID usually isn't set at all, so a bare
+# `docker compose` would silently fall back to the compose file's 1000:1000
+# default; export the real host ids for every invocation below.
+export UID := $(shell id -u)
+export GID := $(shell id -g)
+
 # Duplication threshold (percent). Not sourced by the grid; set at the level of
 # the best profile provided by the subject (leodagan: 1.7 %, arthur: 2.4 %).
 DUPLICATION_MAX_PCT := 3
 
-.PHONY: up build exec down test lint dup demo fmt evaluate require-up
+.PHONY: up build exec down test lint dup demo self fmt evaluate require-up
 
 # Fails with a clear message if the `php` service isn't running, instead of
 # letting `docker compose exec` print its own opaque error.
@@ -18,7 +24,7 @@ require-up:
 
 up:
 	$(COMPOSE) up -d --build
-	$(COMPOSE) exec php composer install --no-interaction --no-progress
+	$(COMPOSE) exec -T php composer install --no-interaction --no-progress
 
 build: up
 
@@ -40,8 +46,12 @@ lint: require-up
 dup: require-up
 	$(EXEC) vendor/bin/phpcpd --min-lines=5 --min-tokens=70 src
 
+# The four supplied profiles only: docs/calibration.md reproduces its verdicts from this
+# exact command, so it must not silently gain an extra, repository-specific profile.
 demo: require-up
 	$(EXEC) bin/aidd-level evaluate profiles/perceval profiles/bohort profiles/leodagan profiles/arthur
+
+self: require-up
 	$(EXEC) bin/aidd-level evaluate profiles/self
 
 fmt: require-up
