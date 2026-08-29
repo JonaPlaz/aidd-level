@@ -141,7 +141,7 @@ qui reste vivant, piloté par `make` :
 
 | Commande | Derrière |
 |---|---|
-| `make up` | `docker compose up -d --build` — construit l'image, installe les dépendances, laisse le service `php` tourner (`command: sleep infinity`) |
+| `make up` | `docker compose up -d --build` **puis** `docker compose exec php composer install` — le montage `.:/app` cache le `vendor/` construit dans l'image, les dépendances s'installent donc dans l'espace de travail monté (remarque Codex, PR #30) ; le service `php` reste vivant (`command: sleep infinity`) |
 | `make demo` | les quatre profils fournis puis `profiles/self` |
 | `make exec` | `docker compose exec php sh` — **on entre dans le conteneur** |
 | `make evaluate arthur` | **tapée dans le conteneur** : `bin/aidd-level evaluate profiles/arthur`, sans Docker — le **nom du profil** suffit (résolu dans `profiles/`, puis `fixtures/`, puis pris comme chemin) ; plusieurs noms acceptés. `make` est installé dans l'image ; tapée hors du conteneur, la cible passe par `docker compose exec` pour que ça marche aussi |
