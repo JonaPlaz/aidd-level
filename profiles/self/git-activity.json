@@ -5,16 +5,16 @@
   },
   "repositories": 1,
   "pull_requests": {
-    "total": 15,
-    "median_files_changed": 6,
+    "total": 17,
+    "median_files_changed": 7,
     "median_lines_changed": 458,
-    "median_correction_commits_after_open": 2,
-    "merged_without_human_edit_after_open": 2
+    "median_correction_commits_after_open": 1,
+    "merged_without_human_edit_after_open": 3
   },
   "commits": {
-    "total": 64,
-    "median_per_pr": 4,
-    "ai_coauthored_ratio": 0.48
+    "total": 68,
+    "median_per_pr": 3,
+    "ai_coauthored_ratio": 0.51
   },
   "parallelism": {
     "max_concurrent_branches": 7,

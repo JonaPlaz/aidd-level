@@ -47,15 +47,19 @@ chiffré, « fournir le champ » avant tout geste) ; **évalué**.
 
 ## Ce que l'outil dit de son propre dépôt
 
-`profiles/self/` est fabriqué depuis l'API GitHub par `scripts/self-profile.py`. Verdict :
-**Blue, par Intervention et Taille ex æquo** — 2 commits correctifs après ouverture en
-médiane, 6 fichiers par PR. Les commits correctifs sont ceux de la boucle de revue : Codex
-commente, Claude Code corrige, aucune main humaine. Le proxy agrégé ne le voit pas ; seule la
-signature commit par commit le verrait, et `git-activity.json` ne la livre pas. C'est la limite
-assumée de l'axe (spec 03), constatée en vrai — et la première version du script se trompait
-encore plus : elle datait les commits par `committer.date`, que chaque rebase réécrit, et lisait
-Red ; Codex l'a vu, `author.date` a corrigé. Le dépôt porte désormais le trailer sur chaque
-commit d'agent.
+`profiles/self/` est fabriqué depuis l'API GitHub par `scripts/self-profile.py`, régénéré en
+fin de chantier (17 PR). Verdict : **Blue, par Taille** — 7 fichiers par PR en médiane, la
+bande M ; Intervention est à 1 commit correctif après ouverture (« aux étapes clés »),
+Harness à behavior sans boucle, En parallèle à 1,5. Le chemin vers Green est donc la taille
+habituelle des chantiers — et la table des gestes le renvoie, comme prévu, au dispositif :
+la taille suit le harnais, elle ne se décrète pas.
+
+Deux leçons mesurées sur ce profil. Les commits correctifs sont ceux de la boucle de revue
+(Codex commente, Claude Code corrige, aucune main humaine) : le proxy agrégé les lit comme
+des reprises — limite assumée de l'axe (spec 03), constatée en vrai. Et la première version
+du script lisait Red : elle datait les commits par `committer.date`, que chaque rebase
+réécrit ; Codex l'a vu, `author.date` a corrigé. Le dépôt porte désormais le trailer sur
+chaque commit d'agent (ratio 0,51 mesuré avant la règle).
 
 ## Comment ça a été construit
 

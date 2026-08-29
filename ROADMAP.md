@@ -44,3 +44,4 @@ chaque fois).
 | 9 | Console, demo, calibration, README | 00 § 6 | 7, 8 | — | #10 | **mergé** : #25 `dd06334` — épreuve du clone propre réussie |
 | 10 | Fixtures maison | 02–05 | 9 | — | #11 | **mergé** : #26 `53acee1` — 10 fixtures, 👍 Codex sans remarque |
 | 11 | Profil self, méthode, harness.md | 00 § 7–8 | 9, 10 | — | #12 | en revue — reste : passe de refactor, vidéo (Jonathan) |
+| 11 | Profil self, méthode, harness.md, refactor | 00 § 7–8 | 9, 10 | — | #12 | **mergé** : #27 `2eee192` (self, méthode, harness.md), #28 `4da3e0f` (refactor, −128/+65 lignes, tests inchangés) — reste la vidéo (Jonathan) |
