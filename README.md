@@ -6,12 +6,35 @@
 ## Lancer
 
 ```
-docker build -t aidd-level .
-docker run --rm aidd-level evaluate profiles/arthur
+make up
+make exec
+bin/aidd-level evaluate profiles/arthur
 ```
 
-Sortie : le niveau, l'axe qui plafonne avec chaque fait et l'endroit où il se constate, puis le
-geste vers le niveau suivant. Aucune clé d'API, aucun réseau.
+Sortie (dans le conteneur, après `make exec`) :
+
+```
+❖ 🔺 🔹 🟢 [🥉] 🥈 🥇
+axe bloquant : Harness et Intervention (ex æquo)
+🥉 Copper — arthur (développeur indépendant)
+Niveau atteint : Copper · niveau visé : Silver
+...
+```
+
+(sortie complète : voir « Exemple de sortie réelle » ci-dessous). Aucune clé d'API, aucun réseau.
+
+**Sans `make`** :
+
+```
+docker compose up -d --build
+docker compose exec php bin/aidd-level evaluate profiles/arthur
+```
+
+**Image autonome** (sans conteneur vivant) :
+
+```
+docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur
+```
 
 ## Ce que fait l'outil
 
@@ -124,17 +147,21 @@ docs/                   specs/ (les décisions produit), calibration.md, journal
 
 ## Commandes `make`
 
-Tout tourne dans Docker (PHP local insuffisant : PHPUnit 13 exige PHP ≥ 8.4.1).
+Tout tourne dans un conteneur de développement vivant (PHP local insuffisant : PHPUnit 13
+exige PHP ≥ 8.4.1). `make up` le construit et le lance ; les autres commandes (sauf `up` et
+`down`) échouent avec « Lance d'abord : make up » s'il ne tourne pas.
 
 | Commande | Rôle |
 |---|---|
-| `make build` | construit l'image et installe les dépendances |
+| `make up` | construit l'image, la lance (`sleep infinity`), installe les dépendances |
+| `make build` | alias de `make up` |
+| `make exec` | shell interactif dans le conteneur |
+| `make down` | arrête le conteneur |
 | `make test` | PHPUnit |
 | `make lint` | PHPStan |
 | `make dup` | détection de duplication |
-| `make demo` | évalue les quatre profils de `profiles/` |
+| `make demo` | évalue les quatre profils de `profiles/` puis `profiles/self` |
 | `make fmt FILE=…` | formate un fichier PHP |
-| `make shell` | shell dans le conteneur |
 
 ## Attribution des profils
 
