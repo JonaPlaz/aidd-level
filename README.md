@@ -36,7 +36,8 @@ conteneur, la même commande fonctionne aussi (elle repasse par `docker compose 
 **Sans `make`** :
 
 ```
-docker compose up -d --build
+UID=$(id -u) GID=$(id -g) docker compose up -d --build
+docker compose exec php composer install --no-interaction --no-progress
 docker compose exec php bin/aidd-level evaluate profiles/arthur
 ```
 
@@ -171,7 +172,8 @@ exige PHP ≥ 8.4.1). `make up` le construit et le lance ; les autres commandes 
 | `make test` | PHPUnit |
 | `make lint` | PHPStan |
 | `make dup` | détection de duplication |
-| `make demo` | évalue les quatre profils de `profiles/` puis `profiles/self` |
+| `make demo` | évalue les quatre profils fournis (contrat de `docs/calibration.md`) |
+| `make self` | évalue `profiles/self` |
 | `make fmt FILE=…` | formate un fichier PHP |
 
 ## Attribution des profils
