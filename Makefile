@@ -1,5 +1,6 @@
 # All commands run inside a live Docker container: local PHP is not guaranteed to be 8.5.
-# `make up` starts it (docker compose exec php ...); every other target requires it running.
+# `make up` starts it (docker compose exec php ...); every other target requires it running,
+# except `evaluate`, which is meant to be typed directly inside the container.
 COMPOSE := docker compose
 EXEC    := $(COMPOSE) exec -T php
 
@@ -7,7 +8,7 @@ EXEC    := $(COMPOSE) exec -T php
 # the best profile provided by the subject (leodagan: 1.7 %, arthur: 2.4 %).
 DUPLICATION_MAX_PCT := 3
 
-.PHONY: up build exec down test lint dup demo fmt require-up
+.PHONY: up build exec down test lint dup demo fmt evaluate require-up
 
 # Fails with a clear message if the `php` service isn't running, instead of
 # letting `docker compose exec` print its own opaque error.
@@ -45,3 +46,32 @@ demo: require-up
 
 fmt: require-up
 	$(EXEC) vendor/bin/php-cs-fixer fix $(FILE) --quiet
+
+# `make evaluate arthur [bohort ...]` — meant to be typed inside the container, straight
+# after `make exec`, without wrapping "docker compose" around the tool. Profile names are
+# picked up from the extra command-line goals (MAKECMDGOALS), caught by the empty pattern
+# rule below so make doesn't complain about "No rule to make target"; `P=` is a fallback for
+# names that don't survive as bare make goals. Each name resolves to `profiles/<name>`, then
+# `fixtures/<name>`, then falls back to the literal path. Typed outside the container
+# (IN_CONTAINER unset), it re-enters via `docker compose exec -T` so it works from either
+# side (docs/specs/00-vue-ensemble.md § 6).
+evaluate:
+	@names="$(strip $(filter-out $@,$(MAKECMDGOALS)) $(P))"; \
+	if [ -z "$$names" ]; then echo "Usage : make evaluate <profil> [<profil>...]"; exit 1; fi; \
+	if [ -n "$$IN_CONTAINER" ]; then \
+		paths=""; \
+		for n in $$names; do \
+			if [ -d "profiles/$$n" ]; then paths="$$paths profiles/$$n"; \
+			elif [ -d "fixtures/$$n" ]; then paths="$$paths fixtures/$$n"; \
+			else paths="$$paths $$n"; fi; \
+		done; \
+		bin/aidd-level evaluate $$paths; \
+	else \
+		$(MAKE) --no-print-directory require-up; \
+		$(COMPOSE) exec -T php make evaluate $$names; \
+	fi
+
+# Swallows the profile names passed alongside `evaluate` (e.g. `make evaluate arthur`) so
+# make doesn't treat them as targets to build in their own right.
+%:
+	@:
