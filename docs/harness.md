@@ -17,8 +17,8 @@ La spec 08 décrit l'intention ; ce fichier décrit le fait. Les pointeurs sont 
 - **Parallélisme calculé** : six fronts ouverts après le noyau (chantiers 2–7), sans conflit
   de fichiers — le découpage par axe a tenu. Intégration en cascade séquentielle (check
   `strict`), ~3 min par PR.
-- **Le tool sur lui-même** : `profiles/self/` régénéré par script, verdict Blue par
-  Intervention et Taille (voir `docs/methode.md`) — après une première lecture Red due à un
+- **Le tool sur lui-même** : `profiles/self/` régénéré par script en fin de chantier (17 PR),
+  verdict Blue par Taille (voir `docs/methode.md`) — après une première lecture Red due à un
   script qui comptait les rebases comme des corrections, corrigée sur remarque Codex.
 
 ## Ce qui a été coupé ou revu
