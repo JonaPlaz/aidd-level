@@ -14,6 +14,7 @@ use AiddLevel\Domain\Axis\Intervention\InterventionEvaluator;
 use AiddLevel\Domain\Axis\Parallelism\ParallelismEvaluator;
 use AiddLevel\Domain\Axis\Size\SizeEvaluator;
 use AiddLevel\Domain\AxisEvaluator;
+use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Exception\ProfileNotAssessable;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Profile\ContextFiles;
@@ -246,6 +247,125 @@ final class EvaluateProfileHandlerTest extends TestCase
 
         $noteTexts = array_map(static fn ($note): string => $note->text, $assessment->notes);
         self::assertContains('pièce annoncée, absente : session.md', $noteTexts);
+    }
+
+    #[Test]
+    public function aBlankProfileIdNeverBuildsABlankPointerAndIsNotedInstead(): void
+    {
+        // Codex review of PR #24, remark 1: `profile_id` present but blank in profile.json.
+        $sandbox = $this->sandbox();
+        file_put_contents($sandbox.'/profile.json', json_encode(['profile_id' => '']));
+
+        $handler = $this->handlerWithRealSource();
+        $assessment = $handler->handle(new EvaluateProfile($sandbox));
+
+        self::assertSame(AssessmentStatus::NotAssessable, $assessment->status);
+        self::assertNotNull($assessment->identity);
+        self::assertSame('', $assessment->identity->id);
+        $noteTexts = array_map(static fn ($note): string => $note->text, $assessment->notes);
+        self::assertContains('profile_id absent', $noteTexts);
+
+        $this->cleanup($sandbox);
+    }
+
+    #[Test]
+    public function anAbsentContextFilesBlockIsNeverWhiteFiltered(): void
+    {
+        // Codex review of PR #24, remark 2: the filter only fires once context_files was
+        // actually read and confirms nothing is there — an absent block falls through to
+        // HarnessEvaluator, which renders its own non-observable Range.
+        $profile = $this->profileWith(new GitActivity(
+            period: null,
+            pullRequestsTotal: 20,
+            medianFilesChanged: 10.0,
+            medianLinesChanged: 200.0,
+            medianCorrectionCommitsAfterOpen: 1.0,
+            mergedWithoutHumanEditAfterOpen: 5,
+            aiCoauthoredRatio: 0.0,
+            maxConcurrentBranches: 2,
+            medianConcurrentBranches: 1.0,
+            contextFiles: null,
+        ));
+
+        $handler = $this->handlerWithFixtureSource($profile);
+        $assessment = $handler->handle(new EvaluateProfile('unused'));
+
+        self::assertSame(AssessmentStatus::LowConfidence, $assessment->status);
+
+        $harness = null;
+        foreach ($assessment->verdicts as $verdict) {
+            if (Axis::Harness === $verdict->axis) {
+                $harness = $verdict;
+            }
+        }
+
+        self::assertNotNull($harness);
+        self::assertInstanceOf(Range::class, $harness->confidence);
+    }
+
+    #[Test]
+    public function axisVerdictNotesReachTheAssessmentPrefixedByTheirAxis(): void
+    {
+        // Codex review of PR #24, remark 3: bohort's Parallelism axis carries a "peak
+        // observed, not retained" note (max_concurrent_branches = 3, median = 1) that the
+        // renderer can only ever show via Assessment::$notes.
+        $handler = $this->handlerWithRealSource();
+
+        $assessment = $handler->handle(new EvaluateProfile(self::PROFILES_DIR.'/bohort'));
+
+        $noteTexts = array_map(static fn ($note): string => $note->text, $assessment->notes);
+        $matches = array_filter(
+            $noteTexts,
+            static fn (string $text): bool => str_starts_with($text, 'En parallèle : pic observé'),
+        );
+
+        self::assertNotEmpty($matches);
+    }
+
+    #[Test]
+    public function theMissingPrerequisiteAndHintSplitOnBytesNotCharacters(): void
+    {
+        // Codex review of PR #24, remark 4: the em dash separator is multi-byte, strpos()
+        // returns a byte offset — mb_strlen() on the separator sliced the hint two bytes
+        // short. Asserted against the real, unmodified DirectoryProfileSource message.
+        $handler = $this->handlerWithRealSource();
+
+        $assessment = $handler->handle(new EvaluateProfile(self::PROFILES_DIR.'/does-not-exist'));
+
+        self::assertSame(
+            self::PROFILES_DIR."/does-not-exist n'est pas un dossier lisible",
+            $assessment->missingPrerequisite,
+        );
+        self::assertSame('fournir un chemin de dossier de profil existant', $assessment->hint);
+    }
+
+    #[Test]
+    public function signalAbsentRecommendationsComeBeforeOrdinaryGesturesEvenExAequo(): void
+    {
+        // Codex review of PR #24, remark 5: Taille's median is absent (signal absent) while
+        // Parallelism sits at a genuine, measured White (median = 0, not absent) — both cap
+        // the level at White, ex æquo, but the "fournir" recommendation must still lead.
+        $profile = $this->profileWith(new GitActivity(
+            period: null,
+            pullRequestsTotal: 20,
+            medianFilesChanged: null,
+            medianLinesChanged: null,
+            medianCorrectionCommitsAfterOpen: 1.0,
+            mergedWithoutHumanEditAfterOpen: 1,
+            aiCoauthoredRatio: 0.5,
+            maxConcurrentBranches: 0,
+            medianConcurrentBranches: 0.0,
+            contextFiles: new ContextFiles(agentsMd: true, rules: 1, skills: 0, hooks: 0, agents: 0),
+        ));
+
+        $handler = $this->handlerWithFixtureSource($profile);
+        $assessment = $handler->handle(new EvaluateProfile('unused'));
+
+        self::assertContains(Axis::Size, $assessment->cappingAxes);
+        self::assertContains(Axis::Parallelism, $assessment->cappingAxes);
+        self::assertNotEmpty($assessment->recommendations);
+        self::assertSame(Axis::Size, $assessment->recommendations[0]->axis);
+        self::assertStringStartsWith('fournir le champ', $assessment->recommendations[0]->gesture);
     }
 
     private function handlerWithRealSource(): EvaluateProfileHandler

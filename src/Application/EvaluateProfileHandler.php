@@ -18,9 +18,11 @@ use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\GitActivity;
 use AiddLevel\Domain\Profile\Profile;
+use AiddLevel\Domain\Profile\ProfileIdentity;
 use AiddLevel\Domain\Profile\SonarMeasures;
 use AiddLevel\Domain\ProfileSource;
 use AiddLevel\Domain\Progression\RecommendationPolicy;
+use AiddLevel\Domain\Recommendation;
 
 /**
  * The only use case (docs/specs/00-vue-ensemble.md § 4.2): gate (via `ProfileSource`, §
@@ -74,10 +76,66 @@ final readonly class EvaluateProfileHandler
             cappingAxes: $result->cappingAxes,
             verdicts: $verdicts,
             recommendations: null !== $target
-                ? $this->recommendationPolicy->recommend($verdicts, $result->cappingAxes, $target)
+                ? $this->prioritizeSignalAbsent($this->recommendationPolicy->recommend($verdicts, $result->cappingAxes, $target))
                 : [],
-            notes: $this->buildNotes($profile, $request->path),
+            notes: [...$this->axisNotes($verdicts), ...$this->buildNotes($profile, $request->path)],
         );
+    }
+
+    /**
+     * Codex review of PR #24, remark 5: a "fournir le champ …" recommendation
+     * (docs/specs/06-sortie-et-progression.md § Signal absent d'abord) is not actionable by
+     * the developer at all — it names a dossier-assembly gap, not a gesture — so it must lead
+     * the plan even when it sits behind an ordinary gesture in `RecommendationPolicy::AXIS_ORDER`
+     * (e.g. Parallelism ex æquo with a signal-absent Size at White). `RecommendationTable`'s
+     * own gestures never start with this exact French verb phrase, so the check is reliable
+     * without duplicating `RecommendationPolicy`'s private signal-absent detection here.
+     * `usort`/array_values keep PHP's stable sort: relative order within each group survives.
+     *
+     * @param list<Recommendation> $recommendations
+     *
+     * @return list<Recommendation>
+     */
+    private function prioritizeSignalAbsent(array $recommendations): array
+    {
+        $isSignalAbsent = static fn (Recommendation $recommendation): bool => str_starts_with($recommendation->gesture, 'fournir le champ ');
+
+        return [
+            ...array_values(array_filter($recommendations, $isSignalAbsent)),
+            ...array_values(array_filter($recommendations, static fn (Recommendation $r): bool => !$isSignalAbsent($r))),
+        ];
+    }
+
+    /**
+     * Codex review of PR #24, remark 3: `AxisVerdict::$notes` (absent field, short sample,
+     * peak not retained, structural-proof mismatch…) never reached the reader — the renderer
+     * only reads `Assessment::$notes`. Each one is copied here, prefixed by its axis so the
+     * reader knows which axis it is about, its pointer kept exactly as the evaluator built it.
+     *
+     * @param list<AxisVerdict> $verdicts
+     *
+     * @return list<Note>
+     */
+    private function axisNotes(array $verdicts): array
+    {
+        $notes = [];
+        foreach ($verdicts as $verdict) {
+            foreach ($verdict->notes as $note) {
+                $notes[] = new Note(sprintf('%s : %s', $this->axisLabel($verdict->axis), $note->text), $note->pointer);
+            }
+        }
+
+        return $notes;
+    }
+
+    private function axisLabel(Axis $axis): string
+    {
+        return match ($axis) {
+            Axis::Size => 'Taille',
+            Axis::Harness => 'Harness',
+            Axis::Intervention => 'Intervention',
+            Axis::Parallelism => 'En parallèle',
+        };
     }
 
     /**
@@ -94,9 +152,13 @@ final readonly class EvaluateProfileHandler
     /**
      * docs/specs/05-robustesse.md § Filtre White: `commits.ai_coauthored_ratio = 0` (strictly,
      * a real zero, never an absent ratio) **and** no `context_files` counter at all — every
-     * counter null or zero, with `agents_md` explicitly `false`. Absent entirely
-     * (`contextFiles === null`) counts as "no counter" too: there is nothing to show either
-     * way. `perceval` (ratio 0.04) never enters this branch (docs/specs/05 § Filtre White).
+     * counter null or zero, with `agents_md` explicitly `false`. `context_files` entirely
+     * absent is *not* the same as "every counter zero" (Codex review of PR #24, remark 2): the
+     * filter only fires once `context_files` was actually read and confirms nothing is there;
+     * an absent `context_files` block falls through to `HarnessEvaluator`, which already
+     * renders its own non-observable `Range` (docs/specs/05 § Signal absent) — the filter must
+     * never fabricate an `agents_md = false` pointer nobody observed. `perceval` (ratio 0.04)
+     * never enters this branch either (docs/specs/05 § Filtre White).
      */
     private function isWhiteFiltered(GitActivity $gitActivity): bool
     {
@@ -106,7 +168,7 @@ final readonly class EvaluateProfileHandler
 
         $contextFiles = $gitActivity->contextFiles;
         if (null === $contextFiles) {
-            return true;
+            return false;
         }
 
         if (false !== $contextFiles->agentsMd) {
@@ -166,10 +228,7 @@ final readonly class EvaluateProfileHandler
         $identity = $exception->partialIdentity;
         $notes = [];
         if (null !== $identity) {
-            $notes[] = new Note(
-                sprintf('identité lisible malgré tout : %s', $identity->id),
-                new Pointer('profile.json', 'profile_id', $identity->id),
-            );
+            $notes[] = $this->identityNote($identity);
         }
 
         return new Assessment(
@@ -187,10 +246,33 @@ final readonly class EvaluateProfileHandler
     }
 
     /**
+     * docs/specs/05-robustesse.md § Trois statuts de sortie: "ce qui a été lu quand même" — a
+     * partial identity always has a profile_id, but that field can itself be an empty string
+     * (`profile_id` present in `profile.json` yet blank). A `Pointer` refuses a blank value
+     * (Codex review of PR #24, remark 1): the identity note names that gap instead of letting
+     * `Pointer`'s guard turn a NotAssessable result into an uncaught exception of its own.
+     */
+    private function identityNote(ProfileIdentity $identity): Note
+    {
+        if ('' === trim($identity->id)) {
+            return new Note('profile_id absent', new Pointer('profile.json', 'profile_id', 'absent'));
+        }
+
+        return new Note(
+            sprintf('identité lisible malgré tout : %s', $identity->id),
+            new Pointer('profile.json', 'profile_id', $identity->id),
+        );
+    }
+
+    /**
      * @return array{0: string, 1: ?string}
      */
     private static function splitPrerequisite(string $message): array
     {
+        // Codex review of PR #24, remark 4: `strpos()` returns a byte offset, so the offset
+        // arithmetic must stay in bytes too — `strlen()`, never `mb_strlen()`. The separator
+        // itself is multi-byte (the em dash `—` alone is 3 bytes in UTF-8), so the previous
+        // `mb_strlen()` undercounted it and sliced `$hint` two bytes short, corrupting it.
         $separator = ' — ';
         $position = strpos($message, $separator);
 
@@ -198,7 +280,7 @@ final readonly class EvaluateProfileHandler
             return [$message, null];
         }
 
-        return [substr($message, 0, $position), substr($message, $position + mb_strlen($separator))];
+        return [substr($message, 0, $position), substr($message, $position + \strlen($separator))];
     }
 
     /**
