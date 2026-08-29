@@ -1,0 +1,27 @@
+{
+  "period": {
+    "from": "2026-01-01",
+    "to": "2026-06-30"
+  },
+  "pull_requests": {
+    "total": 20,
+    "median_files_changed": 13,
+    "median_lines_changed": 500,
+    "median_correction_commits_after_open": 0,
+    "merged_without_human_edit_after_open": 15
+  },
+  "commits": {
+    "ai_coauthored_ratio": 0.8
+  },
+  "parallelism": {
+    "max_concurrent_branches": 4,
+    "median_concurrent_branches": 3
+  },
+  "context_files": {
+    "agents_md": true,
+    "rules_count": 1,
+    "skills_count": 1,
+    "hooks_count": 1,
+    "agents_count": 0
+  }
+}

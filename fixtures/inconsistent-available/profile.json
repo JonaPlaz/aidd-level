@@ -1,0 +1,13 @@
+{
+  "profile_id": "inconsistent-available",
+  "role": "développeuse",
+  "experience_years": 5,
+  "stack": [
+    "Ruby"
+  ],
+  "team_size": 3,
+  "available": [
+    "git-activity.json",
+    "session.md"
+  ]
+}

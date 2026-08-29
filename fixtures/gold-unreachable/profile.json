@@ -1,0 +1,14 @@
+{
+  "profile_id": "gold-unreachable",
+  "role": "tech lead",
+  "experience_years": 10,
+  "stack": [
+    "Go",
+    "Kubernetes"
+  ],
+  "team_size": 6,
+  "available": [
+    "git-activity.json",
+    "repo-context/"
+  ]
+}

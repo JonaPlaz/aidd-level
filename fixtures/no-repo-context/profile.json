@@ -1,0 +1,17 @@
+{
+  "profile_id": "no-repo-context",
+  "role": "développeur indépendant",
+  "experience_years": 9,
+  "stack": [
+    "Python",
+    "FastAPI",
+    "TypeScript",
+    "React",
+    "Terraform"
+  ],
+  "team_size": 1,
+  "available": [
+    "git-activity.json"
+  ],
+  "note": "Mêmes signaux que arthur (profiles/arthur), sans repo-context/."
+}

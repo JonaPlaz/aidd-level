@@ -1,0 +1,15 @@
+{
+  "profile_id": "short-sample",
+  "role": "tech lead",
+  "experience_years": 11,
+  "stack": [
+    "Go",
+    "TypeScript",
+    "React",
+    "Kubernetes"
+  ],
+  "team_size": 8,
+  "available": [
+    "git-activity.json"
+  ]
+}

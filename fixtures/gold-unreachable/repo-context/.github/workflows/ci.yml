@@ -1,0 +1,13 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install
+        run: make build
+      - name: Test with retry
+        uses: nick-invision/retry@v2
+        with:
+          max_attempts: 3
+          command: make test

@@ -1,0 +1,12 @@
+{
+  "profile_id": "counters-no-memory",
+  "role": "développeur",
+  "experience_years": 3,
+  "stack": [
+    "Java"
+  ],
+  "team_size": 4,
+  "available": [
+    "git-activity.json"
+  ]
+}
