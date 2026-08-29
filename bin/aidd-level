@@ -5,8 +5,9 @@ declare(strict_types=1);
 
 require __DIR__.'/../vendor/autoload.php';
 
-use Symfony\Component\Console\Application;
+use AiddLevel\Infrastructure\Console\ApplicationFactory;
 
-$application = new Application('aidd-level', '0.1.0');
-// Commands are registered by the Infrastructure layer (see docs/specs/00-vue-ensemble.md).
+// Wiring lives in the Infrastructure layer (docs/specs/00-vue-ensemble.md § 4.4: no DI
+// container, a wiring class is enough).
+$application = ApplicationFactory::createConsoleApplication();
 $application->run();
