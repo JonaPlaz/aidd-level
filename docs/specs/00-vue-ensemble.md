@@ -142,13 +142,14 @@ qui reste vivant, piloté par `make` :
 | Commande | Derrière |
 |---|---|
 | `make up` | `docker compose up -d --build` — construit l'image, installe les dépendances, laisse le service `php` tourner (`command: sleep infinity`) |
-| `make evaluate P=profiles/arthur` | `docker compose exec php bin/aidd-level evaluate $(P)` ; `P` accepte plusieurs dossiers et un chemin externe sous le dossier monté |
 | `make demo` | les quatre profils fournis puis `profiles/self` |
-| `make exec` | `docker compose exec php sh` |
+| `make exec` | `docker compose exec php sh` — **on est dans le conteneur** ; l'outil s'y lance directement : `bin/aidd-level evaluate profiles/arthur` |
 | `make down` | `docker compose down` |
 | `make test` · `lint` · `dup` · `fmt` | `docker compose exec php …` (le conteneur doit tourner ; message clair sinon) |
 
-Notice du README : `make up` puis `make evaluate P=profiles/arthur`. Repli sans `make`, dans
+Notice du README, trois lignes : `make up`, `make exec`, puis dans le conteneur
+`bin/aidd-level evaluate profiles/arthur`. Pas de cible `make evaluate` : l'exec est déjà
+fait, la commande de l'outil se tape telle quelle. Repli sans `make`, dans
 le README sous la notice : les deux commandes `docker compose` équivalentes, et l'image
 autonome `docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur`
 (le `Dockerfile` garde son `ENTRYPOINT`).
