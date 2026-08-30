@@ -76,9 +76,11 @@ verdict d'ouverture (revue ou réaction 👍 ; `@codex review` ne sert qu'aux re
 exceptionnelles) avec `gh api --paginate` sur `…/reviews`, `…/comments` et
 `…/issues/{n}/reactions`, plafond `REVIEW_WAIT_MAX = 20 min` (valeur initiale d'après la PR
 #13 : revue reçue ≈ 12 min après le dernier push ; délais suivants consignés dans
-`docs/harness.md`). Puis **une passe de correction** qui traite toutes les remarques, **une
-réponse tracée par remarque** dans le fil de la PR (appliqué en `<sha>`, ou non appliqué et
-motif), rebase, et seulement alors `gh pr merge --auto`. **Rien ne s'arme avant le verdict
+`docs/harness.md`). Puis **une passe de correction** qui traite toutes les remarques, **rebase et push
+d'abord** (amendé le 2026-08-30, remarque Codex sur la PR #38 : un rebase après coup réécrit
+le SHA cité), puis **une réponse tracée par remarque** dans le fil de la PR (appliqué en
+`<sha>` présent sur la branche, ou non appliqué et motif), et seulement alors
+`gh pr merge --auto`. **Rien ne s'arme avant le verdict
 d'ouverture** — c'est le point que Jonathan a fixé : GitHub ne merge jamais avant que Codex
 ait eu le temps de revoir. Re-revue jamais automatique : seulement si la correction change
 une décision de scoring, ou sur demande. Délai dépassé ou quota épuisé → journal, label

@@ -36,12 +36,12 @@ une implémentation. `docs/calibration.md` est la preuve chiffrée sur les quatr
 |---|---|
 | Niveau = **minimum** des quatre axes ; cellule = minimum, pas valeur exacte | spec 00 § 2 |
 | **Médiane**, jamais maximum (Taille, En parallèle) | specs 01, 04 |
-| Intervention = médiane des commits correctifs après ouverture, seuils 3/2/1/0 ; **aucune pièce ne donne l'auteur par commit**, le ratio humain/IA par branche est incalculable | spec 03 |
+| Intervention = médiane des commits correctifs après ouverture, bandes `≥ 3` Red, `≥ 2` Blue, `> 0` Copper (0,5 inclus), `= 0` Silver ; **aucune pièce ne donne l'auteur par commit**, le ratio humain/IA par branche est incalculable | spec 03 |
 | `declaratif.md` hors calcul ; `session.md`, `code/` **non lus** ; `pull-requests.json` écarté | specs 00 § 3, 03 |
 | Champ absent (`null`) ≠ zéro : jamais coercé, axe non observable → fourchette + note | spec 05 § Signal absent |
 | Harness cumule : behavior sans mémoire n'existe pas ; boucle = relance **et** borne | spec 02 |
 | Gold Intervention inatteignable par construction (cadrage automatisé non observable) | spec 03 |
-| Codex revoit **une fois** à l'ouverture ; `+1` = verdict favorable ; merge par `--auto`, jamais synchrone | spec 08, CLAUDE.md § Flow |
+| Codex revoit **une fois** à l'ouverture ; `+1` = verdict favorable ; seule re-revue : `@codex review` si la correction change un seuil, un niveau ou la règle du minimum ; merge par `--auto`, jamais synchrone | spec 08, CLAUDE.md § Flow |
 
 ## Où en est le projet
 
