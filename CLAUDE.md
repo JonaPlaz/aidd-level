@@ -22,18 +22,15 @@
   — c'est le signal que la grille lit (« commit signé par un assistant ») ; sans lui, le dépôt
   se note lui-même à tort (constaté : ratio 0,48 sur `profiles/self`).
 
-## Flow d'une PR — ne jamais improviser
+## Flow d'une PR — imposé par le harnais
 
-- Une issue → `/feature <n°>` : le skill porte spec, dev, revue, merge. À la main seulement pour
-  une PR de docs ou de profils, et alors **le même flow** :
-  1. PR ouverte (`gh pr create`), label `to-review`, attendre le verdict Codex : réaction `eyes` = en cours,
-     `+1` = sans remarque, revue `COMMENTED` = remarques inline (`gh api …/pulls/<n>/comments`).
-  2. Remarques : une passe de correction, **rebase et push `--force-with-lease` d'abord**, puis
-     **une réponse tracée par remarque** citant le SHA présent sur la branche (« appliqué en
-     `<sha>` » ou « non appliqué, motif »). Si la correction change un seuil, un niveau ou la
-     règle du minimum : `@codex review` avant d'armer (seule re-revue admise).
-  3. Armer : `gh pr merge <n> --auto --squash --delete-branch`, **dans tous les cas**, 👍 compris.
-     **Jamais de merge synchrone** (refusé par le classifieur, et hors flow). Le cron
-     `auto-merge-after-codex` (chantier 15) n'est qu'un filet pour le 👍 oublié.
-- Après merge : `git checkout main && git pull`, ligne au journal avec pointeur.
-
+- **Toute PR naît d'une issue et passe par `/feature <n°>`**, docs comprises. Le skill est
+  invocable par la session ; le hook `guard-git` refuse `gh pr create` hors d'un run du skill
+  et tout `gh pr merge` synchrone (seuls `--auto` et `--disable-auto` passent).
+- Ce que le skill garantit, dans l'ordre : label `to-review` ; attente du verdict Codex
+  (`eyes` = en cours, `+1` = sans remarque, revue `COMMENTED` = remarques inline) ; une passe
+  de correction ; **rebase et push d'abord**, puis une réponse tracée par remarque citant le SHA
+  présent sur la branche ; `@codex review` seulement si la correction change un seuil, un
+  niveau ou la règle du minimum ; `gh pr merge --auto --squash --delete-branch` dans tous les
+  cas ; ligne au journal avec pointeur.
+- Le cron `auto-merge-after-codex` (chantier 15) n'est qu'un filet pour un 👍 resté sans suite.

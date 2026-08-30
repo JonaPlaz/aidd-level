@@ -63,7 +63,7 @@ adaptation assumée, revue au journal si une borne est atteinte.
 | Skill | Frontmatter | Rôle |
 |---|---|---|
 | `bootstrap` | `disable-model-invocation: true`, `allowed-tools: Bash Write Read` | § 07, une fois |
-| `feature` | `argument-hint: [issue-number]`, `disable-model-invocation: true` | enchaîne spec → validation → dev → PR → attente de review → correction → merge auto, sans intervention après validation. Mode `--trivial` pour la PR jetable |
+| `feature` | `argument-hint: [issue-number]` (invocable par le modèle depuis le 2026-08-30, chantier 16) | enchaîne spec → validation → dev → PR → attente de review → correction → merge auto, sans intervention après validation. Mode `--trivial` pour la PR jetable |
 
 **Attente de review (local)** : l'agent `dev` rend la main dès la PR ouverte ; **le skill
 possède la boucle** (une seule responsabilité, remarque Codex sur la PR #13). Les opérations
@@ -103,6 +103,15 @@ cron ne lit que le 👍.
 Historique : « une passe » (26 août) → « autant de passes que Codex en demande » (29 août,
 PR #15) → « une revue, une passe, réponses tracées » (29 août, quota). Chaque étape est au
 journal.
+
+**Le cycle est imposé, pas rappelé** (amendé le 2026-08-30, chantier 16). Constat : quatre PR
+ouvertes à la main en une matinée, hors skill, avec à chaque fois un pas du cycle oublié
+(label, armement, merge synchrone tenté). `disable-model-invocation: true` sur `feature`
+(posé au chantier 0 sans motif écrit) obligeait un humain à taper `/feature` — l'inverse du
+but. Levé : la session lance le skill elle-même. Et le hook `guard-git` refuse `gh pr create`
+hors d'un run du skill (marqueur `<git common dir>/feature.lock`, posé au premier geste du
+skill, retiré au dernier, visible depuis les worktrees) et tout `gh pr merge` sans `--auto`
+ni `--disable-auto`. Une PR de docs passe aussi par une issue et `/feature`.
 
 **Iron rule** : une fois l'agent dev engagé sur une issue, le skill ne revient pas au routage ;
 il termine, ou s'arrête sur une borne.
