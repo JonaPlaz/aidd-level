@@ -1,0 +1,60 @@
+name: auto-merge-after-codex
+
+# docs/specs/08-harnais.md § Armement par la plateforme. A reaction fires no Actions event,
+# so this runs on a schedule. For every open, non-draft PR without the `blocked` label:
+#   - a +1 reaction from the Codex bot newer than the head commit → arm auto-merge, bound to
+#     that head (`--match-head-commit`), so a concurrent push fails the arming instead of
+#     merging an unreviewed head;
+#   - auto-merge already armed but the head moved past the latest +1 → disarm, the new head
+#     has not been reviewed (a writer's push does not disarm auto-merge by itself).
+# GitHub then merges by itself once `ci` is green and the branch is up to date.
+# One PR failing never stops the others (Codex review of PR #37).
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  arm:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      CODEX_BOT: chatgpt-codex-connector[bot]
+    steps:
+      - name: Arm or disarm auto-merge according to the Codex thumbs-up
+        run: |
+          set -uo pipefail
+          gh pr list --repo "$REPO" --state open --limit 500 \
+            --json number,isDraft,labels,autoMergeRequest,headRefOid \
+            --jq '.[] | select(.isDraft | not)
+                       | select([.labels[].name] | index("blocked") | not)
+                       | "\(.number) \(.headRefOid) \(.autoMergeRequest != null)"' \
+          | while read -r number head_sha armed; do
+              head_date=$(gh api "repos/$REPO/commits/$head_sha" --jq '.commit.committer.date') || { echo "#$number: cannot read head, skipping"; continue; }
+              thumbs_date=$(gh api --paginate "repos/$REPO/issues/$number/reactions" \
+                --jq "[.[] | select(.user.login == \"$CODEX_BOT\" and .content == \"+1\") | .created_at] | max // empty") || { echo "#$number: cannot read reactions, skipping"; continue; }
+
+              fresh=false
+              if [ -n "$thumbs_date" ] && [[ ! "$thumbs_date" < "$head_date" ]]; then
+                fresh=true
+              fi
+
+              if [ "$fresh" = true ] && [ "$armed" = false ]; then
+                echo "#$number: Codex thumbs-up at $thumbs_date on head $head_sha, arming auto-merge"
+                gh pr merge "$number" --repo "$REPO" --auto --squash --delete-branch --match-head-commit "$head_sha" \
+                  || echo "#$number: arming failed, will retry next run"
+              elif [ "$fresh" = false ] && [ "$armed" = true ]; then
+                echo "#$number: auto-merge armed but head $head_sha is newer than the last thumbs-up (${thumbs_date:-none}), disarming"
+                gh pr merge "$number" --repo "$REPO" --disable-auto \
+                  || echo "#$number: disarming failed, will retry next run"
+              else
+                echo "#$number: nothing to do (fresh=$fresh armed=$armed)"
+              fi
+            done
+          exit 0
