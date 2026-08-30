@@ -27,14 +27,34 @@ dans la liste `allow` de `.claude/settings.json` : aucun arrêt pour permission.
 
 - `gh issue view <n°>` : lire le titre, le corps, la spec citée.
 - Spec citée présente dans `docs/specs/` **et committée sur `origin/main`** → étape 2.
-- Présente mais non committée (validée à l'invocation précédente) → branche
-  `docs/spec-<n°>`, commit, push, PR `docs:` avec label `to-review`, boucle de l'étape 3.
-  `--auto` n'est pas un merge synchrone : **attendre `gh pr view <pr> --json mergedAt`
-  non nul** (toutes les 60 s, même plafond), puis `git fetch origin main`, puis étape 2. Le
-  worktree de l'agent `dev` part d'`origin/main` : une spec qui n'y est pas n'existe pas
-  pour lui.
 - Absente → lancer l'agent `spec`, puis **s'arrêter** : « spec écrite, à valider ». Ne pas
-  poursuivre dans la même invocation.
+  poursuivre dans la même invocation. Les questions de l'agent vivent dans son **rendu**,
+  jamais dans le fichier.
+- **Réponses reçues → relancer l'agent `spec` avec elles → il les intègre au texte normatif
+  et supprime toute question → alors seulement le commit** (docs/specs/08-harnais.md § 12.2).
+- **Spec validée, présente dans l'arbre de travail, non committée** (sans question ouverte —
+  déjà validée telle quelle, ou déjà intégrée par la branche précédente) → même chemin : le
+  contrôle avant commit ci-dessous, puis le commit.
+
+  Les deux branches convergent sur le contrôle avant commit, sur les lignes ajoutées aux
+  specs par cette PR — pas le dépôt entier, pas même le fichier entier :
+
+  ```
+  for f in $(git diff --name-only origin/main -- docs/specs;
+             git ls-files --others --exclude-standard -- docs/specs); do
+    git add -N -- "$f"                                  # sans quoi une spec neuve reste invisible
+    git diff -U0 origin/main -- "$f" | sed -n 's/^+//p' \
+      | grep -Ei '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)|\?[[:space:]]*$' \
+      | grep -vi historique
+  done
+  ```
+
+  Toute occurrence arrête le commit : la spec repart à l'agent `spec` pour intégration, pas
+  au commit. Sans occurrence → branche `docs/spec-<n°>`, commit, push, PR `docs:` avec label
+  `to-review`, boucle de l'étape 3. `--auto` n'est pas un merge synchrone : **attendre
+  `gh pr view <pr> --json mergedAt` non nul** (toutes les 60 s, même plafond), puis
+  `git fetch origin main`, puis étape 2. Le worktree de l'agent `dev` part d'`origin/main` :
+  une spec qui n'y est pas n'existe pas pour lui.
 - `--trivial` : pas d'agent, une ligne ajoutée au README, PR ouverte, étape 3.
 
 ## 2. Implémentation

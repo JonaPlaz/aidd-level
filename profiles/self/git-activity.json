@@ -1,32 +1,32 @@
 {
   "period": {
     "from": "2026-08-28",
-    "to": "2026-08-29"
+    "to": "2026-08-30"
   },
   "repositories": 1,
   "pull_requests": {
-    "total": 20,
-    "median_files_changed": 5.5,
-    "median_lines_changed": 432.5,
-    "median_correction_commits_after_open": 1.5,
-    "merged_without_human_edit_after_open": 4
+    "total": 35,
+    "median_files_changed": 5,
+    "median_lines_changed": 367,
+    "median_correction_commits_after_open": 1,
+    "merged_without_human_edit_after_open": 8
   },
   "commits": {
-    "total": 80,
-    "median_per_pr": 3.5,
-    "ai_coauthored_ratio": 0.59
+    "total": 116,
+    "median_per_pr": 3,
+    "ai_coauthored_ratio": 0.72
   },
   "parallelism": {
     "max_concurrent_branches": 7,
-    "median_concurrent_branches": 1.5
+    "median_concurrent_branches": 1.0
   },
   "context_files": {
     "agents_md": true,
     "rules_count": 0,
-    "skills_count": 2,
-    "hooks_count": 4,
-    "agents_count": 2,
-    "last_updated": "2026-08-29"
+    "skills_count": 3,
+    "hooks_count": 6,
+    "agents_count": 3,
+    "last_updated": "2026-08-30"
   },
   "assistant_usage": {
     "declared_tools": [
