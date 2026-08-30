@@ -47,9 +47,9 @@ une implémentation. `docs/calibration.md` est la preuve chiffrée sur les quatr
 
 Mis à jour à chaque fin de chantier — une ligne, pas un historique (l'historique est `ROADMAP.md`).
 
-- **2026-08-30** : chantiers 0–12 mergés. Profils `venec` et `lancelot` (sans niveau) ajoutés
-  (#35). En cours : 15 (auto-merge par Actions, #37), 13 (note « sur la borne », ratio absent,
-  spec #36). À spécifier : 14 (boucles resserrées). Reste : vidéo (Jonathan).
+- **2026-08-30** : chantiers 0–12, 15, 16 mergés. En cours : 13 (issue #40, lancé par
+  `/feature` depuis la session). À spécifier : 14 (boucles resserrées). Profils `venec` et
+  `lancelot` (sans niveau) ajoutés (#35). Reste : vidéo (Jonathan).
 
 ## Stack et commandes
 
