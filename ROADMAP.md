@@ -66,4 +66,4 @@ commit. Deux chantiers de lisibilité et de robustesse en découlent, sans touch
 | 14 | Détection de boucle resserrée | 02 § Boucles | 13 | — | #45 | **mergé** : #50 `9b8e0e1` |
 | 18 | Mémoire projet | 08 § 12 | 17 | — | #49 | **mergé** : #53 `fddc825` |
 | 19 | READMEs d'architecture — panneaux une page : `.claude/README.md` (harnais), `src/README.md` (hexagonal), pointeurs vers specs, zéro duplication (source unique `AGENTS.md`) | 00 § 7 (à amender) | 18 | `.claude/README.md`, `src/README.md` | #56 | à spécifier |
-| 19 | READMEs d'architecture | 00 § 7 | 18 | — | #56 | **mergé** : spec #58 `47bfa04`, panneaux #59 `06587c6` |
+| 19 | Documentation par partie — quatre panneaux, README réduit à trois choses, la doc suit le code | 00 § 7 (2026-08-30) | 18 | `.claude/README.md`, `src/README.md`, `profiles/README.md`, `docs/sortie.md`, `README.md`, `AGENTS.md`, `docs/specs/00-vue-ensemble.md`, `docs/specs/07-amorcage.md`, `docs/specs/08-harnais.md`, `profiles/self/` | #56 | **mergé** : spec #58 `47bfa04`, panneaux #59 `06587c6` |
