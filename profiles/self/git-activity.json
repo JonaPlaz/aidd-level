@@ -5,16 +5,16 @@
   },
   "repositories": 1,
   "pull_requests": {
-    "total": 35,
-    "median_files_changed": 5,
+    "total": 39,
+    "median_files_changed": 4,
     "median_lines_changed": 367,
     "median_correction_commits_after_open": 1,
     "merged_without_human_edit_after_open": 8
   },
   "commits": {
-    "total": 116,
+    "total": 128,
     "median_per_pr": 3,
-    "ai_coauthored_ratio": 0.72
+    "ai_coauthored_ratio": 0.74
   },
   "parallelism": {
     "max_concurrent_branches": 7,

@@ -59,15 +59,7 @@ Mis à jour à chaque fin de chantier — une ligne, pas un historique (l'histor
 ## Stack et commandes
 
 PHP 8.5, `symfony/console ^7.4`, PHPUnit 13. Tout tourne dans Docker (PHP local insuffisant).
-
-| Commande | Rôle |
-|---|---|
-| `make build` | construit l'image et installe les dépendances |
-| `make test` | PHPUnit |
-| `make lint` | PHPStan |
-| `make dup` | détection de duplication |
-| `make demo` | évalue les quatre profils de `profiles/` |
-| `make fmt FILE=…` | formate un fichier PHP |
+Table des cibles : `README.md § Commandes`.
 
 Les commandes du projet passent par `make` (Docker) ; ne pas lancer `php`, `composer` ni
 `vendor/bin/*` directement.
@@ -135,3 +127,7 @@ Points à vérifier sur chaque pull request, dans cet ordre :
 9. **Une spec ne contredit pas sa propre fin** : aucune question ouverte, aucune section
    d'arbitrage qui décide, aucun seuil ni nom de constante cité en deux valeurs différentes
    dans le même fichier.
+10. **La doc suit le code** : une PR qui rend faux un panneau de documentation
+    (`.claude/README.md`, `src/README.md`, `profiles/README.md`, `docs/sortie.md`,
+    `README.md`) le corrige dans la même PR ; la table chemin → panneau est en
+    `docs/specs/00-vue-ensemble.md § 7.5`.
