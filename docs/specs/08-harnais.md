@@ -751,12 +751,14 @@ for f in $(git diff --name-only origin/main -- docs/specs;
            git ls-files --others --exclude-standard -- docs/specs); do
   git add -N -- "$f"                                  # sans quoi une spec neuve reste invisible
   git diff -U0 origin/main -- "$f" | sed -n 's/^+//p' \
-    | grep -Ei '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)' \
+    | grep -Ei '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)|\?[[:space:]]*$' \
     | grep -vi historique
 done
 ```
 
-Toute occurrence arrête le commit. Trois propriétés, chacune pour une raison :
+Toute occurrence arrête le commit. Le dernier segment du motif, une ligne qui se termine par
+`?`, attrape la question ordinaire qui n'a pas la forme d'un marqueur (« Faut-il … ? ») ; le
+filtre `historique` continue de s'appliquer. Trois propriétés, chacune pour une raison :
 
 - **`git add -N` et `git ls-files --others --exclude-standard`** : le cas nominal de ce cycle est
   une spec **créée** par l'agent `spec`, donc non suivie ; un contrôle qui ne lit que
