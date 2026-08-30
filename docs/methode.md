@@ -17,9 +17,12 @@ sont »). L'axe qui plafonne est du même coup l'explication et le chemin : le m
 produit la note et son pourquoi, rien n'est reconstruit après coup.
 
 **Pourquoi ces seuils.** Aucun n'est dans la grille. Les bandes de taille viennent des mesures
-publiées sur les PR après adoption de l'IA (médiane 66 → 210 lignes ; 20 fichiers / 1 000
-lignes, le point où la revue casse). Les seuils d'intervention traduisent mot pour mot la
-colonne « ce qu'on observe ». Tous vivent dans des constantes nommées de `src/Domain/Threshold/`,
+publiées sur les PR après adoption de l'IA (médiane 66 → 210 lignes,
+[Brodzinski](https://brodzinski.com/2026/07/3x-pull-request-size-ai.html) ; 20 fichiers / 1 000
+lignes, le point où la revue casse,
+[Salesforce](https://engineering.salesforce.com/scaling-code-reviews-adapting-to-a-surge-in-ai-generated-code/)).
+Les seuils d'intervention traduisent mot pour mot la colonne « ce qu'on observe ». Tous vivent
+dans des constantes nommées de `src/Domain/Threshold/`,
 avec leur origine en commentaire — ce qui est une adaptation le dit. Éprouvés sur les quatre
 profils fournis **sans ajustement** : 4/4 (`docs/calibration.md`), et sur dix profils fictifs
 couvrant ce que le jeu fourni ne prouve pas (Silver, White, échantillons courts, champs absents).
@@ -28,6 +31,30 @@ couvrant ce que le jeu fourni ne prouve pas (Silver, White, échantillons courts
 pour 4 % de commits IA). Sonar est cité, jamais jugé : la qualité est le prérequis, pas un axe.
 `pull-requests.json` est inventorié, pas comparé : ses commits par PR ne sont pas des commits
 correctifs.
+
+## Détection de boucles
+
+Une boucle au sens de la grille, c'est une relance **et** une borne, ensemble, trouvées dans
+`repo-context/` (spec 02 § Boucles) — l'une sans l'autre ne compte pas.
+
+- **Positif** : fixture `fixtures/silver-loop`,
+  `repo-context/.github/workflows/ci.yml` — `retry` (relance) et `max_attempts: 3` (borne) à
+  quelques lignes d'écart → détecté, Harness Gold sur cet axe.
+- **Négatif** : `arthur`, `docs/brainstorm/2026-06-auto-retry.md` en parle (« Not decided »),
+  sans l'implémenter — un brainstorm n'est pas un script, rien n'est détecté.
+
+Une relance sans borne n'est pas une boucle au sens de la grille, c'est un risque.
+
+## Le socle
+
+- **Preuve structurelle** : chaque ligne du rendu porte un pointeur vérifiable, `fichier ›
+  champ = valeur` (`Evidence`, `Pointer` — `src/Domain/Evidence.php`, `src/Domain/Pointer.php`),
+  rien ne s'affirme sans lui.
+- **`null` jamais coercé en zéro** : un champ absent rend l'axe non observable, jamais un score
+  dégradé silencieux (spec 05 § *Signal absent*).
+- **Fourchette et confiance basse** : sous le plancher d'échantillon (`SampleFloors`), le
+  verdict sort en fourchette (plancher observé → Gold) avec le manque chiffré, jamais un point
+  inventé (spec 01 § Confiance ; spec 05).
 
 ## Comment on explique
 
