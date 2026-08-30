@@ -85,3 +85,4 @@ Sortie complète, annotée bloc par bloc : `docs/sortie.md`.
 - `src/README.md` — l'architecture du projet, hexagonale à trois couches.
 - `profiles/README.md` — les entrées, ce que l'outil lit.
 - `docs/sortie.md` — les sorties, ce que l'outil rend.
+- `docs/methode.md` — la méthode complète : entrées, calcul, sortie.

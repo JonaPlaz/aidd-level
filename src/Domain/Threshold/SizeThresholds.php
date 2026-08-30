@@ -11,8 +11,10 @@ namespace AiddLevel\Domain\Threshold;
  *
  * Neither the grid, the AIDD framework nor the AIDD manifesto give these bands: assumed
  * adaptation, not sourced by them. Files S/M come from a pre-AI/post-AI median lines split
- * (Brodzinski, 2026: ~66 then 210 lines) reused as the M/L split for files by proximity; L/XL
- * reuses the Salesforce "20 files and 1000 lines" threshold where code review breaks down.
+ * (Brodzinski, 2026: ~66 then 210 lines, https://brodzinski.com/2026/07/3x-pull-request-size-ai.html)
+ * reused as the M/L split for files by proximity; L/XL reuses the Salesforce "20 files and
+ * 1000 lines" threshold where code review breaks down
+ * (https://engineering.salesforce.com/scaling-code-reviews-adapting-to-a-surge-in-ai-generated-code/).
  * Validated against the four supplied profiles (2, 7, 13, 29 files → S, M, L, XL).
  */
 final class SizeThresholds

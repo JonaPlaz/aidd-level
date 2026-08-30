@@ -24,6 +24,9 @@ fichiers (bande M) et il est Blue = M. **L'ordre inverse le déclasse.**
 | L | 9–20 | 211–1000 | seuil Salesforce « 20 fichiers et 1000 lignes » où la review casse |
 | XL | > 20 | > 1000 | idem |
 
+Sources : Brodzinski, 2026 — https://brodzinski.com/2026/07/3x-pull-request-size-ai.html ;
+Salesforce — https://engineering.salesforce.com/scaling-code-reviews-adapting-to-a-surge-in-ai-generated-code/
+
 Ni la grille, ni le framework AIDD, ni le manifeste AIDD ne donnent de bornes : **adaptation
 assumée**, pas standard. Validée sur les quatre profils (2, 7, 13, 29 fichiers → S, M, L, XL).
 
