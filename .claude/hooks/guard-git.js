@@ -20,9 +20,19 @@ const command = (input.tool_input && input.tool_input.command) || '';
 // (spec 08 § Le cycle est imposé, chantier 16).
 checkGh(command, projectRoot(input));
 
+// Checkout guard (spec 08 § 11.5): once more than one /feature-run lock exists, the main
+// checkout is read-only for git — an agent `front` must never touch it while another front
+// (or the session's own roadmap fetch) is live there; the branch operations of a front stay
+// in the worktree of its `dev` agent.
+const GUARDED_SUBCOMMANDS = new Set(['checkout', 'switch', 'rebase', 'merge', 'commit', 'push']);
+
 const invocations = parseGitAll(command);
 for (const [index, git] of invocations.entries()) {
   const root = git.cPath ? path.resolve(projectRoot(input), git.cPath) : projectRoot(input);
+
+  if (GUARDED_SUBCOMMANDS.has(git.subcommand) && locksCount(root) > 1 && isMainCheckout(root)) {
+    block(`guard-git: git ${git.subcommand} on the main checkout is refused while ${locksCount(root)} /feature locks are held (spec 08 § 11.5); operate from the owning worktree instead.`);
+  }
 
   // Bare --force, -f (alone or bundled), force-prefixed refspecs (`+HEAD:branch`), --mirror.
   if (git.subcommand === 'push') {
@@ -108,8 +118,10 @@ function checkGh(command, root) {
 }
 
 // A lock `<n°>` authorizes branches carrying that number as a token (`feat/40-slug`,
-// `docs/spec-40`); a lock `trivial-*` authorizes `trivial/*` branches. Any other lock present
-// belongs to another run and authorizes nothing here.
+// `docs/spec-40`); a lock `trivial-*` authorizes `trivial/*` branches. A lock `roadmap-*`
+// authorizes no branch at all — it only exists for the few seconds of the /roadmap selection
+// window (spec 08 § 11.5) and never owns a PR. Any other lock present belongs to another run
+// and authorizes nothing here.
 function branchOwnsALock(root) {
   let branch = '';
   try {
@@ -123,5 +135,30 @@ function branchOwnsALock(root) {
   } catch {
     return false;
   }
-  return ids.some((id) => (id.startsWith('trivial-') ? branch.startsWith('trivial/') : new RegExp(`(^|[-/])${id}([-/]|$)`).test(branch)));
+  return ids.some((id) => {
+    if (id.startsWith('roadmap-')) return false;
+    if (id.startsWith('trivial-')) return branch.startsWith('trivial/');
+    return new RegExp(`(^|[-/])${id}([-/]|$)`).test(branch);
+  });
+}
+
+function locksCount(root) {
+  try {
+    return fs.readdirSync(locksDir(root)).length;
+  } catch {
+    return 0;
+  }
+}
+
+// The main checkout is where `--git-dir` and `--git-common-dir` coincide; any other worktree
+// (an agent's `dev` worktree, a throwaway test repo) has its own `--git-dir` under
+// `<common>/worktrees/<name>`.
+function isMainCheckout(root) {
+  try {
+    const gitDir = path.resolve(root, execSync('git rev-parse --git-dir', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());
+    const commonDir = path.resolve(root, execSync('git rev-parse --git-common-dir', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());
+    return gitDir === commonDir;
+  } catch {
+    return false;
+  }
 }

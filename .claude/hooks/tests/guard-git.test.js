@@ -28,16 +28,28 @@ assert.match(run('gh pr -R JonaPlaz/aidd-level create --title x'), /^block:/);
 assert.match(run('gh pr --repo=JonaPlaz/aidd-level create'), /^block:/);
 lock('lock', '41');
 assert.match(run('gh pr create --title x'), /^block:/, 'a lock of another run authorizes nothing');
+lock('unlock', '41'); // keep a single lock at a time: two locks now guard the main checkout (below)
 lock('lock', '40');
 assert.equal(run('gh pr create --title x'), 'pass');
 assert.equal(run('git push -u origin feat/40-x && gh pr create --label to-review'), 'pass');
+// A second run's lock coexisting does not affect `gh` commands (only guarded git subcommands,
+// tested below): `gh pr create` still passes on the owning branch, and `unlock` removes only
+// the run that called it.
+lock('lock', '41');
+assert.equal(run('gh pr create --title x'), 'pass', 'a second lock does not disown this branch');
 lock('unlock', '40');
 assert.match(run('gh pr create --title x'), /^block:/, 'unlock removes only this run\'s lock');
+assert.match(execSync(`node ${path.join(hooks, 'feature-lock.js')} list`, { cwd: repo, encoding: 'utf8' }), /41/, 'the other run\'s lock survives');
 lock('unlock', '41');
 execSync('git checkout -q -b trivial/readme-line', { cwd: repo });
 lock('lock', 'trivial-1');
 assert.equal(run('gh pr create'), 'pass');
 lock('unlock', 'trivial-1');
+
+// gh pr create: a `roadmap-*` lock authorizes no branch at all (spec 08 § 11.5).
+lock('lock', 'roadmap-20260830120000');
+assert.match(run('gh pr create'), /^block:/, 'a roadmap-* lock authorizes no branch');
+lock('unlock', 'roadmap-20260830120000');
 
 // gh pr merge: --auto / --disable-auto only.
 assert.match(run('gh pr merge 1 --squash'), /^block: guard-git: synchronous gh pr merge/);
@@ -60,6 +72,22 @@ execSync('git add src', { cwd: repo });
 assert.match(run('git commit -m x'), /^block: guard-git: a commit must not touch/);
 execSync('git reset -q src/Infrastructure', { cwd: repo });
 assert.equal(run('git commit -m x'), 'pass');
+
+// Checkout guard (spec 08 § 11.5): once more than one /feature lock exists, git operations
+// on the main checkout are refused; a secondary worktree is unaffected, and a single lock
+// does not guard anything.
+lock('lock', '10');
+lock('lock', '11');
+assert.match(run('git checkout -b x'), /^block: guard-git: git checkout on the main checkout/);
+assert.match(run('git switch -c y'), /^block:/);
+assert.match(run('git rebase origin/main'), /^block:/);
+const wt = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-git-wt-'));
+execSync(`git worktree add -q -b feat/10-in-worktree ${wt}`, { cwd: repo });
+assert.equal(run('git commit --allow-empty -m x', wt), 'pass', 'a secondary worktree is not guarded');
+execSync(`git worktree remove -f ${wt}`, { cwd: repo });
+lock('unlock', '10');
+lock('unlock', '11');
+assert.equal(run('git checkout -q main'), 'pass', 'a single (or no) lock does not guard the main checkout');
 
 fs.rmSync(repo, { recursive: true, force: true });
 console.log('guard-git: all violation tests pass');
