@@ -5,8 +5,9 @@ name: auto-merge-after-codex
 #   - a +1 reaction from the Codex bot newer than the head commit → arm auto-merge, bound to
 #     that head (`--match-head-commit`), so a concurrent push fails the arming instead of
 #     merging an unreviewed head;
-#   - auto-merge already armed but the head moved past the latest +1 → disarm, the new head
-#     has not been reviewed (a writer's push does not disarm auto-merge by itself).
+#   - auto-merge already armed, a +1 exists but the head moved past it → disarm, the new head
+#     has not been reviewed (a writer's push does not disarm auto-merge by itself). No +1 at
+#     all is the "with remarks" path: the agent armed it after its traced replies, leave it.
 # GitHub then merges by itself once `ci` is green and the branch is up to date.
 # One PR failing never stops the others (Codex review of PR #37).
 
@@ -49,8 +50,8 @@ jobs:
                 echo "#$number: Codex thumbs-up at $thumbs_date on head $head_sha, arming auto-merge"
                 gh pr merge "$number" --repo "$REPO" --auto --squash --delete-branch --match-head-commit "$head_sha" \
                   || echo "#$number: arming failed, will retry next run"
-              elif [ "$fresh" = false ] && [ "$armed" = true ]; then
-                echo "#$number: auto-merge armed but head $head_sha is newer than the last thumbs-up (${thumbs_date:-none}), disarming"
+              elif [ -n "$thumbs_date" ] && [ "$fresh" = false ] && [ "$armed" = true ]; then
+                echo "#$number: auto-merge armed but head $head_sha is newer than the last thumbs-up ($thumbs_date), disarming"
                 gh pr merge "$number" --repo "$REPO" --disable-auto \
                   || echo "#$number: disarming failed, will retry next run"
               else
