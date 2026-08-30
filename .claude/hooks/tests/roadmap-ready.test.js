@@ -1,4 +1,5 @@
-// Unit tests of the front-maturity rule (spec 08 § 11.9). Each case is a `ROADMAP.md`
+// Unit tests of the front-maturity rule (spec 08 § 11.9) and of the correction pass on
+// PR #51 (fourteen points, each referenced by number below). Each case is a `ROADMAP.md`
 // fixture plus a `gh` state injected by plain objects/functions — never the network. Disk
 // and git facts genuinely local (locks, pause marker, fetch, spec-on-origin) run against a
 // disposable git repository, like guard-git.test.js.
@@ -12,7 +13,19 @@ const path = require('node:path');
 const { execSync, spawnSync } = require('node:child_process');
 
 const hooksDir = path.resolve(__dirname, '..');
-const { scan, MAX_CONCURRENT_FRONTS } = require(path.join(hooksDir, 'roadmap-ready.js'));
+const roadmapReady = require(path.join(hooksDir, 'roadmap-ready.js'));
+const {
+  scan,
+  render,
+  MAX_CONCURRENT_FRONTS,
+  parseSpecPrefixes,
+  parseDependsOn,
+  branchIssueNumbers,
+  lockRoadmapSelector,
+  unlockRoadmapSelector,
+  sweepStaleRoadmapLock,
+  roadmapSelectorLockFile,
+} = roadmapReady;
 const { locksDir, pausedMarker } = require(path.join(hooksDir, 'lib.js'));
 
 function header() {
@@ -29,7 +42,6 @@ function writeRoadmap(dir, rows) {
   fs.writeFileSync(path.join(dir, 'ROADMAP.md'), header() + rows.join('\n') + '\n');
 }
 
-// Default fixture: only one to-implement candidate (#2, chantier 2), spec present.
 const NO_GH_CALL = () => {
   throw new Error('unexpected gh call in this test');
 };
@@ -44,14 +56,15 @@ function baseOpts(dir, overrides) {
       blockedIssueOpen: () => false,
       openPRs: () => [],
       dependencyIssueView: NO_GH_CALL,
+      confirmPRMerged: () => null, // unknown by default: never silently confirms nor denies
     },
     overrides,
   );
 }
 
-// -- Condition 2: dependency maturity --------------------------------------------------
+// -- Point 0: closedByPullRequestsReferences carries no per-entry `state` -------------------
 
-// Case 1: dependency issue open → discarded.
+// Case 1: dependency issue open → discarded, no gap (point 8: OPEN is an ordinary wait).
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | #1 | à faire |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
@@ -63,17 +76,19 @@ function baseOpts(dir, overrides) {
   );
   assert.equal(r.ready.length, 0);
   assert.equal(r.notReady.length, 1);
+  assert.equal(r.gaps.length, 0, 'an open dependency is not a gap (point 8)');
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 2: dependency issue CLOSED with a merged PR, ROADMAP état line still missing → satisfied.
+// Case 2: dependency issue CLOSED with a reference (the real gh shape has no `state` field on
+// the reference itself, point 0), ROADMAP état line still missing → satisfied.
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | #1 | à faire |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
   const r = scan(
     baseOpts(dir, {
       toImplementIssues: () => [{ number: 2, body: '', labels: [] }],
-      dependencyIssueView: () => ({ state: 'CLOSED', closedByPullRequestsReferences: [{ state: 'MERGED' }] }),
+      dependencyIssueView: () => ({ state: 'CLOSED', closedByPullRequestsReferences: [{ id: 'PR_1', number: 9, repository: 'aidd-level', url: 'https://x' }] }),
     }),
   );
   assert.equal(r.ready.length, 1);
@@ -81,7 +96,24 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 3: dependency issue CLOSED without a merged PR → discarded, gap printed.
+// Case 2bis: an optional confirmation contradicting the reference (pr view state !== MERGED)
+// overrides it back to "not merged".
+(() => {
+  const dir = repo();
+  writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | #1 | à faire |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
+  const r = scan(
+    baseOpts(dir, {
+      toImplementIssues: () => [{ number: 2, body: '', labels: [] }],
+      dependencyIssueView: () => ({ state: 'CLOSED', closedByPullRequestsReferences: [{ number: 9 }] }),
+      confirmPRMerged: () => false,
+    }),
+  );
+  assert.equal(r.ready.length, 0);
+  assert.equal(r.gaps.length, 1);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// Case 3: dependency issue CLOSED with no reference at all → discarded, gap printed.
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | #1 | à faire |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
@@ -93,6 +125,23 @@ function baseOpts(dir, overrides) {
   );
   assert.equal(r.ready.length, 0);
   assert.equal(r.gaps.length, 1);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// Point 8: a `gh` read failure on a single dependency is "not ready, no gap" — never a global
+// scan failure, never counted as an écart.
+(() => {
+  const dir = repo();
+  writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | #1 | à faire |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
+  const r = scan(
+    baseOpts(dir, {
+      toImplementIssues: () => [{ number: 2, body: '', labels: [] }],
+      dependencyIssueView: () => null,
+    }),
+  );
+  assert.equal(r.ready.length, 0);
+  assert.equal(r.degraded, false, 'a single dependency read failure never degrades the whole scan');
+  assert.equal(r.gaps.length, 0, 'a read failure is not a gap');
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
@@ -109,9 +158,46 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// -- Condition 5: overlapping outputs ----------------------------------------------------
+// -- Point 1: only the spec identifier(s) at the head of a cell, never every two-digit number --
 
-// Case 5: outputs shared with a front already open (open PR referencing another issue) → discarded.
+(() => {
+  assert.deepEqual(parseSpecPrefixes('00 § 4.1'), ['00']);
+  assert.deepEqual(parseSpecPrefixes('03 § Médiane sur la borne, 02 § Ratio absent'), ['03', '02']);
+  assert.deepEqual(parseSpecPrefixes('08 § 11 (2026-08-30)'), ['08'], 'the year is not a spec number');
+  assert.deepEqual(parseSpecPrefixes('02–05 « non prouvé »'), ['02'], 'only the head of the range, never both bounds');
+})();
+
+// -- Point 12: an unrecognised "Dépend de" fragment fails the candidate closed --------------
+
+(() => {
+  assert.deepEqual(parseDependsOn('—'), { ok: true, deps: [] });
+  assert.deepEqual(parseDependsOn('2, 3, 4'), { ok: true, deps: [2, 3, 4] });
+  assert.deepEqual(parseDependsOn('2–4'), { ok: true, deps: [2, 3, 4] });
+  assert.equal(parseDependsOn('1 / 2').ok, false, 'an unrecognised fragment must not parse as "no dependencies"');
+})();
+
+(() => {
+  const dir = repo();
+  writeRoadmap(dir, ['| 2 | Front | 00 | 1 / 2 | `src/B/` | #2 | à faire |']);
+  const r = scan(baseOpts(dir, { toImplementIssues: () => [{ number: 2, body: '', labels: [] }] }));
+  assert.equal(r.ready.length, 0);
+  assert.match(r.notReady[0].reason, /illisible/);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// -- Point 11: outputs absent or "—" make overlap undecidable — never silently "no overlap" -
+
+(() => {
+  const dir = repo();
+  writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | — | **mergé** : #9 `abc1234` |', '| 2 | Front | 00 | 1 | — | #2 | à faire |']);
+  const r = scan(baseOpts(dir, { toImplementIssues: () => [{ number: 2, body: '', labels: [] }] }));
+  assert.equal(r.ready.length, 0);
+  assert.match(r.notReady[0].reason, /indécidable/);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// -- Condition 5 (unchanged): outputs shared with a front already open --------------------
+
 (() => {
   const dir = repo();
   writeRoadmap(dir, [
@@ -130,9 +216,8 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// -- Condition 3: lock present -----------------------------------------------------------
+// -- Condition 3 (unchanged): lock present --------------------------------------------------
 
-// Case 6: a `feature-locks/<n°>` file present → discarded.
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | — | **mergé** : #9 `abc1234` |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
@@ -144,9 +229,15 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// -- Condition 4: open PR already referencing the issue ----------------------------------
+// -- Point 10: every numeric token of a branch name is compared, not just the first ---------
 
-// Case 7: an open PR carries the number as a branch token → discarded.
+(() => {
+  assert.deepEqual(branchIssueNumbers('feat/40-slug'), [40]);
+  assert.deepEqual(branchIssueNumbers('feat/40-12-fix'), [40, 12]);
+  assert.deepEqual(branchIssueNumbers('docs/spec-40'), [40]);
+  assert.deepEqual(branchIssueNumbers('chore/unrelated'), []);
+})();
+
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | — | **mergé** : #9 `abc1234` |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
@@ -156,21 +247,26 @@ function baseOpts(dir, overrides) {
       openPRs: () => [{ number: 50, headRefName: 'feat/2-front', body: '', labels: [] }],
     }),
   );
-  assert.equal(r1.ready.length, 0);
-  // Case 7bis: or `Closes #<n°>` in the body, on an unrelated branch name.
+  assert.equal(r1.ready.length, 0, 'branch token exactly matching the candidate');
   const r2 = scan(
     baseOpts(dir, {
       toImplementIssues: () => [{ number: 2, body: '', labels: [] }],
-      openPRs: () => [{ number: 51, headRefName: 'chore/unrelated', body: 'Closes #2', labels: [] }],
+      openPRs: () => [{ number: 51, headRefName: 'feat/40-2-fix', body: '', labels: [] }],
     }),
   );
-  assert.equal(r2.ready.length, 0);
+  assert.equal(r2.ready.length, 0, 'a second numeric token in the branch name must also be compared');
+  const r3 = scan(
+    baseOpts(dir, {
+      toImplementIssues: () => [{ number: 2, body: '', labels: [] }],
+      openPRs: () => [{ number: 52, headRefName: 'chore/unrelated', body: 'Closes #2', labels: [] }],
+    }),
+  );
+  assert.equal(r3.ready.length, 0, 'Closes #<n> in the body');
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// -- Condition 6: spec presence on origin/main -------------------------------------------
+// -- Condition 6 (unchanged): spec presence on origin/main -----------------------------------
 
-// Case 8: spec absent from origin/main → classed "à spécifier", never retained.
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 2 | Front | 99 | — | `src/B/` | #2 | à faire |']);
@@ -185,8 +281,6 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 8bis: default implementation against a real disposable repo (spec 08 § 11.9: "dépôt
-// jetable"), no injection — an origin remote genuinely lacking docs/specs/17-*.md.
 (() => {
   const origin = repo();
   const dir = repo();
@@ -206,10 +300,8 @@ function baseOpts(dir, overrides) {
   fs.rmSync(origin, { recursive: true, force: true });
 })();
 
-// -- Global brakes --------------------------------------------------------------------------
+// -- Global brakes (unchanged) ---------------------------------------------------------------
 
-// Case 9: an open PR labelled `blocked` → retained list empty, brake announced; same for an
-// open issue labelled `blocked` (tested separately).
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 2 | Front | 00 | — | `src/B/` | #2 | à faire |']);
@@ -222,8 +314,6 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 10: pause marker present → empty list, brake "pause"; `resume` (removing the marker)
-// brings the list back.
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 1 | Noyau | 00 | — | `src/A/` | — | **mergé** : #9 `abc1234` |', '| 2 | Front | 00 | 1 | `src/B/` | #2 | à faire |']);
@@ -238,8 +328,6 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 11: `git fetch` failing (or exceeding FETCH_TIMEOUT) → empty list, brake "remote state
-// unknown" — real failure against a disposable repo whose `origin` does not exist.
 (() => {
   const dir = repo();
   execSync('git remote add origin /nonexistent/path/for/sure', { cwd: dir });
@@ -250,7 +338,8 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 12: five ready fronts → three retained, ascending order (MAX_CONCURRENT_FRONTS).
+// -- Point 4: order of service is by chantier number, not by issue number -------------------
+
 (() => {
   const dir = repo();
   const rows = [];
@@ -270,22 +359,84 @@ function baseOpts(dir, overrides) {
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
-// Case 13: `gh` failing, `ROADMAP.md` unreadable, outside a git repository → empty output, exit 0.
 (() => {
+  // Chantier numbers deliberately in the opposite order of their issue numbers.
   const dir = repo();
-  const r1 = scan(baseOpts(dir, { toImplementIssues: NO_GH_CALL }));
-  // ROADMAP.md was never written in this fixture: unreadable → silent, empty.
-  assert.equal(r1.ready.length, 0);
-  assert.equal(r1.paused, false);
-  assert.equal(r1.remoteUnknown, false);
+  writeRoadmap(dir, [
+    '| 5 | Chantier cinq | 00 | — | `src/F5/` | #20 | à faire |',
+    '| 3 | Chantier trois | 00 | — | `src/F3/` | #21 | à faire |',
+  ]);
+  const r = scan(
+    baseOpts(dir, {
+      toImplementIssues: () => [
+        { number: 20, body: '', labels: [] },
+        { number: 21, body: '', labels: [] },
+      ],
+    }),
+  );
+  assert.deepEqual(
+    r.ready.map((c) => c.chantier),
+    [3, 5],
+    'ascending chantier order',
+  );
+  assert.deepEqual(
+    r.ready.map((c) => c.issue),
+    [21, 20],
+    'issue #21 (chantier 3) is served before issue #20 (chantier 5)',
+  );
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// -- Point 7: gh issue/pr list calls request --limit 500 -------------------------------------
+
+(() => {
+  const src = fs.readFileSync(path.join(hooksDir, 'roadmap-ready.js'), 'utf8');
+  const ghListCalls = [...src.matchAll(/gh(?:Json)?\(\[('issue'|'pr'), 'list'[^\]]*\]/g)];
+  assert.ok(ghListCalls.length >= 4, 'expected at least the four gh …list… call sites');
+  for (const call of ghListCalls) {
+    assert.match(call[0], /'--limit', GH_LIST_LIMIT/, `missing --limit on: ${call[0]}`);
+  }
+  assert.match(src, /GH_LIST_LIMIT = '500'/);
+})();
+
+// -- Point 13: a degraded scan (ROADMAP.md unreadable, gh failing, deadline exceeded) prints
+// as such, never as "aucun front prêt" ------------------------------------------------------
+
+(() => {
+  const dir = repo(); // no ROADMAP.md written
+  const r = scan(baseOpts(dir, { toImplementIssues: NO_GH_CALL }));
+  assert.equal(r.ready.length, 0);
+  assert.equal(r.degraded, true, 'ROADMAP.md missing must degrade the scan, not "no front ready"');
+  assert.match(render(r), /scan dégradé/);
+  assert.doesNotMatch(render(r), /aucun front prêt/);
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
 (() => {
   const dir = repo();
   writeRoadmap(dir, ['| 2 | Front | 00 | — | `src/B/` | #2 | à faire |']);
-  const r = scan(baseOpts(dir, { toImplementIssues: NO_GH_CALL })); // `gh` fails
+  const r = scan(baseOpts(dir, { toImplementIssues: NO_GH_CALL })); // `gh` throws
   assert.equal(r.ready.length, 0);
+  assert.equal(r.degraded, true);
+  assert.match(render(r), /scan dégradé/);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// Point 3: the shared deadline already spent when the scan starts degrades it too.
+(() => {
+  const dir = repo();
+  writeRoadmap(dir, ['| 2 | Front | 00 | — | `src/B/` | #2 | à faire |']);
+  const past = Date.now() - 10 * 60_000; // now() so far in the past that remaining() is 0 throughout
+  const r = scan(
+    baseOpts(dir, {
+      now: past,
+      toImplementIssues: () => {
+        throw new Error('ROADMAP_SCAN_TIMEOUT_MS dépassé');
+      },
+    }),
+  );
+  assert.equal(r.ready.length, 0);
+  assert.equal(r.degraded, true);
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
@@ -294,6 +445,75 @@ function baseOpts(dir, overrides) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'roadmap-ready-nogit-'));
   const proc = spawnSync('node', [path.join(hooksDir, 'roadmap-ready.js')], { cwd: dir, env: Object.assign({}, process.env, { CLAUDE_PROJECT_DIR: dir }), encoding: 'utf8' });
   assert.equal(proc.status, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+// -- Points 2 and 5: the roadmap-selector exclusive lock -------------------------------------
+
+(() => {
+  const dir = repo();
+  const a = lockRoadmapSelector(dir);
+  assert.equal(a.ok, true);
+  const b = lockRoadmapSelector(dir); // a second, concurrent acquisition attempt
+  assert.equal(b.ok, false, 'a live roadmap-selector lock refuses a second acquisition');
+  assert.ok(fs.existsSync(roadmapSelectorLockFile(dir)));
+  unlockRoadmapSelector(dir);
+  assert.ok(!fs.existsSync(roadmapSelectorLockFile(dir)));
+  const c = lockRoadmapSelector(dir);
+  assert.equal(c.ok, true, 'unlock frees the selector for the next run');
+  assert.notEqual(a.id, c.id, 'ids are unique (timestamp + pid)');
+  unlockRoadmapSelector(dir);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+(() => {
+  // A lock left by a process that no longer exists is swept before anything else acts on it.
+  const dir = repo();
+  fs.mkdirSync(locksDir(dir), { recursive: true });
+  const deadPid = 999999; // exceedingly unlikely to be a live pid
+  fs.writeFileSync(roadmapSelectorLockFile(dir), `roadmap-1-${deadPid}\n${new Date().toISOString()}\n${deadPid}\n`);
+  const swept = sweepStaleRoadmapLock(dir);
+  assert.ok(swept, 'an orphaned lock (dead pid) is reported as swept');
+  assert.ok(!fs.existsSync(roadmapSelectorLockFile(dir)));
+  const r = lockRoadmapSelector(dir);
+  assert.equal(r.ok, true, 'the selector is free again after the sweep');
+  unlockRoadmapSelector(dir);
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+(() => {
+  // A lock older than ROADMAP_SELECTOR_STALE_MS, even with a live pid, is swept too.
+  const dir = repo();
+  fs.mkdirSync(locksDir(dir), { recursive: true });
+  const oldTs = Date.now() - (roadmapReady.ROADMAP_SELECTOR_STALE_MS + 60_000);
+  fs.writeFileSync(roadmapSelectorLockFile(dir), `roadmap-old-${process.pid}\n${new Date(oldTs).toISOString()}\n${process.pid}\n`);
+  const swept = sweepStaleRoadmapLock(dir);
+  assert.ok(swept, 'an aged lock is swept even if its pid is still alive');
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+(() => {
+  // `scan()` itself sweeps a stale selector lock before doing anything else (point 5): a
+  // SessionStart-only session must not let a dead lock linger.
+  const dir = repo();
+  writeRoadmap(dir, ['| 2 | Front | 00 | — | `src/B/` | #2 | à faire |']);
+  fs.mkdirSync(locksDir(dir), { recursive: true });
+  const deadPid = 999998;
+  fs.writeFileSync(roadmapSelectorLockFile(dir), `roadmap-2-${deadPid}\n${new Date().toISOString()}\n${deadPid}\n`);
+  scan(baseOpts(dir, { toImplementIssues: () => [{ number: 2, body: '', labels: [] }] }));
+  assert.ok(!fs.existsSync(roadmapSelectorLockFile(dir)), 'scan() swept the stale selector lock');
+  fs.rmSync(dir, { recursive: true, force: true });
+})();
+
+(() => {
+  // The CLI `lock` sub-command exits non-zero for the loser (point 2: "le perdant sort").
+  const dir = repo();
+  const win = spawnSync('node', [path.join(hooksDir, 'roadmap-ready.js'), 'lock'], { cwd: dir, env: Object.assign({}, process.env, { CLAUDE_PROJECT_DIR: dir }), encoding: 'utf8' });
+  assert.equal(win.status, 0);
+  const lose = spawnSync('node', [path.join(hooksDir, 'roadmap-ready.js'), 'lock'], { cwd: dir, env: Object.assign({}, process.env, { CLAUDE_PROJECT_DIR: dir }), encoding: 'utf8' });
+  assert.notEqual(lose.status, 0, 'a second concurrent `lock` exits non-zero');
+  const unlock = spawnSync('node', [path.join(hooksDir, 'roadmap-ready.js'), 'unlock'], { cwd: dir, env: Object.assign({}, process.env, { CLAUDE_PROJECT_DIR: dir }), encoding: 'utf8' });
+  assert.equal(unlock.status, 0);
   fs.rmSync(dir, { recursive: true, force: true });
 })();
 
