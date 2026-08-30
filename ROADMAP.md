@@ -60,3 +60,4 @@ commit. Deux chantiers de lisibilité et de robustesse en découlent, sans touch
 | 13 | Verdict fragile dit tel quel — note « médiane sur la borne » (Intervention, bornes 3 et 2) ; ratio IA absent jamais coercé en 0 (Harness) | 03, 02 | 12 | — | #40 | en cours : lancé par /feature depuis la session (2026-08-30) |
 | 13 | Verdict fragile dit tel quel | 03, 02 | 12 | — | #40 | **mergé** : #44 `7e1d1b0` |
 | 14 | Détection de boucle resserrée | 02 § Boucles — détection resserrée (2026-08-30) | 13 | `src/Domain/Axis/Harness/Loop*`, `fixtures/`, `tests/` | #45 | spec validée le 2026-08-30, en cours |
+| 17 | Lancement autonome de la roadmap — skill `roadmap`, agent `front`, hook `SessionStart` informatif, garde du checkout principal | 08 § 11 (2026-08-30) | 16 | `.claude/skills/roadmap/`, `.claude/agents/front.md`, `.claude/hooks/`, `CLAUDE.md` | #46 | spec validée le 2026-08-30, en cours |
