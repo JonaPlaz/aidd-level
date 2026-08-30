@@ -84,6 +84,20 @@ ait eu le temps de revoir. Re-revue jamais automatique : seulement si la correct
 une décision de scoring, ou sur demande. Délai dépassé ou quota épuisé → journal, label
 `blocked`, arrêt.
 
+**Armement par la plateforme, pas par l'agent** (amendé le 2026-08-30, chantier 15). Constat
+du jour : deux PR ouvertes à la main, hors skill, n'ont armé personne — le 👍 de Codex est
+resté sans suite jusqu'à ce qu'un humain s'en aperçoive. Le verdict Codex est un événement
+GitHub, distant, invisible d'un hook Claude Code ; et une réaction ne déclenche **aucun**
+événement Actions (seuls revues et commentaires en déclenchent). Donc un workflow
+`.github/workflows/auto-merge-after-codex.yml`, en **cron** (toutes les 10 min) et à la
+demande, qui, pour chaque PR ouverte, non brouillon, sans label `blocked`, dont l'auteur de la
+réaction `+1` est `chatgpt-codex-connector[bot]` **et** dont cette réaction est postérieure au
+dernier commit de la branche, arme `gh pr merge --auto --squash --delete-branch`. GitHub merge
+ensuite seul quand `ci` est vert et la branche à jour (`strict`). Le chemin « avec remarques »
+reste au skill : Actions ne sait pas juger qu'une remarque est traitée ; le skill corrige,
+répond, puis arme comme avant. « Rien ne s'arme avant le verdict d'ouverture » tient : le
+cron ne lit que le 👍.
+
 Historique : « une passe » (26 août) → « autant de passes que Codex en demande » (29 août,
 PR #15) → « une revue, une passe, réponses tracées » (29 août, quota). Chaque étape est au
 journal.
