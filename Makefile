@@ -24,6 +24,8 @@ require-up:
 
 up:
 	$(COMPOSE) up -d --build
+	# A vendor/ left by an earlier run as root would block Composer: take it back first.
+	$(COMPOSE) exec -T --user root php sh -c 'chown -R $(UID):$(GID) /app/vendor /app/composer.lock 2>/dev/null || true'
 	$(COMPOSE) exec -T php composer install --no-interaction --no-progress
 
 build: up
