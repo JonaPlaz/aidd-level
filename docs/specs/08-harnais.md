@@ -676,7 +676,7 @@ l'ordre du fichier du 2026-08-30) :
 | « Un commit touche une seule couche … le hook `guard-git` refuse domaine + infrastructure » | règle 7, **complétée** (le numéro ne bouge pas) |
 | Branche courte, rebase, `--force-with-lease`, une tentative puis journaliser | Conventions, puce « Rebase sur `main` », complétée |
 | `ROADMAP.md` / `docs/journal.md` append-only + « une ligne de journal sans pointeur ne vaut rien » | Conventions, puce append-only, complétée |
-| `.brief/` jamais écrit, committé, cité | **supprimée sans remplacement** : la règle y est déjà (Conventions) |
+| La règle des entrées privées (convention existante, chemins déclarés dans `.worktreeinclude`) | **supprimée sans remplacement** : la règle y est déjà (Conventions) |
 | « Les commandes du projet passent par `make` ; ne pas lancer `php`, `composer`, `vendor/bin/*` » | Stack et commandes, une phrase sous la table |
 | Commits en anglais, Conventional Commits, sujet ≤ 72 caractères | Conventions, puce « Conventional Commits », complétée |
 | Trailer de coauteur | **coupée en deux** : la règle et son motif (ratio 0,48 sur `profiles/self`) vont en Conventions ; la chaîne exacte reste côté Claude |
@@ -704,20 +704,25 @@ autre en descend.
 
 **Pointeurs à repointer dans la même PR**, sans quoi le dépôt se cite lui-même à faux :
 
-- `AGENTS.md` › Décisions figées, colonne « Où » de la ligne Codex : `CLAUDE.md § Flow` →
-  `AGENTS.md § Flow d'une PR` ;
-- ce fichier, § 11.7 (« instruction du skill et de `CLAUDE.md § Flow` ») et § 11.8 (ligne
-  `CLAUDE.md § Flow` de la table des sorties) : même remplacement ;
-- `.claude/hooks/guard-git.js`, deux messages de refus qui citent `CLAUDE.md` (`… (CLAUDE.md).`
-  pour `--force`, `… (CLAUDE.md § Flow).` pour `gh pr create`) → `AGENTS.md`. Vérifié le
-  2026-08-30 : `.claude/hooks/tests/guard-git.test.js` n'assertionne aucun de ces textes, les
-  tests ne bougent pas ;
-- `docs/specs/07-amorcage.md` décrit le `CLAUDE.md` du jour 1 : **non réécrit** (c'est
-  l'historique de l'amorçage), une ligne de renvoi vers ce § suffit.
+Quatre sites citent aujourd'hui le fichier Claude comme porteur du flow ; tous doivent citer
+`AGENTS.md § Flow d'une PR`. Ils sont désignés ici par leur emplacement, sans reproduire la
+chaîne périmée — c'est ce qui rend l'épreuve 5 du § 12.5 lisible (sortie attendue vide).
 
-Hors périmètre, et assumé : `profiles/self/repo-context/` est une copie régénérée par
-`scripts/self-profile.py`, jamais éditée à la main ; les deux fichiers y subsistent, aucun n'est
-créé ni supprimé, aucun seuil ni fixture n'est touché, `docs/calibration.md` reste vrai.
+- `AGENTS.md` › Décisions figées, colonne « Où » de la ligne Codex ;
+- ce fichier, § 11.7 (les trois mots, « instruction du skill et de … ») et § 11.8 (dernière
+  colonne de la table des sorties du chantier 17) ;
+- `.claude/hooks/guard-git.js`, ses **deux** messages de refus — celui de `--force` et celui de
+  `gh pr create` — qui renvoient le lecteur au fichier Claude. Vérifié le 2026-08-30 :
+  `.claude/hooks/tests/guard-git.test.js` n'assertionne aucun de ces textes, les tests ne
+  bougent pas ;
+- `docs/specs/07-amorcage.md` décrit le fichier Claude du jour 1 : **non réécrit** (c'est
+  l'historique de l'amorçage), une ligne de renvoi vers ce § 12 suffit.
+
+`profiles/self/repo-context/` copie `AGENTS.md` et `CLAUDE.md` : la migration change donc le
+profil que le dépôt applique à lui-même. `docs/methode.md` (l. 50-51) pose que `profiles/self/`
+est **régénéré en fin de chantier** par `scripts/self-profile.py` — ce chantier ne fait pas
+exception : régénération dedans, dans un commit `chore(self)` **séparé** (une couche par commit),
+et l'épreuve 7 du § 12.5 vérifie que le verdict ne bouge pas.
 
 ### 12.2 (b) Une spec validée ne se contredit pas : les arbitrages sont intégrés
 
@@ -737,23 +742,34 @@ arrêt » et « spec présente mais non committée », une étape nommée :
 > supprime toute question → alors seulement le commit** (branche `docs/spec-<n°>`, PR `docs:`,
 > étape 3 du skill).
 
-Le skill ne commit **jamais** une spec qui porte encore une question. Contrôle avant commit,
-sur les seuls fichiers de `docs/specs/` que la PR modifie (pas le dépôt entier) :
+Le skill ne commit **jamais** une spec qui porte encore une question. Contrôle avant commit, sur
+les **lignes ajoutées** aux specs par cette PR — pas le dépôt entier, pas même le fichier
+entier :
 
 ```
-git diff --name-only origin/main -- docs/specs \
-  | xargs -r grep -nEi '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)' \
-  | grep -vi historique
+for f in $(git diff --name-only origin/main -- docs/specs;
+           git ls-files --others --exclude-standard -- docs/specs); do
+  git add -N -- "$f"                                  # sans quoi une spec neuve reste invisible
+  git diff -U0 origin/main -- "$f" | sed -n 's/^+//p' \
+    | grep -Ei '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)' \
+    | grep -vi historique
+done
 ```
 
-Toute occurrence arrête le commit. Le motif est **ancré** : il attrape un titre de section
-d'arbitrage et une question en tête de ligne — la position d'où l'on décide —, pas une mention en
-cours de phrase ; et il laisse passer un titre portant le mot « historique », seule forme tolérée
-plus bas. C'est délibéré : sans cet ancrage, ce § se refuserait lui-même, puisqu'il nomme les
-marqueurs qu'il interdit. **Exception nommée** : le § 1 de ce fichier (arbitrage `claude-code-action`,
-correction en local contre CI) et le § 5 (`DUPLICATION_MAX_PCT`, 3 % proposé) portent deux
-arbitrages restés ouverts depuis le 2026-08-26 ; ils sont **connus et hors périmètre** de ce
-chantier, ne bloquent que la PR qui touche ces § — et un chantier ultérieur les tranche.
+Toute occurrence arrête le commit. Trois propriétés, chacune pour une raison :
+
+- **`git add -N` et `git ls-files --others --exclude-standard`** : le cas nominal de ce cycle est
+  une spec **créée** par l'agent `spec`, donc non suivie ; un contrôle qui ne lit que
+  `git diff` la laisserait passer entière — c'est précisément le fichier le plus à risque.
+  `add -N` l'enregistre sans contenu, ce qui suffit à la rendre visible du diff et n'engage rien.
+- **`-U0`, et seulement les lignes `+`** : le contrôle juge ce que la PR écrit, jamais ce qu'elle
+  hérite. Les deux arbitrages restés ouverts depuis le 2026-08-26 dans les § 1 et § 5 de ce
+  fichier ne bloquent donc que la PR qui les touche — celle qui les tranchera. Aucune exception
+  nominative à tenir à jour, donc aucune liste à oublier de mettre à jour.
+- **Le motif est ancré**, et filtré par `historique` : il attrape un titre de section d'arbitrage
+  et une question en tête de ligne — la position d'où l'on décide —, pas une mention en cours de
+  phrase, et il laisse passer la table d'historique tolérée plus bas. Sans cet ancrage, ce §
+  se refuserait lui-même, puisqu'il nomme les marqueurs qu'il interdit.
 
 **L'agent `spec`** (`.claude/agents/spec.md`, étape 4) : pose ses questions en fin de rendu,
 chacune avec sa recommandation, jamais dans le fichier ; relancé avec les réponses, il les fond
@@ -813,17 +829,18 @@ Relevé le 2026-08-30, à consigner au journal dans la PR de ce chantier.
 | `CLAUDE.md` | réduit à `@AGENTS.md` + le titre + cinq puces d'artefacts Claude Code |
 | `.claude/skills/feature/SKILL.md` § 1 | l'étape « réponses reçues → agent `spec` → intégration → commit », et le contrôle avant commit du § 12.2 |
 | `.claude/agents/spec.md` | étape 4 réécrite : questions en fin de rendu avec recommandation, intégrées et supprimées à la réponse |
-| `docs/specs/08-harnais.md` | ce § 12, plus les deux pointeurs `CLAUDE.md § Flow` du § 11 |
+| `docs/specs/08-harnais.md` | ce § 12, plus les deux références repointées du § 11 |
 | `docs/specs/07-amorcage.md` | une ligne de renvoi vers ce § (le texte d'amorçage n'est pas réécrit) |
 | `.claude/hooks/guard-git.js` | deux chaînes de message repointées vers `AGENTS.md` |
+| `profiles/self/` | régénéré par `python3 scripts/self-profile.py` (le `repo-context/` copie les deux fichiers migrés), dans un commit `chore(self)` **séparé** |
 | `docs/journal.md` | deux lignes : la migration (pointeur PR), le constat cron du § 12.3 |
 | `ROADMAP.md` | une ligne ajoutée, chantier 18, dépendance 17, sorties `AGENTS.md`, `CLAUDE.md`, `.claude/`, issue #49 |
 
 Ce chantier ne touche ni `src/` ni `tests/` ni `fixtures/` : la règle 7 d'`AGENTS.md` (domaine +
-infrastructure dans un même commit) est sans objet. Il **ne régénère pas `profiles/self`** : la
-régénération est un geste de fin de roadmap (§ 10, `docs/methode.md`) et la mêler ici brouillerait
-le diff de la migration. Il **dépend du chantier 17** (PR #51, mergée 2026-08-30T13:50:27Z), qui a
-écrit les trois dernières puces du § Flow que ce chantier déplace.
+infrastructure dans un même commit) est sans objet, et **aucun seuil ni décision de scoring n'est
+touché** — ce qui bouge dans `profiles/self/`, c'est la matière lue, pas la règle qui la lit. Il
+**dépend du chantier 17** (PR #51, mergée 2026-08-30T13:50:27Z), qui a écrit les trois dernières
+puces du § Flow que ce chantier déplace.
 
 ### 12.5 Tests / épreuve
 
@@ -843,8 +860,9 @@ le diff de la migration. Il **dépend du chantier 17** (PR #51, mergée 2026-08-
 
    Sortie attendue : **vide**. Le test attrape le copier-coller, pas la paraphrase : la
    paraphrase est du ressort de la revue (point 9 et point 8 « signaler ce qui contredit les
-   specs »). Jetons de contrôle, chacun présent d'**un seul** côté : `.brief/`, `append-only`,
-   `Conventional Commits`, `--force-with-lease`, `to-review`, `72`. Un **nom d'artefact**
+   specs »). Jetons de contrôle, chacun présent d'**un seul** côté : `append-only`,
+   `Conventional Commits`, `--force-with-lease`, `to-review`, `vendor/bin`, `72`. Un **nom
+   d'artefact**
    (`/feature`, `guard-git`, `spec`) peut apparaître des deux côtés : c'est une règle qui ne se
    répète pas, pas un nom.
 3. **Une spec de test qui pose une question est refusée.** Sur une PR jetable (`--trivial`,
@@ -857,13 +875,24 @@ le diff de la migration. Il **dépend du chantier 17** (PR #51, mergée 2026-08-
 4. **Le cycle complet passe encore.** Une spec nouvelle écrite par l'agent `spec` : ses
    questions sont **dans le rendu**, le fichier committé n'en contient aucune, et le journal
    porte la ligne « arbitrages intégrés » avec son pointeur.
-5. **Les pointeurs ne mentent plus** :
-   `grep -rn 'CLAUDE.md § Flow' AGENTS.md docs .claude | grep -v '08-harnais.md'` → aucune
-   sortie. Les seules mentions qui subsistent sont celles du § 12.1 ci-dessus, qui **décrivent
-   le déplacement** au lieu d'y renvoyer ; le § 11 et `guard-git.js`, eux, ne doivent plus en
-   porter aucune.
+5. **Les pointeurs ne mentent plus** — un `grep` par site, aucune exclusion en bloc :
+
+   | Site | Commande | Attendu |
+   |---|---|---|
+   | Tout le dépôt, chaîne périmée | `grep -rn 'CLAUDE\.md § Flow' AGENTS.md docs .claude` | **vide** (le § 12.1 désigne ses sites sans reproduire la chaîne) |
+   | Ce fichier, § 11.7 et § 11.8 | `grep -n 'CLAUDE\.md' docs/specs/08-harnais.md` | aucune ligne dans le § 11 ; celles du § 12 parlent du fichier, pas du flow |
+   | `guard-git.js`, message `--force` | `grep -n '(CLAUDE\.md)' .claude/hooks/guard-git.js` | **vide**, et `grep -c '(AGENTS\.md)'` = 1 |
+   | `guard-git.js`, message `gh pr create` | `grep -n 'CLAUDE\.md § Flow' .claude/hooks/guard-git.js` | **vide**, et le message cite `AGENTS.md § Flow d'une PR` |
+   | Spec d'amorçage | `grep -n '08 § 12' docs/specs/07-amorcage.md` | **une** ligne (le renvoi ajouté ; le texte du jour 1 reste) |
+   | `AGENTS.md` › Décisions figées | `grep -n "Flow d'une PR" AGENTS.md` | au moins deux lignes : le titre du § migré et la colonne « Où » de la ligne Codex |
 6. **Rien n'a bougé côté scoring** : `make test` et `make demo` inchangés, `docs/calibration.md`
    toujours vrai (le chantier ne touche aucun fichier de `src/`, `tests/` ou `fixtures/`).
+7. **Le dépôt se note comme avant.** Après `python3 scripts/self-profile.py`, `make evaluate
+   self` rend le **même verdict qu'au chantier 11 : Blue, plafonné par Taille** (`docs/methode.md`
+   l. 50-51). Un verdict différent n'est pas un échec en soi — il se journalise, avec l'axe qui a
+   bougé et le pointeur du fichier de `repo-context/` en cause — mais il **arrête la PR** : une
+   migration de mémoire projet n'a aucune raison de déplacer un niveau, et si elle le fait, c'est
+   la mesure qu'il faut regarder avant de merger.
 
 Ligne à ajouter à `ROADMAP.md` (append-only, une ligne, colonnes de la table) : chantier **18**,
 « Source unique `AGENTS.md`, arbitrages intégrés aux specs », spec « 08 § 12 (2026-08-30) »,
