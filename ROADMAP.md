@@ -61,3 +61,5 @@ commit. Deux chantiers de lisibilité et de robustesse en découlent, sans touch
 | 13 | Verdict fragile dit tel quel | 03, 02 | 12 | — | #40 | **mergé** : #44 `7e1d1b0` |
 | 14 | Détection de boucle resserrée | 02 § Boucles — détection resserrée (2026-08-30) | 13 | `src/Domain/Axis/Harness/Loop*`, `fixtures/`, `tests/` | #45 | spec validée le 2026-08-30, en cours |
 | 17 | Lancement autonome de la roadmap — skill `roadmap`, agent `front`, hook `SessionStart` informatif, garde du checkout principal | 08 § 11 (2026-08-30) | 16 | `.claude/skills/roadmap/`, `.claude/agents/front.md`, `.claude/hooks/`, `CLAUDE.md` | #46 | spec validée le 2026-08-30, en cours |
+| 17 | Lancement autonome de la roadmap | 08 § 11 | 16 | — | #46 | **mergé** : #51 `b84bcd9` |
+| 18 | Mémoire projet — source unique `AGENTS.md`, `CLAUDE.md` en 12 lignes ; arbitrages intégrés à la spec avant commit ; point 9 de revue ; relevé du cron le 2026-08-31 | 08 § 12 (2026-08-30) | 17 | `AGENTS.md`, `CLAUDE.md`, `.claude/skills/feature/`, `.claude/agents/spec.md`, `docs/specs/07`, `docs/journal.md` | #49 | spec validée le 2026-08-30, en cours |

@@ -637,3 +637,235 @@ Le texte ci-dessus fait foi ; cette table dit seulement d'où viennent ses déci
 | 2026-08-30, Codex (PR #48) : un seul propriétaire de la ligne de journal par front | § 11.5 |
 | 2026-08-30, Codex (PR #48) : lancement en arrière-plan exigé, jamais supposé | § 11.5 |
 | 2026-08-30, Codex (PR #48) : `git fetch origin main` borné avant tout scan | § 11.1, § 11.3 frein 3 |
+
+## 12. Mémoire projet : source unique et arbitrages intégrés (2026-08-30)
+
+Chantier 18, issue #49 et son commentaire. Ce § **ajoute** au § 3 (le cycle) et au § 11 (la
+roadmap) ; il ne réécrit ni l'un ni l'autre. Deux règles et un constat, tous trois de conduite :
+aucun seuil de domaine, aucune décision de scoring. Validé par Jonathan le 2026-08-30, réponses
+comprises : le texte ci-dessous les porte, et l'historique de l'arbitrage tient en une ligne de
+journal pointant l'issue #49 (§ 12.2).
+
+### 12.1 (a) Une seule source de mémoire projet : `AGENTS.md`
+
+Motif, dans les termes de l'arbitrage : **Codex lit `AGENTS.md` et ne résout aucun import ;
+Claude Code lit les deux.** Une règle écrite du seul côté `CLAUDE.md` est donc invisible du
+reviewer — c'est déjà ce qui a coûté quatre PR ouvertes hors cycle le 2026-08-30 alors que le
+flux existait (journal `2026-08-30T11:30Z`, § 3 « Le cycle est imposé »).
+
+Le partage, seul critère, appliqué ligne à ligne :
+
+| Fichier | Ce qu'il porte |
+|---|---|
+| `AGENTS.md` | tout ce qui vaut **pour n'importe quel agent** : but, architecture, règles non négociables, décisions figées, où en est le projet, stack et commandes, conventions, **flow d'une PR**, définition de fini, code review rules |
+| `CLAUDE.md` | `@AGENTS.md`, puis **uniquement ce qui n'existe que côté Claude Code** : hooks, skills, agents et worktrees, verrous, classifieur, valeur exacte du trailer |
+
+**Aucune ligne présente dans les deux.** Quand une règle a une part universelle et une part
+propre à Claude Code, la **règle** va dans `AGENTS.md` et la seule **valeur** dans `CLAUDE.md` —
+jamais la règle deux fois. La numérotation existante d'`AGENTS.md` ne bouge pas : les règles
+non négociables 1 à 7 et les points de revue 1 à 8 sont **cités par les specs** (§ 11.1 « règle 7
+de la revue », § 11.8 « règle 7 d'AGENTS.md ») ; on complète une ligne, on ajoute à la fin, on ne
+renumérote pas.
+
+**Ce qui migre aujourd'hui de `CLAUDE.md` vers `AGENTS.md`** (les huit puces et le § Flow, dans
+l'ordre du fichier du 2026-08-30) :
+
+| Ligne de `CLAUDE.md` | Où elle atterrit dans `AGENTS.md` |
+|---|---|
+| « Lire la spec concernée … signaler l'écart et s'arrêter » | Règles non négociables, **nouvelle règle 8** (1 à 7 inchangées) |
+| « Un commit touche une seule couche … le hook `guard-git` refuse domaine + infrastructure » | règle 7, **complétée** (le numéro ne bouge pas) |
+| Branche courte, rebase, `--force-with-lease`, une tentative puis journaliser | Conventions, puce « Rebase sur `main` », complétée |
+| `ROADMAP.md` / `docs/journal.md` append-only + « une ligne de journal sans pointeur ne vaut rien » | Conventions, puce append-only, complétée |
+| `.brief/` jamais écrit, committé, cité | **supprimée sans remplacement** : la règle y est déjà (Conventions) |
+| « Les commandes du projet passent par `make` ; ne pas lancer `php`, `composer`, `vendor/bin/*` » | Stack et commandes, une phrase sous la table |
+| Commits en anglais, Conventional Commits, sujet ≤ 72 caractères | Conventions, puce « Conventional Commits », complétée |
+| Trailer de coauteur | **coupée en deux** : la règle et son motif (ratio 0,48 sur `profiles/self`) vont en Conventions ; la chaîne exacte reste côté Claude |
+| § « Flow d'une PR — imposé par le harnais », **entier** (issue → cycle, garanties dans l'ordre, filet cron, `/roadmap`, les trois mots) | nouveau § « Flow d'une PR », placé avant « Définition de fini » |
+
+La dernière ligne est la seule qui ait demandé une frontière : le § Flow contient depuis le
+chantier 17 des puces qui nomment `/roadmap`, l'agent `front` et les trois mots de pilotage.
+**Il migre entier, ces puces comprises** : elles disent ce qui arrive à une PR — qui l'ouvre, à
+quelles conditions, qui l'arrête —, et c'est ce que le reviewer doit lire. Ce qui reste côté
+Claude Code n'est pas la conduite mais l'**artefact** qui la porte.
+
+**Ce qui reste dans `CLAUDE.md`** — les artefacts, pas les règles : les skills (`/feature`,
+`/roadmap`) et les agents (`spec`, `dev`, `front`) invocables par la session ; les hooks
+versionnés dans `.claude/settings.json` (pointeur vers le § 4, jamais leur contenu redit) ; les
+worktrees ; les commandes de verrou (`feature-lock.js lock|unlock`, `roadmap-ready.js
+pause|resume`) ; la chaîne exacte `Co-Authored-By: Claude <noreply@anthropic.com>` ; et **une
+commande externe par appel**, parce que le classifieur refuse les commandes groupées (journal
+`2026-08-28T21:23Z`, `gh repo create` + labels + protection rejouée en trois commandes) — règle
+absente du fichier aujourd'hui, ajoutée ici parce qu'elle n'a pas d'autre place.
+
+Forme cible, indicative pour la mise en page mais **normative pour le compte** (§ 12.5) : la
+ligne `@AGENTS.md`, le titre, cinq puces d'au plus deux lignes — douze lignes non vides, marge
+nulle. Une règle de plus n'agrandit pas `CLAUDE.md` : **elle remonte dans `AGENTS.md`**, ou une
+autre en descend.
+
+**Pointeurs à repointer dans la même PR**, sans quoi le dépôt se cite lui-même à faux :
+
+- `AGENTS.md` › Décisions figées, colonne « Où » de la ligne Codex : `CLAUDE.md § Flow` →
+  `AGENTS.md § Flow d'une PR` ;
+- ce fichier, § 11.7 (« instruction du skill et de `CLAUDE.md § Flow` ») et § 11.8 (ligne
+  `CLAUDE.md § Flow` de la table des sorties) : même remplacement ;
+- `.claude/hooks/guard-git.js`, deux messages de refus qui citent `CLAUDE.md` (`… (CLAUDE.md).`
+  pour `--force`, `… (CLAUDE.md § Flow).` pour `gh pr create`) → `AGENTS.md`. Vérifié le
+  2026-08-30 : `.claude/hooks/tests/guard-git.test.js` n'assertionne aucun de ces textes, les
+  tests ne bougent pas ;
+- `docs/specs/07-amorcage.md` décrit le `CLAUDE.md` du jour 1 : **non réécrit** (c'est
+  l'historique de l'amorçage), une ligne de renvoi vers ce § suffit.
+
+Hors périmètre, et assumé : `profiles/self/repo-context/` est une copie régénérée par
+`scripts/self-profile.py`, jamais éditée à la main ; les deux fichiers y subsistent, aucun n'est
+créé ni supprimé, aucun seuil ni fixture n'est touché, `docs/calibration.md` reste vrai.
+
+### 12.2 (b) Une spec validée ne se contredit pas : les arbitrages sont intégrés
+
+Constat (issue #49, PR #47) : les réponses de Jonathan aux questions ouvertes de la spec du
+chantier 14 ont été **ajoutées en fin de fichier** au lieu d'être fondues dans le texte. Trois
+contradictions internes ont suivi, relevées par Codex : note contre silence, `LoopThresholds`
+contre `HarnessThresholds`, liste blanche incomplète. Le cycle ne disait pas **qui** intègre.
+
+**Règle.** Une spec **validée** ne contient ni question ouverte ni section qui décide en dehors
+de son texte normatif. Les questions vivent dans le **rendu** de l'agent `spec` — son dernier
+message —, jamais dans le fichier.
+
+**Le cycle, complété (§ 3 et skill `feature` § 1).** Entre « spec absente → agent `spec` →
+arrêt » et « spec présente mais non committée », une étape nommée :
+
+> **Réponses reçues → relancer l'agent `spec` avec elles → il les intègre au texte normatif et
+> supprime toute question → alors seulement le commit** (branche `docs/spec-<n°>`, PR `docs:`,
+> étape 3 du skill).
+
+Le skill ne commit **jamais** une spec qui porte encore une question. Contrôle avant commit,
+sur les seuls fichiers de `docs/specs/` que la PR modifie (pas le dépôt entier) :
+
+```
+git diff --name-only origin/main -- docs/specs \
+  | xargs -r grep -nEi '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)' \
+  | grep -vi historique
+```
+
+Toute occurrence arrête le commit. Le motif est **ancré** : il attrape un titre de section
+d'arbitrage et une question en tête de ligne — la position d'où l'on décide —, pas une mention en
+cours de phrase ; et il laisse passer un titre portant le mot « historique », seule forme tolérée
+plus bas. C'est délibéré : sans cet ancrage, ce § se refuserait lui-même, puisqu'il nomme les
+marqueurs qu'il interdit. **Exception nommée** : le § 1 de ce fichier (arbitrage `claude-code-action`,
+correction en local contre CI) et le § 5 (`DUPLICATION_MAX_PCT`, 3 % proposé) portent deux
+arbitrages restés ouverts depuis le 2026-08-26 ; ils sont **connus et hors périmètre** de ce
+chantier, ne bloquent que la PR qui touche ces § — et un chantier ultérieur les tranche.
+
+**L'agent `spec`** (`.claude/agents/spec.md`, étape 4) : pose ses questions en fin de rendu,
+chacune avec sa recommandation, jamais dans le fichier ; relancé avec les réponses, il les fond
+là où elles décident (le § concerné, le seuil et son origine, le cas dégradé, le test qui le
+fige), puis **supprime** la question ; il n'ajoute aucune section d'arbitrage.
+
+**Ce qui reste permis** : une table d'**historique** d'arbitrages, si et seulement si elle porte
+ce titre, dit qu'elle ne décide rien et que le texte fait foi, et donne pour chaque ligne
+l'endroit où la décision a atterri. Forme déjà appliquée deux fois et gardée telle quelle :
+`docs/specs/02-axe-harness.md` § « Arbitrages du 2026-08-30 — historique » et le § « Historique
+des arbitrages du § 11 » ci-dessus. Elle **ne dispense pas** de la ligne de journal.
+
+**L'historique va au journal**, une ligne par intégration, avec pointeur (§ 6) : étape = le
+chantier, événement = « arbitrages intégrés à `docs/specs/<fichier>` », pointeur = l'issue ou la
+PR où les réponses ont été données.
+
+**`AGENTS.md` › Code Review Rules, point 9** (les points 1 à 8 sont inchangés et cités
+ailleurs) :
+
+> 9. **Une spec ne contredit pas sa propre fin** : aucune question ouverte, aucune section
+>    d'arbitrage qui décide, aucun seuil ni nom de constante cité en deux valeurs différentes
+>    dans le même fichier.
+
+### 12.3 (c) Constat : le cron d'armement n'a produit aucun tir planifié
+
+Relevé le 2026-08-30, à consigner au journal dans la PR de ce chantier.
+
+- `auto-merge-after-codex.yml` est sur `main` depuis la PR #37, mergée à **11:38:00Z**
+  (`19e2e83`) ; correctif #39 à 11:42:38Z (`e3838c8`). Son déclencheur est
+  `schedule: '*/10 * * * *'` plus `workflow_dispatch` (§ « Armement par la plateforme »).
+- `GET /repos/JonaPlaz/aidd-level/actions/workflows/auto-merge-after-codex.yml/runs`, lu après
+  13:50Z : **`total_count = 1`**, un seul run, `event = workflow_dispatch`, 12:21:57Z,
+  `success`. **Aucun run `schedule`** en plus de deux heures, là où `*/10` en prévoit une
+  douzaine.
+- Conséquence factuelle : le filet n'a **jamais** servi. Toutes les PR mergées depuis (#43,
+  #44, #47, #48, #50, #51) l'ont été par le chemin nominal du skill — aucun armement ne peut
+  être attribué au cron, puisqu'aucun tir planifié n'a eu lieu. Rien n'est resté sans suite ;
+  rien ne prouve non plus que le filet fonctionne.
+- Ce que dit la source (docs GitHub Actions, *events that trigger workflows*, consultée le
+  2026-08-30) : « The `schedule` event can be delayed during periods of high loads of GitHub
+  Actions workflow runs » ; « Scheduled workflows run on the latest commit on the default
+  branch » (satisfait : le fichier est sur `main`) ; intervalle minimal 5 min (satisfait) ;
+  désactivation automatique après 60 jours sans activité (sans objet, dépôt de deux jours).
+- **Non vérifié** : la cause. Un délai de forte charge, un enregistrement tardif du planning
+  après le merge, ou autre chose — rien dans les données relevées ne tranche.
+- **Décision : pas de correctif.** C'est un filet, pas le chemin nominal, et le chemin nominal
+  tient. **Prochain relevé : le 2026-08-31**, même requête ; si le nombre de runs `schedule` est
+  encore nul, **ouvrir une issue** — la cause devient alors un chantier, pas un doute. Chaque
+  relevé va au journal, daté et pointé ; `docs/harness.md` en héritera dans sa table
+  « Prévu / Réel » quand le doute sera tranché.
+
+### 12.4 Sorties du chantier
+
+| Fichier | Rôle |
+|---|---|
+| `AGENTS.md` | absorbe les neuf entrées de la table du § 12.1 ; gagne un § « Flow d'une PR », une règle non négociable 8, un point de revue 9 ; règles 1 à 7 et points 1 à 8 non renumérotés |
+| `CLAUDE.md` | réduit à `@AGENTS.md` + le titre + cinq puces d'artefacts Claude Code |
+| `.claude/skills/feature/SKILL.md` § 1 | l'étape « réponses reçues → agent `spec` → intégration → commit », et le contrôle avant commit du § 12.2 |
+| `.claude/agents/spec.md` | étape 4 réécrite : questions en fin de rendu avec recommandation, intégrées et supprimées à la réponse |
+| `docs/specs/08-harnais.md` | ce § 12, plus les deux pointeurs `CLAUDE.md § Flow` du § 11 |
+| `docs/specs/07-amorcage.md` | une ligne de renvoi vers ce § (le texte d'amorçage n'est pas réécrit) |
+| `.claude/hooks/guard-git.js` | deux chaînes de message repointées vers `AGENTS.md` |
+| `docs/journal.md` | deux lignes : la migration (pointeur PR), le constat cron du § 12.3 |
+| `ROADMAP.md` | une ligne ajoutée, chantier 18, dépendance 17, sorties `AGENTS.md`, `CLAUDE.md`, `.claude/`, issue #49 |
+
+Ce chantier ne touche ni `src/` ni `tests/` ni `fixtures/` : la règle 7 d'`AGENTS.md` (domaine +
+infrastructure dans un même commit) est sans objet. Il **ne régénère pas `profiles/self`** : la
+régénération est un geste de fin de roadmap (§ 10, `docs/methode.md`) et la mêler ici brouillerait
+le diff de la migration. Il **dépend du chantier 17** (PR #51, mergée 2026-08-30T13:50:27Z), qui a
+écrit les trois dernières puces du § Flow que ce chantier déplace.
+
+### 12.5 Tests / épreuve
+
+1. **`CLAUDE.md` tient en douze lignes.** `grep -c '[^[:space:]]' CLAUDE.md` ≤ **12** (lignes non
+   vides, `@AGENTS.md` et titre compris). Origine : consigne de Jonathan du 2026-08-30 ; la
+   forme cible du § 12.1 en produit exactement douze. **Marge nulle**, et c'est voulu : un
+   dépassement n'est pas un dépassement de format, c'est le signal qu'une règle a été écrite du
+   mauvais côté — elle remonte dans `AGENTS.md`.
+2. **Aucune duplication entre les deux fichiers.** Comparaison mécanique des lignes normalisées
+   (minuscules, marqueurs markdown et ponctuation retirés, espaces réduits) :
+
+   ```
+   norm() { sed -E 's/^[[:space:]]*[-*][[:space:]]*//; s/[`*_#|]//g; s/[[:punct:]]+/ /g; \
+            s/[[:space:]]+/ /g; s/^ //; s/ $//' "$1" | tr 'A-Z' 'a-z' | grep -v '^$' | sort -u; }
+   comm -12 <(norm AGENTS.md) <(norm CLAUDE.md)
+   ```
+
+   Sortie attendue : **vide**. Le test attrape le copier-coller, pas la paraphrase : la
+   paraphrase est du ressort de la revue (point 9 et point 8 « signaler ce qui contredit les
+   specs »). Jetons de contrôle, chacun présent d'**un seul** côté : `.brief/`, `append-only`,
+   `Conventional Commits`, `--force-with-lease`, `to-review`, `72`. Un **nom d'artefact**
+   (`/feature`, `guard-git`, `spec`) peut apparaître des deux côtés : c'est une règle qui ne se
+   répète pas, pas un nom.
+3. **Une spec de test qui pose une question est refusée.** Sur une PR jetable (`--trivial`,
+   § 9), ajouter à une spec une ligne « **Question ouverte** : … ». Attendu, dans l'ordre :
+   le contrôle avant commit du § 12.2 la refuse **avant** la PR ; contrôle levé à la main, la
+   revue (Codex sur le point 9, ou Jonathan) la signale. Réserve honnête : la seconde moitié
+   n'est pas déterministe — Codex est un modèle, il peut passer à côté. Le point 9 reste donc
+   **un point de revue**, et il ne bascule en `grep` de CI que si cette épreuve échoue : le
+   constat va au journal, et la bascule est alors un chantier à part.
+4. **Le cycle complet passe encore.** Une spec nouvelle écrite par l'agent `spec` : ses
+   questions sont **dans le rendu**, le fichier committé n'en contient aucune, et le journal
+   porte la ligne « arbitrages intégrés » avec son pointeur.
+5. **Les pointeurs ne mentent plus** :
+   `grep -rn 'CLAUDE.md § Flow' AGENTS.md docs .claude | grep -v '08-harnais.md'` → aucune
+   sortie. Les seules mentions qui subsistent sont celles du § 12.1 ci-dessus, qui **décrivent
+   le déplacement** au lieu d'y renvoyer ; le § 11 et `guard-git.js`, eux, ne doivent plus en
+   porter aucune.
+6. **Rien n'a bougé côté scoring** : `make test` et `make demo` inchangés, `docs/calibration.md`
+   toujours vrai (le chantier ne touche aucun fichier de `src/`, `tests/` ou `fixtures/`).
+
+Ligne à ajouter à `ROADMAP.md` (append-only, une ligne, colonnes de la table) : chantier **18**,
+« Source unique `AGENTS.md`, arbitrages intégrés aux specs », spec « 08 § 12 (2026-08-30) »,
+dépend de « 17 », sorties « `AGENTS.md`, `CLAUDE.md`, `.claude/skills/feature/`,
+`.claude/agents/spec.md` », issue « #49 », état « à faire ».
