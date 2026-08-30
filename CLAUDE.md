@@ -21,3 +21,17 @@
 - **Tout commit produit par un agent porte le trailer** `Co-Authored-By: Claude <noreply@anthropic.com>`
   — c'est le signal que la grille lit (« commit signé par un assistant ») ; sans lui, le dépôt
   se note lui-même à tort (constaté : ratio 0,48 sur `profiles/self`).
+
+## Flow d'une PR — ne jamais improviser
+
+- Une issue → `/feature <n°>` : le skill porte spec, dev, revue, merge. À la main seulement pour
+  une PR de docs ou de profils, et alors **le même flow** :
+  1. PR ouverte (`gh pr create`), attendre le verdict Codex : réaction `eyes` = en cours,
+     `+1` = sans remarque, revue `COMMENTED` = remarques inline (`gh api …/pulls/<n>/comments`).
+  2. Remarques : une passe de correction, **une réponse tracée par remarque** (« appliqué en
+     `<sha>` » ou « non appliqué, motif »), rebase, push `--force-with-lease`.
+  3. Armer : `gh pr merge <n> --auto --squash --delete-branch`. **Jamais de merge synchrone**
+     (refusé par le classifieur, et hors flow). Le cron `auto-merge-after-codex` arme seul le
+     chemin « sans remarque » ; le chemin « avec remarques » est à l'agent.
+- Après merge : `git checkout main && git pull`, ligne au journal avec pointeur.
+
