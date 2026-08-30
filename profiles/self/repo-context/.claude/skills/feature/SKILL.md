@@ -32,15 +32,19 @@ dans la liste `allow` de `.claude/settings.json` : aucun arrêt pour permission.
   jamais dans le fichier.
 - **Réponses reçues → relancer l'agent `spec` avec elles → il les intègre au texte normatif
   et supprime toute question → alors seulement le commit** (docs/specs/08-harnais.md § 12.2).
-  Contrôle avant commit, sur les lignes ajoutées aux specs par cette PR — pas le dépôt
-  entier, pas même le fichier entier :
+- **Spec validée, présente dans l'arbre de travail, non committée** (sans question ouverte —
+  déjà validée telle quelle, ou déjà intégrée par la branche précédente) → même chemin : le
+  contrôle avant commit ci-dessous, puis le commit.
+
+  Les deux branches convergent sur le contrôle avant commit, sur les lignes ajoutées aux
+  specs par cette PR — pas le dépôt entier, pas même le fichier entier :
 
   ```
   for f in $(git diff --name-only origin/main -- docs/specs;
              git ls-files --others --exclude-standard -- docs/specs); do
     git add -N -- "$f"                                  # sans quoi une spec neuve reste invisible
     git diff -U0 origin/main -- "$f" | sed -n 's/^+//p' \
-      | grep -Ei '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)' \
+      | grep -Ei '^#{1,6} *\**(questions? ouvertes?|arbitrages?)|^[[:space:]]*[-*>]?[[:space:]]*\**(question ouverte|à trancher|à valider pa)|\?[[:space:]]*$' \
       | grep -vi historique
   done
   ```
