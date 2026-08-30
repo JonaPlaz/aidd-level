@@ -58,3 +58,5 @@ commit. Deux chantiers de lisibilité et de robustesse en découlent, sans touch
 | 15 | Auto-merge armé par GitHub Actions | 08 | — | — | — | **mergé** : #37 `19e2e83`, correctifs #39 `e3838c8` |
 | 16 | Cycle imposé par le harnais | 08 | 15 | — | — | **mergé** : #41 `7c64b11` |
 | 13 | Verdict fragile dit tel quel — note « médiane sur la borne » (Intervention, bornes 3 et 2) ; ratio IA absent jamais coercé en 0 (Harness) | 03, 02 | 12 | — | #40 | en cours : lancé par /feature depuis la session (2026-08-30) |
+| 13 | Verdict fragile dit tel quel | 03, 02 | 12 | — | #40 | **mergé** : #44 `7e1d1b0` |
+| 14 | Détection de boucle resserrée | 02 § Boucles — détection resserrée (2026-08-30) | 13 | `src/Domain/Axis/Harness/Loop*`, `fixtures/`, `tests/` | #45 | spec validée le 2026-08-30, en cours |
