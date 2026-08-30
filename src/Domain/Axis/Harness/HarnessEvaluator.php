@@ -240,19 +240,25 @@ final class HarnessEvaluator implements AxisEvaluator
                 self::NO_LOOP_FOUND_NOTE,
                 new Pointer('repo-context/', 'bounded retry', 'none found'),
             );
+        }
 
-            $unboundedRetry = LoopDetector::detectUnboundedRetry($repoContext);
-            if (null !== $unboundedRetry) {
-                $notes[] = new Note(
-                    sprintf('relance non bornée trouvée dans `%s`', $unboundedRetry->file->path),
-                    new Pointer(
-                        sprintf('repo-context/%s', $unboundedRetry->file->path),
-                        'unbounded retry',
-                        sprintf('line %d', $unboundedRetry->line),
-                    ),
-                );
-            }
+        // Computed whatever the verdict above: a different, unrelated file can name a
+        // relance with no bound in its window even when another file already carries a
+        // bounded loop (Gold) — the fact stays worth citing once, the first found in
+        // reading order (docs/specs/02-axe-harness.md § 5; Codex review of PR #50).
+        $unboundedRetry = LoopDetector::detectUnboundedRetry($repoContext);
+        if (null !== $unboundedRetry) {
+            $notes[] = new Note(
+                sprintf('relance non bornée trouvée dans `%s`', $unboundedRetry->file->path),
+                new Pointer(
+                    sprintf('repo-context/%s', $unboundedRetry->file->path),
+                    'unbounded retry',
+                    sprintf('line %d', $unboundedRetry->line),
+                ),
+            );
+        }
 
+        if (null === $loopMatch) {
             return [HarnessLevel::Behavior, $evidences, $notes];
         }
 

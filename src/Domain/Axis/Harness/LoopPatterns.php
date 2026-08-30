@@ -21,10 +21,12 @@ final class LoopPatterns
     /**
      * Names a restart explicitly — `retry`, `rerun`, `until` — never `while` and never a
      * counted loop (docs/specs/02-axe-harness.md § 5): only these tokens can trigger the
-     * « relance non bornée » note. Left-anchored only (no trailing `\b`), so `retry_deploy`
-     * still counts as naming a relance (fixture FP1b).
+     * « relance non bornée » note. The right edge is a negative lookahead for a letter
+     * (`(?![a-zA-Z])`), not a plain `\b`: `retry_deploy` still counts (the underscore is not
+     * a letter, fixture FP1b), but `retryable` and `untilted` — a different word that merely
+     * starts the same way — do not (Codex review of PR #50).
      */
-    public const string RETRY_NAMED = '/\bretry|\brerun|\buntil/i';
+    public const string RETRY_NAMED = '/\bretry(?![a-zA-Z])|\brerun(?![a-zA-Z])|\buntil(?![a-zA-Z])/i';
 
     /**
      * Any restart construct: the three named ones above, plus `while`, plus a
@@ -32,7 +34,7 @@ final class LoopPatterns
      * ones (`seq 100 -1 1`, `{-100..20}`) that § 4 still counts as a restart looking for a
      * separate bound, even though they never satisfy the counted-loop bound themselves.
      */
-    public const string RETRY = '/\bretry|\brerun|\buntil|\bwhile\b'
+    public const string RETRY = '/\bretry(?![a-zA-Z])|\brerun(?![a-zA-Z])|\buntil(?![a-zA-Z])|\bwhile\b'
         .'|\bfor\b\s+\S+\s+\bin\b\s*(?:\$\(\s*seq\b|\{)/i';
 
     /**

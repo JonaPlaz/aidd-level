@@ -194,10 +194,15 @@ final class LoopDetector
             return [];
         }
 
+        // Binary or invalid-UTF-8 content: checked explicitly, before any regex touches it,
+        // rather than relying on `preg_split`/`preg_match` to fail (docs/specs/02-axe-harness.md
+        // § Cas dégradés — no match, never an exception; Codex review of PR #50).
+        if (str_contains($content, "\0") || !mb_check_encoding($content, 'UTF-8')) {
+            return [];
+        }
+
         $lines = preg_split('/\r\n|\r|\n/', $content);
         if (false === $lines) {
-            // Binary content: preg_split can fail on invalid UTF-8. No match, never an
-            // exception (docs/specs/02-axe-harness.md § Cas dégradés).
             return [];
         }
 
@@ -219,8 +224,13 @@ final class LoopDetector
                 continue;
             }
 
-            if (str_contains($line, '/*')) {
-                $inBlock = true;
+            $openPos = strpos($line, '/*');
+            if (false !== $openPos) {
+                // `/* generated */`: closed on the very same line, only that line is
+                // dropped — the block state must not leak into the lines that follow
+                // (Codex review of PR #50).
+                $closePos = strpos($line, '*/', $openPos + 2);
+                $inBlock = false === $closePos;
                 continue;
             }
 
@@ -239,7 +249,7 @@ final class LoopDetector
             }
 
             $length = (int) $matches[2];
-            if ($length >= 1 && $length <= LoopThresholds::COUNTED_MAX) {
+            if ($length >= LoopThresholds::COUNTED_MIN && $length <= LoopThresholds::COUNTED_MAX) {
                 return $matches[1];
             }
         }

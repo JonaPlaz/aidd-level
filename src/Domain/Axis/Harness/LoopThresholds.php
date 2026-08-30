@@ -33,4 +33,12 @@ final class LoopThresholds
      * là où elle s'applique (§ 8).
      */
     public const int COUNTED_MAX = 20;
+
+    /**
+     * The shortest counted loop that still counts as a bound (§ 4): a length of 0 would mean
+     * the `for` never restarts anything, so it is not a retry construct at all. Named next to
+     * `COUNTED_MAX` instead of leaving `1` unexplained in `LoopDetector` (Codex review of
+     * PR #50) — the spec never considered another value.
+     */
+    public const int COUNTED_MIN = 1;
 }
