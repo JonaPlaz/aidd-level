@@ -39,7 +39,7 @@ for (const [index, git] of invocations.entries()) {
     const args = ` ${git.args} `;
     // Refspecs may be shell-quoted: '+HEAD:branch' — the shell strips the quotes before git.
     if (/\s--force(\s|$)|\s-f(\s|$)|\s-[a-zA-Z]*f[a-zA-Z]*(\s|$)|\s["']?\+\S+|\s--mirror(\s|$)/.test(args)) {
-      block('guard-git: bare --force / -f / +refspec / --mirror is refused; rebase then push with --force-with-lease (CLAUDE.md).');
+      block('guard-git: bare --force / -f / +refspec / --mirror is refused; rebase then push with --force-with-lease (AGENTS.md).');
     }
     continue;
   }
@@ -109,7 +109,7 @@ function checkCommit(git, root, priorAdds) {
 function checkGh(command, root) {
   for (const { subcommand, args } of parseGhPrAll(command)) {
     if (subcommand === 'create' && !branchOwnsALock(root)) {
-      block('guard-git: gh pr create outside a /feature run is refused; open the issue and run /feature <n°> (CLAUDE.md § Flow).');
+      block("guard-git: gh pr create outside a /feature run is refused; open the issue and run /feature <n°> (AGENTS.md § Flow d'une PR).");
     }
     if (subcommand === 'merge' && !/\s--(auto|disable-auto)(\s|$)/.test(` ${args} `)) {
       block('guard-git: synchronous gh pr merge is refused; arm with --auto (spec 08).');
