@@ -224,15 +224,22 @@ c'est une pièce à conviction, et `docs/sortie.md` en porte une.
 
 **`.claude/README.md` — le harnais.** Contenu, vérifié le 2026-08-30 contre
 `.claude/settings.json` et l'arborescence de `.claude/` (six événements câblés sur cinq
-scripts) :
+scripts, plus deux scripts qui ne sont câblés sur aucun événement) :
 
 - les **trois agents** (`spec`, `dev`, `front`) : une ligne chacun — ce qu'il fait, et s'il
   travaille en worktree. **Ni modèle, ni effort, ni `maxTurns`** : ce sont des valeurs, elles
   vivent en spec 08 § 2 et § 11.5 ;
 - les **trois skills** (`bootstrap`, `feature`, `roadmap`) : ce que chacun déclenche ;
-- les **cinq scripts de hook** (`guard-layers`, `guard-git`, `format`, `journal`,
-  `roadmap-ready`) avec l'événement qui les appelle ; `lib.js` et `.claude/hooks/tests/` cités
-  pour ce qu'ils sont. La **règle** exacte de chaque hook reste en spec 08 § 4 ;
+- **tout ce que contient `.claude/hooks/`**, en deux groupes que le panneau ne mélange pas :
+  - les **cinq scripts câblés sur un événement** (`guard-layers.js`, `guard-git.js`,
+    `format.js`, `journal.js`, `roadmap-ready.js`) avec l'événement qui les appelle ;
+  - les **deux scripts câblés sur aucun événement**, sans quoi le panneau serait faux au sens du
+    § 7.5 : **`feature-lock.js`**, l'utilitaire de verrou par issue — appelé en ligne de commande
+    au premier et au dernier geste du skill `feature`, et c'est le verrou qu'il pose que
+    `guard-git.js` exige pour laisser passer un `gh pr create` (spec 08 § 3) — et `lib.js`,
+    la bibliothèque partagée. `.claude/hooks/tests/` est cité pour ce qu'il est ;
+
+  La **règle** exacte de chaque hook et le détail du verrou restent en spec 08 § 3 et § 4 ;
 - le **flow d'une PR en cinq lignes** : issue → `/feature <n°>` → PR + label `to-review` →
   revue Codex et une passe de correction → `gh pr merge --auto`. Les garanties détaillées et
   l'ordre exact restent `AGENTS.md § Flow d'une PR` ;
@@ -268,7 +275,14 @@ Pointeurs : § 4 de cette spec (les types), specs 01 à 04 (un axe chacune), 05 
 - **ce que contient ce dépôt** : les six profils (quatre calibrés, `venec` et `lancelot` sans
   niveau attribué), `profiles/self/` fabriqué par `scripts/self-profile.py`, et
   `profiles/ATTRIBUTION.md` pour la licence ;
-- **où les champs sont lus** : `src/Infrastructure/Profile/`, un lecteur par pièce ;
+- **où les champs sont lus** : `src/Infrastructure/Profile/`, **un lecteur dédié par mesure
+  parsée** — `GitActivityReader`, `PullRequestsReader`, `RepoContextReader`,
+  `SonarMeasuresReader` (`JsonFile` n'étant que le décodage). Le reste est à
+  `DirectoryProfileSource`, et le panneau le dit tel quel : il lit `profile.json` lui-même
+  (identité et `available`), applique le gate, **note la seule présence** de `declaratif.md`, et
+  **inventorie** `code/` et `session.md` sans jamais les ouvrir. Vérifié le 2026-08-30 dans
+  `src/Infrastructure/Profile/` : quatre lecteurs, pas huit — « un lecteur par pièce » serait
+  faux ;
 - **`fixtures/`** : les dossiers fabriqués pour les cas que les profils fournis ne prouvent pas ;
 - que **champ absent ≠ zéro** — nommé, jamais re-justifié : spec 05 § *Signal absent*.
 
@@ -339,7 +353,9 @@ veut dire ici :
 2026-08-30). `AGENTS.md § Stack et
 commandes` garde la stack et la phrase « les commandes du projet passent par `make` (Docker) ;
 ne pas lancer `php`, `composer` ni `vendor/bin/*` directement », et **remplace sa table par un
-renvoi** au README. Motif : deux tables de commandes, c'est exactement la duplication que
+renvoi** dont la chaîne est fixée ici parce qu'un test la cherche : la section porte
+« table des cibles : `README.md` § Commandes » — d'où le titre **`## Commandes`** dans le
+README (§ 7.3, point 2). Motif : deux tables de commandes, c'est exactement la duplication que
 08 § 12.1 interdit ; et entre les deux, celle qui doit rester est celle du livrable noté, que le
 jury lit — un agent, lui, ouvre le fichier qu'on lui pointe. C'est le **seul contenu**
 d'`AGENTS.md` que ce chantier déplace ; son autre modification, le point de revue 10 (§ 7.5),
@@ -382,8 +398,13 @@ Quel panneau, pour quel chemin :
 | `.claude/**` (agents, skills, hooks, `settings.json`) | `.claude/README.md` |
 | `src/**` (couches, types, emplacement des seuils, point d'extension) | `src/README.md` |
 | `profiles/**`, `fixtures/**`, `src/Infrastructure/Profile/**`, `scripts/self-profile.py` | `profiles/README.md` |
-| `src/Infrastructure/Render/**`, `src/Domain/Progression/**`, les statuts, `tests/expected/**` | `docs/sortie.md` |
+| `src/Infrastructure/Render/**`, `src/Domain/Progression/**`, les statuts, `tests/expected/**` | `docs/sortie.md` **et** `README.md` |
 | `Makefile`, `Dockerfile`, `compose.yaml`, `bin/**` | `README.md` |
+
+La quatrième ligne vise **deux** fichiers, et c'est la seule : le `README.md` embarque les
+quatre premières lignes d'une sortie réelle (§ 7.3). Une forme de sortie qui change périme donc
+`docs/sortie.md` **et** cet extrait — les corriger séparément ferait mentir le `README.md` en
+suivant la table à la lettre.
 
 **Où la règle est écrite : une seule fois, dans `AGENTS.md` › Code Review Rules, en point 10**
 (les points 1 à 9 sont inchangés et cités ailleurs — 08 § 12.1 : on ajoute à la fin, on ne
@@ -421,20 +442,30 @@ chantier à part** (même escalade que 08 § 12.5, test 3).
 | `docs/specs/00-vue-ensemble.md` | ce § 7 |
 | `docs/specs/08-harnais.md` § 12.1 | **une ligne** de renvoi : les panneaux relèvent du § 7 de la spec 00 et pointent `AGENTS.md` au lieu de le recopier |
 | `docs/specs/07-amorcage.md` | **une ligne** de renvoi : le squelette de `README.md` du jour 1 est l'amorçage, pas la cible (le texte du jour 1 n'est pas réécrit) |
+| `profiles/self/` | **régénéré** en fin de chantier (`python3 scripts/self-profile.py`), commit `chore(self)` séparé — `repo-context/` y recopie l'`AGENTS.md` modifié |
 | `docs/journal.md` | une ligne : « arbitrages intégrés à `docs/specs/00-vue-ensemble.md` », pointeur = l'issue #56, où les réponses ont été données (08 § 12.2) |
 | `ROADMAP.md` | une ligne ajoutée (append-only), chantier **19**, périmètre élargi et sorties ci-dessus |
 
 Ligne à ajouter à `ROADMAP.md`, colonnes de la table :
 
 ```
-| 19 | Documentation par partie — quatre panneaux, README réduit à trois choses, la doc suit le code | 00 § 7 (2026-08-30) | 18 | `.claude/README.md`, `src/README.md`, `profiles/README.md`, `docs/sortie.md`, `README.md`, `AGENTS.md`, `docs/specs/00`, `docs/specs/07`, `docs/specs/08` | #56 | spec écrite |
+| 19 | Documentation par partie — quatre panneaux, README réduit à trois choses, la doc suit le code | 00 § 7 (2026-08-30) | 18 | `.claude/README.md`, `src/README.md`, `profiles/README.md`, `docs/sortie.md`, `README.md`, `AGENTS.md`, `docs/specs/00-vue-ensemble.md`, `docs/specs/07-amorcage.md`, `docs/specs/08-harnais.md`, `profiles/self/` | #56 | spec écrite |
 ```
+
+Deux exigences sur cette cellule, et elles viennent du code qui la lit — `outputsOverlap` de
+`.claude/hooks/roadmap-ready.js` ne rapproche deux sorties que par **égalité** ou par **parent
+délimité par `/`** (vérifié le 2026-08-30, `na === nb || na.startsWith(nb + '/') ||
+nb.startsWith(na + '/')`) :
+
+- **les noms de fichiers sont entiers** : `docs/specs/00` ne recouvrirait pas
+  `docs/specs/00-vue-ensemble.md` et un chantier concurrent qui touche cette spec ne serait pas
+  écarté. D'où les trois noms complets ;
+- **`profiles/self/` y figure**, puisque ce chantier le régénère : sans lui, un front qui
+  refabrique les profils pourrait partir en même temps.
 
 La première ligne du chantier 19 déclarait deux sorties (`.claude/README.md`, `src/README.md`) ;
 celle-ci les remplace par la liste complète. C'est nécessaire, pas cosmétique : la condition 5
-du § 11.3 de la spec 08 (chevauchement de sorties) lit **la dernière ligne qui déclare des
-sorties**, et un chantier concurrent touchant `README.md`, `AGENTS.md` ou une spec doit s'en
-trouver écarté.
+du § 11.3 de la spec 08 lit **la dernière ligne qui déclare des sorties**.
 
 `profiles/self/repo-context/` recopie `AGENTS.md` : ce chantier le modifie, donc `profiles/self/`
 est régénéré en fin de chantier comme le veut `docs/methode.md`, dans un commit `chore(self)`
@@ -469,16 +500,28 @@ main dans la PR ; leur résultat va au journal. `make test`, `make lint`, `make 
    specs qu'il cite :
 
    ```
-   norm() { sed -E 's/^[[:space:]]*[-*>|][[:space:]]*//; s/[`*_#|]//g; s/[[:punct:]]+/ /g; \
-            s/[[:space:]]+/ /g; s/^ //; s/ $//' "$1" | tr 'A-Z' 'a-z' \
+   prose() { awk '/^```/{f=!f; next} !f' "$1"; }          # même exclusion qu'au test 1
+   norm() { prose "$1" \
+            | sed -E 's/^[[:space:]]*[-*>|][[:space:]]*//; s/[`*_#|]//g; s/[[:punct:]]+/ /g; \
+                      s/[[:space:]]+/ /g; s/^ //; s/ $//' | tr 'A-Z' 'a-z' \
             | awk 'NF>=5' | sort -u; }
    comm -12 <(norm A) <(norm B)
    ```
 
-   Sortie attendue : **vide**. Le filtre `NF>=5` (adaptation assumée) écarte les titres et les
-   en-têtes de table, qui se ressemblent sans rien dupliquer ; en dessous de cinq mots, une ligne
-   n'énonce pas une règle. Le test attrape le copier-coller, pas la paraphrase — la paraphrase
-   reste du ressort de la revue (points 8 et 9).
+   Sortie attendue : **vide**. **Le test ne juge que la prose** : les blocs délimités par ```
+   sont retirés avant normalisation, exactement comme au test 1. Sans cette exclusion le test
+   serait insatisfaisable par construction — le § 7.3 met les **quatre premières lignes** d'une
+   sortie réelle dans le `README.md` et le § 7.2 la **même** sortie, complète, dans
+   `docs/sortie.md` : `axe bloquant : …` et `Niveau atteint : …` seraient comptées comme des
+   lignes dupliquées alors qu'elles sont la pièce à conviction, citée deux fois **exprès**. La
+   contrepartie est écrite : l'extrait du `README.md` est un **préfixe littéral** de la sortie de
+   `docs/sortie.md`, jamais une variante — une divergence entre les deux se voit à l'œil et
+   relève du test 5 et du point de revue 10, pas de ce `comm`.
+
+   Le filtre `NF>=5` (adaptation assumée) écarte les titres et les en-têtes de table, qui se
+   ressemblent sans rien dupliquer ; en dessous de cinq mots, une ligne n'énonce pas une règle.
+   Le test attrape le copier-coller, pas la paraphrase — la paraphrase reste du ressort de la
+   revue (points 8 et 9).
 
    **Jetons de contrôle**, chacun présent dans **exactement un** des cinq fichiers — ils prouvent
    que ce qui a quitté le `README.md` (§ 7.4) y a bien été retiré, et qu'il a atterri à un seul
@@ -488,19 +531,37 @@ main dans la PR ; leur résultat va au journal. `make test`, `make lint`, `make 
    les cinq fichiers : un nom d'artefact ou de classe apparaît légitimement aussi dans `AGENTS.md`
    et dans les specs, c'est un nom, pas une règle qui se répète (08 § 12.5, test 2).
 
-   **2b. Une seule table de commandes** (§ 7.3) : `grep -n '^| \`make ' AGENTS.md` → **vide**, et
-   `grep -c 'README.md' AGENTS.md` ≥ 1 sur la ligne du § Stack et commandes, qui porte le renvoi.
-   La même commande sur `README.md` rend la table complète : elle existe, et une seule fois.
-3. **Aucun seuil chiffré dans un panneau** (interdit 1 du § 7.1) :
+   **2b. Une seule table de commandes** (§ 7.3). Les deux moitiés se lisent **dans la seule
+   section `## Stack et commandes`** — la chercher dans tout `AGENTS.md` ne prouverait rien, le
+   point de revue 10 y cite déjà `README.md` :
 
    ```
-   grep -nE '[=≥≤><][[:space:]]*[0-9]|[0-9][[:space:]]*(%|min|h|fichiers|lignes|essais)' \
-     .claude/README.md src/README.md profiles/README.md docs/sortie.md
+   section() { sed -n '/^## Stack et commandes$/,/^## /p' AGENTS.md; }
+   section | grep -n '^| `make '                  # attendu : vide (plus de table)
+   section | grep -c 'README.md § Commandes'      # attendu : 1 (la phrase de renvoi)
+   grep -c '^| `make ' README.md                  # attendu : ≥ 1 (la table y est, et là seulement)
+   ```
+3. **Aucun seuil chiffré dans un panneau** (interdit 1 du § 7.1). **Sur la prose seule**, blocs
+   délimités par ``` exclus comme aux tests 1 et 2 (fonction `prose`, définie au test 2) :
+
+   ```
+   for f in .claude/README.md src/README.md profiles/README.md docs/sortie.md; do
+     prose "$f" | grep -nE '[=≥≤><][[:space:]]*[0-9]|[0-9][[:space:]]*(%|min|h|fichiers|lignes|essais)' \
+       | sed "s|^|$f:|"
+   done
    ```
 
-   Attendu : **vide**. Les seules valeurs numériques du jeu (`PHP 8.5`, `PHPUnit 13`,
-   `symfony/console ^7.4`) vivent dans le `README.md`, hors panneaux, et ne correspondent à aucun
-   de ces motifs.
+   Attendu : **vide**. L'exclusion n'est pas un confort : la sortie réelle copiée dans
+   `docs/sortie.md` **contient** des valeurs (`median_files_changed = 29`, « plancher 5 »…) parce
+   que c'est ce que l'outil imprime ; les filtrer du bloc reviendrait à falsifier la pièce. Ce
+   que l'interdit 1 vise, ce sont les **seuils écrits en prose** par le panneau, seuls capables
+   d'entrer en concurrence avec la constante nommée du domaine ou avec une spec. Les valeurs
+   numériques de prose admises ailleurs (`PHP 8.5`, `PHPUnit 13`, `symfony/console ^7.4`) vivent
+   dans le `README.md`, hors panneaux, et ne correspondent à aucun de ces motifs.
+
+   Cas dégradé : un chiffre du bloc de sortie qui **devient faux** (la sortie a changé) n'est pas
+   affaire de ce test mais de la table du § 7.5, quatrième ligne — `docs/sortie.md` **et**
+   `README.md` se recopient depuis une exécution réelle, jamais à la main.
 4. **Aucun pointeur pendant.** Chaque chemin cité entre accents graves dans les cinq fichiers
    existe (`test -e`), et chaque `§` cité existe dans le fichier visé. Ce test est la raison
    d'être du § 7.2 sur `profiles/README.md` : c'est exactement la classe de défaut qu'il corrige.
