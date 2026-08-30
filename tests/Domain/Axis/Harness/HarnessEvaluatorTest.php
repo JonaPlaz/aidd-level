@@ -187,9 +187,15 @@ final class HarnessEvaluatorTest extends TestCase
     #[Test]
     public function aMakefileWithABoundedRetryPromotesBehaviorToLoopsGold(): void
     {
+        // docs/specs/02-axe-harness.md § 2: a bound written only in a comment is no longer a
+        // cap. The bound must be executable — an actual numeric shell test, as TP1 does.
         $repoContext = new RepoContext(files: [
             new RepoFile('.claude/hooks/check-assertions.js', 'module.exports = () => {};'),
-            new RepoFile('Makefile', "check:\n\tuntil ./run.sh; do echo retrying; done\n\t# max_attempts=3"),
+            new RepoFile(
+                'Makefile',
+                "check:\n\t@n=0; \\\n\tuntil ./run.sh; do \\\n\tn=\$((n+1)); \\\n"
+                ."\t[ \$n -ge 3 ] && exit 1; \\\n\tdone",
+            ),
         ]);
 
         $verdict = $this->evaluator->evaluate($this->profile(

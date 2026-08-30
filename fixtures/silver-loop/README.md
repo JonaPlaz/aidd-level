@@ -13,9 +13,13 @@ fixture construit les deux à la fois : une boucle de relance bornée réellemen
 
 - `git-activity.json › context_files.agents_md = true`, compteurs `rules_count`,
   `skills_count`, `hooks_count` > 0 → Harness au moins « behavior ».
-- `repo-context/.github/workflows/ci.yml` contient `retry` (motif de relance) **et**
-  `max_attempts: 3` (motif de borne), deux tokens indépendants dans le même fichier éligible
-  (`.github/workflows/`) → Harness détecte une boucle → Gold sur cet axe.
+- `repo-context/.github/workflows/ci.yml` contient `retry` (L9, motif de relance) **et**
+  `max_attempts: 3` (L12, motif de borne), à 3 lignes d'écart — dans la fenêtre de
+  `LoopThresholds::PROXIMITY_LINES` (10, docs/specs/02-axe-harness.md § « Boucles —
+  détection resserrée ») → Harness détecte une boucle → Gold sur cet axe. Correction
+  factuelle (chantier 14) : l'action est publiée sous `nick-fields/retry` depuis le
+  2022-02-15 ; `nick-invision/retry` était l'ancien chemin, utilisé par erreur ici avant
+  cette correction.
 - `pull_requests.median_correction_commits_after_open = 0` avec `total = 20 ≥
   SampleFloors::MIN_PR_SAMPLE_ABSENCE (12)` → Intervention = Silver, confirmé.
 - `pull_requests.median_files_changed = 13` (bande L) → Gold sur Taille.

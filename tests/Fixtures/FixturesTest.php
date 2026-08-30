@@ -55,6 +55,26 @@ final class FixturesTest extends TestCase
     }
 
     #[Test]
+    public function loopFarApartCapsAtCopperOnHarnessAloneWithNoUnboundedRetryNote(): void
+    {
+        // docs/specs/02-axe-harness.md § « Boucles — détection resserrée » (chantier 14,
+        // issue #45): `while` L3 and `budget` L210 in the same file, 207 lines apart — the
+        // exact shape the issue complained about. The old, unbounded LoopDetector promoted
+        // this to Gold; the proximity window closes it back to Copper.
+        $assessment = $this->evaluate('loop-far-apart');
+
+        self::assertSame(AssessmentStatus::Evaluated, $assessment->status);
+        self::assertSame(Level::Copper, $assessment->level);
+        self::assertEqualsCanonicalizing([Axis::Harness], $assessment->cappingAxes);
+
+        $harness = $this->verdictFor($assessment->verdicts, Axis::Harness);
+        self::assertSame(Level::Copper, $harness->level);
+
+        $noteTexts = array_map(static fn ($note): string => $note->text, $harness->notes);
+        self::assertSame(['boucles : aucune relance bornée trouvée'], $noteTexts);
+    }
+
+    #[Test]
     public function goldUnreachableStaysAtSilverWithTheInterventionCeilingNote(): void
     {
         $assessment = $this->evaluate('gold-unreachable');
