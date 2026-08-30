@@ -30,3 +30,6 @@ jobs:
 
       - name: Duplication
         run: vendor/bin/phpcpd --min-lines=5 --min-tokens=70 src
+
+      - name: Hooks (violation tests)
+        run: node .claude/hooks/tests/guard-git.test.js

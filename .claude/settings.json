@@ -21,7 +21,8 @@
       "Bash(gh issue:*)",
       "Bash(gh api:*)",
       "Bash(gh run:*)",
-      "Bash(sleep:*)"
+      "Bash(sleep:*)",
+      "Bash(node .claude/hooks/feature-lock.js:*)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

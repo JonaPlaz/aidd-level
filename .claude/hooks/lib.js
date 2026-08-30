@@ -68,4 +68,35 @@ function parseGit(command) {
   return parseGitAll(command)[0] || null;
 }
 
-module.exports = { readInput, projectRoot, relativePath, block, parseGit, parseGitAll };
+// `<git common dir>/feature-locks/`: shared by every worktree of the repository, inside
+// .git so it is never committed. Falls back to `<root>/.git/feature-locks` outside git.
+function locksDir(root) {
+  const { execSync } = require('node:child_process');
+  try {
+    const common = execSync('git rev-parse --path-format=absolute --git-common-dir', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return path.join(common, 'feature-locks');
+  } catch {
+    return path.join(root, '.git', 'feature-locks');
+  }
+}
+
+// Every `gh pr <subcommand> …` invocation of a shell command, with `gh pr` global flags
+// (`-R/--repo <value>`, `--help`…) parsed before the subcommand rather than assumed absent.
+function parseGhPrAll(command) {
+  const segments = command.split(/&&|\|\||;|\||\n/);
+  const found = [];
+  for (const segment of segments) {
+    const m = /^\s*(?:\(\s*)?(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*gh\s+pr\s+(.*)$/s.exec(segment);
+    if (!m) continue;
+    const tokens = m[1].split(/\s+/).filter(Boolean);
+    let i = 0;
+    while (i < tokens.length && tokens[i].startsWith('-')) {
+      const [name, inlineValue] = tokens[i].split(/=(.*)/s);
+      i += (name === '-R' || name === '--repo') && inlineValue === undefined ? 2 : 1;
+    }
+    found.push({ subcommand: tokens[i] || '', args: tokens.slice(i + 1).join(' ') });
+  }
+  return found;
+}
+
+module.exports = { readInput, projectRoot, relativePath, block, parseGit, parseGitAll, parseGhPrAll, locksDir };

@@ -2,7 +2,6 @@
 name: feature
 description: Démarre un chantier depuis une issue GitHub — spec si absente (arrêt humain pour validation), puis implémentation, PR, une revue Codex à l'ouverture, une passe de correction avec réponse tracée, merge automatique. Spec : docs/specs/08-harnais.md.
 argument-hint: [issue-number] [--trivial]
-disable-model-invocation: true
 ---
 
 # /feature <n°>
@@ -10,6 +9,18 @@ disable-model-invocation: true
 Issue → spec → dev → PR → review → merge. Un seul point d'arrêt humain : la validation d'une
 spec nouvelle. Tout le reste s'enchaîne. **Le skill possède la boucle de revue et le merge ;
 l'agent `dev` rend la main dès la PR ouverte.**
+
+## 0. Verrou du cycle
+
+Le hook `guard-git` refuse `gh pr create` hors d'un run de ce skill et tout `gh pr merge`
+synchrone. Premier geste, avant tout : `node .claude/hooks/feature-lock.js lock <n°>`
+(`lock trivial-<horodatage>` en mode `--trivial`). Le verrou est **propre à ce run** : il
+n'autorise que les branches qui portent le numéro (`feat/<n°>-…`, `docs/spec-<n°>` ;
+`trivial/…` pour le mode trivial). Dernier geste, sur toute sortie (mergé, `blocked`, spec à
+valider) : `node .claude/hooks/feature-lock.js unlock <n°>` — jamais le verrou d'un autre run.
+Un verrou du même numéro déjà présent à l'entrée = un run précédent s'est arrêté sans
+nettoyer : le signaler au journal, continuer (`lock` est idempotent). Les deux commandes sont
+dans la liste `allow` de `.claude/settings.json` : aucun arrêt pour permission.
 
 ## 1. Routage (une seule fois — iron rule)
 

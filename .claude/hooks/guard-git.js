@@ -7,13 +7,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
-const { readInput, projectRoot, block, parseGitAll } = require('./lib');
+const { readInput, projectRoot, block, parseGitAll, parseGhPrAll, locksDir } = require('./lib');
 
 const input = readInput();
 const command = (input.tool_input && input.tool_input.command) || '';
 
 // Every git invocation of a chained command is checked: `git add -A && git commit`,
 // `git fetch origin && git push --force`.
+// `gh pr create` only inside a /feature run: the current branch must carry the id of a lock
+// this run owns (`<git common dir>/feature-locks/<id>`, see feature-lock.js); `gh pr merge`
+// only with --auto or --disable-auto — a synchronous merge is never part of the flow
+// (spec 08 § Le cycle est imposé, chantier 16).
+checkGh(command, projectRoot(input));
+
 const invocations = parseGitAll(command);
 for (const [index, git] of invocations.entries()) {
   const root = git.cPath ? path.resolve(projectRoot(input), git.cPath) : projectRoot(input);
@@ -87,4 +93,35 @@ function checkCommit(git, root, priorAdds) {
   if (touchesDomain && touchesInfra) {
     block('guard-git: a commit must not touch src/Domain and src/Infrastructure together (AGENTS.md rule 7). Split the commit.');
   }
+}
+
+
+function checkGh(command, root) {
+  for (const { subcommand, args } of parseGhPrAll(command)) {
+    if (subcommand === 'create' && !branchOwnsALock(root)) {
+      block('guard-git: gh pr create outside a /feature run is refused; open the issue and run /feature <n°> (CLAUDE.md § Flow).');
+    }
+    if (subcommand === 'merge' && !/\s--(auto|disable-auto)(\s|$)/.test(` ${args} `)) {
+      block('guard-git: synchronous gh pr merge is refused; arm with --auto (spec 08).');
+    }
+  }
+}
+
+// A lock `<n°>` authorizes branches carrying that number as a token (`feat/40-slug`,
+// `docs/spec-40`); a lock `trivial-*` authorizes `trivial/*` branches. Any other lock present
+// belongs to another run and authorizes nothing here.
+function branchOwnsALock(root) {
+  let branch = '';
+  try {
+    branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return false;
+  }
+  let ids = [];
+  try {
+    ids = fs.readdirSync(locksDir(root));
+  } catch {
+    return false;
+  }
+  return ids.some((id) => (id.startsWith('trivial-') ? branch.startsWith('trivial/') : new RegExp(`(^|[-/])${id}([-/]|$)`).test(branch)));
 }
