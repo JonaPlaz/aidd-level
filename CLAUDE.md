@@ -26,7 +26,7 @@
 
 - Une issue → `/feature <n°>` : le skill porte spec, dev, revue, merge. À la main seulement pour
   une PR de docs ou de profils, et alors **le même flow** :
-  1. PR ouverte (`gh pr create`), attendre le verdict Codex : réaction `eyes` = en cours,
+  1. PR ouverte (`gh pr create`), label `to-review`, attendre le verdict Codex : réaction `eyes` = en cours,
      `+1` = sans remarque, revue `COMMENTED` = remarques inline (`gh api …/pulls/<n>/comments`).
   2. Remarques : une passe de correction, **une réponse tracée par remarque** (« appliqué en
      `<sha>` » ou « non appliqué, motif »), rebase, push `--force-with-lease`.
