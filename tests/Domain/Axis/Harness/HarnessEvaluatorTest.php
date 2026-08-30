@@ -273,6 +273,41 @@ final class HarnessEvaluatorTest extends TestCase
     }
 
     #[Test]
+    public function aMissingRatioWithNoMemoryFileAndZeroCountersIsARangeWithANote(): void
+    {
+        // docs/specs/02-axe-harness.md § Ratio absent: agents_md=false, counters known at 0,
+        // ratio null — the axis cannot decide between "prompts" (Red) and "rien" (White).
+        $verdict = $this->evaluator->evaluate($this->profile(
+            agentsMd: false,
+            rules: 0,
+            skills: 0,
+            hooks: 0,
+            agents: 0,
+            ratio: null,
+        ));
+
+        self::assertSame(Level::White, $verdict->level);
+        self::assertInstanceOf(Range::class, $verdict->confidence);
+        self::assertSame(Level::White, $verdict->confidence->floor);
+        self::assertSame(Level::Red, $verdict->confidence->ceiling);
+        self::assertSame(0, $verdict->confidence->missingSample);
+        // Codex review of PR #44: the facts actually observed (no memory file, every
+        // counter known at zero) stay cited as Evidence, so "Ce qui a mené là" explains why
+        // Blue to Gold are excluded even though the floor itself is undecided.
+        self::assertCount(2, $verdict->evidences);
+        self::assertSame('context_files.agents_md', $verdict->evidences[0]->pointer->field);
+        self::assertSame('false', $verdict->evidences[0]->pointer->value);
+        self::assertSame('context_files', $verdict->evidences[1]->pointer->field);
+        self::assertCount(1, $verdict->notes);
+        self::assertSame(
+            'ratio absent : impossible de départager prompts de rien',
+            $verdict->notes[0]->text,
+        );
+        self::assertSame('commits.ai_coauthored_ratio', $verdict->notes[0]->pointer->field);
+        self::assertSame('absent', $verdict->notes[0]->pointer->value);
+    }
+
+    #[Test]
     public function countersWithoutAMemoryFileAreCappedAtPromptsWithANote(): void
     {
         // Constated case, unproven on real data (§ Règle): counters > 0, agents_md = false.

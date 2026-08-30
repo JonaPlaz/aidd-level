@@ -38,6 +38,11 @@ use AiddLevel\Domain\Threshold\SampleFloors;
  * counts commits per PR, `median_correction_commits_after_open` counts correction commits
  * after opening — different fields, not comparable (docs/specs/03-axe-intervention.md §
  * Corroboration).
+ *
+ * A median exactly on one of the two one-point discontinuities (`MEDIAN_MAJORITY_MIN`,
+ * `MEDIAN_PARTIAL`) gets a note naming the border and the level just below it: the level does
+ * not change, but the verdict's margin is nil and the sample rule (§ Median on the border)
+ * still owns the status alone.
  */
 final class InterventionEvaluator implements AxisEvaluator
 {
@@ -113,6 +118,11 @@ final class InterventionEvaluator implements AxisEvaluator
 
         $notes = [$this->ceilingNote($activity)];
 
+        $borderNote = $this->borderNote($level, $median);
+        if (null !== $borderNote) {
+            $notes[] = $borderNote;
+        }
+
         $corroboration = $this->corroborationNote($activity);
         if (null !== $corroboration) {
             $notes[] = $corroboration;
@@ -156,6 +166,39 @@ final class InterventionEvaluator implements AxisEvaluator
                 $level->name,
             )),
         };
+    }
+
+    /**
+     * The median falls exactly on `MEDIAN_MAJORITY_MIN` (Red/Blue) or `MEDIAN_PARTIAL`
+     * (Blue/Copper) — the only two one-point discontinuities of this axis
+     * (docs/specs/03-axe-intervention.md § Médiane sur la borne). `MEDIAN_KEY_STEPS` (1) is
+     * not a border: any strictly positive median is Copper, only 0 opens Silver, so a median
+     * of 1 gets no note. The note never touches the status — the sample rule keeps deciding
+     * it independently.
+     */
+    private function borderNote(Level $level, float $median): ?Note
+    {
+        $levelBelow = match ($median) {
+            (float) InterventionThresholds::MEDIAN_MAJORITY_MIN => Level::Blue,
+            (float) InterventionThresholds::MEDIAN_PARTIAL => Level::Copper,
+            default => null,
+        };
+
+        if (null === $levelBelow) {
+            return null;
+        }
+
+        return $this->note(
+            sprintf(
+                "médiane %s sur la borne exacte %s/%s ; en dessous, l'axe serait %s",
+                self::formatNumber($median),
+                $level->name,
+                $levelBelow->name,
+                $levelBelow->name,
+            ),
+            self::MEDIAN_FIELD,
+            self::formatNumber($median),
+        );
     }
 
     private function ceilingNote(GitActivity $activity): Note
