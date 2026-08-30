@@ -5,20 +5,20 @@
   },
   "repositories": 1,
   "pull_requests": {
-    "total": 39,
-    "median_files_changed": 4,
-    "median_lines_changed": 367,
-    "median_correction_commits_after_open": 1,
+    "total": 40,
+    "median_files_changed": 4.5,
+    "median_lines_changed": 372.0,
+    "median_correction_commits_after_open": 1.0,
     "merged_without_human_edit_after_open": 8
   },
   "commits": {
-    "total": 128,
-    "median_per_pr": 3,
-    "ai_coauthored_ratio": 0.74
+    "total": 131,
+    "median_per_pr": 3.0,
+    "ai_coauthored_ratio": 0.75
   },
   "parallelism": {
     "max_concurrent_branches": 7,
-    "median_concurrent_branches": 1.0
+    "median_concurrent_branches": 1
   },
   "context_files": {
     "agents_md": true,
