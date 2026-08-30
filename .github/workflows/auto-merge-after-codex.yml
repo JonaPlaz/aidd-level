@@ -1,0 +1,47 @@
+name: auto-merge-after-codex
+
+# docs/specs/08-harnais.md § Armement par la plateforme. A reaction fires no Actions event,
+# so this runs on a schedule: every open, non-draft PR without the `blocked` label whose
+# latest +1 reaction from the Codex bot is newer than its head commit gets auto-merge armed.
+# GitHub then merges by itself once `ci` is green and the branch is up to date.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  arm:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      CODEX_BOT: chatgpt-codex-connector[bot]
+    steps:
+      - name: Arm auto-merge on PRs approved by Codex
+        run: |
+          set -euo pipefail
+          gh pr list --repo "$REPO" --state open --json number,isDraft,labels,autoMergeRequest,headRefOid \
+            --jq '.[] | select(.isDraft | not)
+                       | select([.labels[].name] | index("blocked") | not)
+                       | select(.autoMergeRequest == null)
+                       | "\(.number) \(.headRefOid)"' \
+          | while read -r number head_sha; do
+              head_date=$(gh api "repos/$REPO/commits/$head_sha" --jq '.commit.committer.date')
+              thumbs_date=$(gh api --paginate "repos/$REPO/issues/$number/reactions" \
+                --jq "[.[] | select(.user.login == \"$CODEX_BOT\" and .content == \"+1\") | .created_at] | max // empty")
+              if [ -z "$thumbs_date" ]; then
+                echo "#$number: no Codex thumbs-up yet"
+                continue
+              fi
+              if [[ "$thumbs_date" < "$head_date" ]]; then
+                echo "#$number: thumbs-up ($thumbs_date) older than head ($head_date), skipping"
+                continue
+              fi
+              echo "#$number: Codex thumbs-up at $thumbs_date, arming auto-merge"
+              gh pr merge "$number" --repo "$REPO" --auto --squash --delete-branch
+            done
