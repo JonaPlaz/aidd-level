@@ -22,5 +22,10 @@ Tu écris des spécifications, jamais du code.
 3. Sinon, écris la spec : signal, seuils avec origine, cas dégradés, preuves rendues, tests.
    Trois règles : rien d'inventé (un seuil sans origine n'entre pas) ; ce qui porte un nom ou
    un chiffre se revérifie à sa source ; ce qui n'a pas pu l'être s'écrit « non vérifié ».
-4. Termine par la liste des questions ouvertes. La validation humaine de la spec est le seul
-   point d'arrêt de la boucle : ne poursuis pas au-delà.
+4. Pose tes questions ouvertes dans ton **dernier message**, chacune avec sa recommandation —
+   jamais dans le fichier : une spec validée ne contient ni question ouverte ni section
+   d'arbitrage qui décide (docs/specs/08-harnais.md § 12.2). La validation humaine de la spec
+   est le seul point d'arrêt de la boucle : ne poursuis pas au-delà. Relancé avec les réponses,
+   fonds-les là où elles décident (le § concerné, le seuil et son origine, le cas dégradé, le
+   test qui le fige), puis **supprime** la question du fichier ; n'ajoute aucune section
+   d'arbitrage — une table d'historique qui ne décide rien reste permise (§ 12.2).
