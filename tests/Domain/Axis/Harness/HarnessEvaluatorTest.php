@@ -216,6 +216,37 @@ final class HarnessEvaluatorTest extends TestCase
     }
 
     #[Test]
+    public function anUnboundedRetryInAnotherFileIsStillNotedEvenWhenALoopIsFoundElsewhere(): void
+    {
+        // Codex review of PR #50: the note must not be gated behind "no loop found" — a
+        // second, unrelated file naming a relance with no bound in its window is still a
+        // fact worth citing, even though the axis already reached Gold via the Makefile.
+        $repoContext = new RepoContext(files: [
+            new RepoFile('.claude/hooks/check-assertions.js', 'module.exports = () => {};'),
+            new RepoFile(
+                'Makefile',
+                "check:\n\t@n=0; \\\n\tuntil ./run.sh; do \\\n\tn=\$((n+1)); \\\n"
+                ."\t[ \$n -ge 3 ] && exit 1; \\\n\tdone",
+            ),
+            new RepoFile('scripts/flaky.sh', "retry_deploy\n"),
+        ]);
+
+        $verdict = $this->evaluator->evaluate($this->profile(
+            agentsMd: true,
+            rules: 3,
+            skills: 3,
+            hooks: 1,
+            agents: 2,
+            ratio: 0.87,
+            repoContext: $repoContext,
+        ));
+
+        self::assertSame(Level::Gold, $verdict->level);
+        $noteTexts = array_map(static fn (Note $note): string => $note->text, $verdict->notes);
+        self::assertContains('relance non bornée trouvée dans `scripts/flaky.sh`', $noteTexts);
+    }
+
+    #[Test]
     public function aRetryPatternUnderDocsIsNeverReadAsALoop(): void
     {
         $repoContext = new RepoContext(files: [

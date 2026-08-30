@@ -435,6 +435,51 @@ final class LoopDetectorTest extends TestCase
         self::assertSame('scripts/first.sh', $unbounded->file->path);
     }
 
+    // --- Passe de correction (revue Codex, PR #50) -------------------------------------
+
+    #[Test]
+    public function aBlockCommentOpenedAndClosedOnTheSameLineOnlyDropsThatLine(): void
+    {
+        $content = implode("\n", [
+            '/* generated */',
+            'until make test; do :; done',
+            'max_attempts: 3',
+        ]);
+        $repoContext = self::singleFile('scripts/generated.sh', $content);
+
+        $match = LoopDetector::detect($repoContext);
+        self::assertNotNull($match, 'a same-line block comment must not leave the block state open for the rest of the file');
+        self::assertSame(2, $match->retryLine);
+        self::assertSame(3, $match->boundLine);
+    }
+
+    #[Test]
+    public function aWordThatMerelyStartsWithARetryTokenIsNeverReadAsARestart(): void
+    {
+        $repoContext = self::singleFile('scripts/config.js', self::padded(1, 'const retryable = true;', 3, 'const budget = 10;'));
+
+        self::assertNull(LoopDetector::detect($repoContext));
+        self::assertNull(LoopDetector::detectUnboundedRetry($repoContext));
+    }
+
+    #[Test]
+    public function aWordThatMerelyStartsWithUntilIsNeverReadAsARestart(): void
+    {
+        $repoContext = self::singleFile('scripts/config.js', self::padded(1, 'const untilted = true;', 3, 'const budget = 10;'));
+
+        self::assertNull(LoopDetector::detect($repoContext));
+        self::assertNull(LoopDetector::detectUnboundedRetry($repoContext));
+    }
+
+    #[Test]
+    public function invalidUtf8ContentHasNoMatchEvenWithBothTokensOnOneLine(): void
+    {
+        $repoContext = self::singleFile('scripts/blob.sh', "\xFF retry\nmax_attempts=3");
+
+        self::assertNull(LoopDetector::detect($repoContext));
+        self::assertNull(LoopDetector::detectUnboundedRetry($repoContext));
+    }
+
     private static function singleFile(string $path, string $content): RepoContext
     {
         return new RepoContext(files: [new RepoFile($path, $content)]);
