@@ -39,21 +39,24 @@ de l'axe, 0)` et une note par champ manquant.
 
 Ajouté le 2026-08-30 (`lancelot`, PR #35). Les médianes de compteurs entiers tombent sur des
 entiers et les seuils sont des entiers : un verdict **sur la borne exacte** est le cas courant,
-pas l'exception (`lancelot` 3 = borne Red, `bohort` 2 = borne Blue, `arthur` 1 = borne Copper).
-Le niveau ne change pas — 3 **est** « sur la majorité » — mais la sortie ne doit pas lire
-`lancelot` (marge nulle) du même ton que `perceval` (4, marge d'un point).
+pas l'exception (`lancelot` 3 = borne Red, `bohort` 2 = borne Blue). Le niveau ne change pas —
+3 **est** « sur la majorité » — mais la sortie ne doit pas lire `lancelot` (marge nulle) du
+même ton que `perceval` (4, marge d'un point).
 
-Règle : quand la médiane est **égale** à la constante qui ouvre son niveau
-(`MEDIAN_MAJORITY_MIN`, `MEDIAN_PARTIAL`, `MEDIAN_KEY_STEPS`), une note, pointée, nomme la
-borne et le niveau voisin :
+Règle : quand la médiane est **égale** à l'une des deux discontinuités d'un point,
+`MEDIAN_MAJORITY_MIN` (3, Red/Blue) ou `MEDIAN_PARTIAL` (2, Blue/Copper), une note, pointée,
+nomme la borne et le niveau voisin. `MEDIAN_KEY_STEPS` (1) n'est **pas** une borne : toute
+médiane strictement positive est Copper (0,5 l'est aussi), seul 0 ouvre Silver — `arthur` n'a
+donc pas de note (remarque Codex sur la PR #36) :
 
 - `Intervention : médiane 3 sur la borne exacte Red/Blue ; en dessous, l'axe serait Blue`
   (`git-activity.json › pull_requests.median_correction_commits_after_open = 3`)
 
 Elle ne dit **pas** combien de PR feraient basculer : la distribution n'est pas fournie
-(`pull-requests.json` écarté, ci-dessous). Statut inchangé (`évalué`) : ce n'est ni un
-échantillon court ni un signal absent. Médiane 0 n'est pas concernée (Silver est déjà gardé
-par le plancher d'échantillon). Les autres axes ne sont pas concernés par ce chantier :
+(`pull-requests.json` écarté, ci-dessous). La note **ne touche pas au statut** : il reste
+celui que la règle d'échantillon produit indépendamment — `évalué` à `total ≥ 5`, fourchette
+et `évalué, confiance basse` en dessous (remarque Codex sur la PR #36). Médiane 0 n'est pas
+concernée (Silver est déjà gardé par le plancher d'échantillon). Les autres axes ne sont pas concernés par ce chantier :
 Taille et En parallèle rendent des bandes, pas des crans d'un point.
 
 ## Corroboration, jamais décision
@@ -83,5 +86,6 @@ Quatre profils → valeurs ci-dessus · fixture médiane 0 avec `total = 8` → 
 [Copper, Silver], « 4 PR manquantes » · fixture médiane 0 avec `total = 30` → Silver.
 Médiane absente → `Range(White, Silver, 0)` + note pointée « = absent » · bornes exactes :
 `total = 12` médiane 0 → Silver, `total = 11` → fourchette, `total = 5` médiane 2 → Blue,
-`total = 4` → fourchette · médiane sur la borne : 3, 2, 1 → note « sur la borne exacte »
-(`lancelot`, `bohort`, `arthur`) ; 4 et 0 → pas de note ; 2,5 → Blue sans note.
+`total = 4` → fourchette · médiane sur la borne : 3 et 2 → note « sur la borne exacte »
+(`lancelot`, `bohort`) ; 1 (`arthur`), 4 et 0 → pas de note ; 2,5 → Blue sans note ; médiane 2
+avec `total = 4` → fourchette **et** note, statut confiance basse.
