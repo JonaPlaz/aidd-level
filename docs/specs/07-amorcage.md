@@ -37,7 +37,9 @@ Rien de `src/` ni de `tests/` : le code n'est jamais le premier geste. Le harnai
 `.github/`) arrive à l'étape 6 du brief, par sa propre spec.
 
 Le partage `AGENTS.md` / `CLAUDE.md` décrit ci-dessus est celui du jour 1, non réécrit : voir
-spec 08 § 12 pour son évolution vers une source unique.
+spec 08 § 12 pour son évolution vers une source unique. Même réserve pour le `README.md` : le
+squelette du jour 1 (« section en construction », « le détail arrive avec le code ») est
+l'amorçage, pas la cible — voir spec 00 § 7.3 pour ce que le README porte au rendu.
 
 ## Étape 2 — dépôt local
 

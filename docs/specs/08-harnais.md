@@ -724,6 +724,11 @@ est **régénéré en fin de chantier** par `scripts/self-profile.py` — ce cha
 exception : régénération dedans, dans un commit `chore(self)` **séparé** (une couche par commit),
 et l'épreuve 7 du § 12.5 vérifie que le verdict ne bouge pas.
 
+Les panneaux de documentation (`.claude/README.md`, `src/README.md`, `profiles/README.md`,
+`docs/sortie.md`) relèvent de la spec 00 § 7 : ils décrivent ce qui existe et **pointent** vers
+`AGENTS.md` et les specs, ils ne les recopient jamais — même règle de source unique, appliquée
+un cran plus loin.
+
 ### 12.2 (b) Une spec validée ne se contredit pas : les arbitrages sont intégrés
 
 Constat (issue #49, PR #47) : les réponses de Jonathan aux questions ouvertes de la spec du
