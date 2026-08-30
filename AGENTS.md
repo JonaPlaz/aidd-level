@@ -51,10 +51,10 @@ une implémentation. `docs/calibration.md` est la preuve chiffrée sur les quatr
 
 Mis à jour à chaque fin de chantier — une ligne, pas un historique (l'historique est `ROADMAP.md`).
 
-- **2026-08-30** : chantiers 0–18 mergés (14 : #50 `9b8e0e1` ; 17 : #51 `b84bcd9` ; 18 : #53
-  `fddc825`). Profils `venec` et `lancelot` (sans niveau) ajoutés (#35). Reste : vidéo
-  (Jonathan, issue #12) et le relevé du cron `auto-merge-after-codex` prévu le 2026-08-31
-  (spec 08 § 12.3, ouvrir une issue si le compte de runs planifiés est toujours nul).
+- **2026-08-30** : chantiers 0–19 mergés (19, READMEs d'architecture : spec #58 `47bfa04`,
+  panneaux #59 `06587c6`). Profils `venec` et `lancelot` (sans niveau) ajoutés (#35). Reste :
+  vidéo (Jonathan, issue #12) et le relevé du cron `auto-merge-after-codex` prévu le
+  2026-08-31 (spec 08 § 12.3, ouvrir une issue si le compte de runs planifiés est toujours nul).
 
 ## Stack et commandes
 
