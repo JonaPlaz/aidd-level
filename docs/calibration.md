@@ -57,3 +57,28 @@ fois »), `arthur` est Copper faute de boucle, `perceval` est Red sur trois axes
 
 `make demo` évalue les quatre profils ; `tests/Calibration/` fixe ces quatre verdicts en
 tests — un repreneur qui bouge un seuil voit aussitôt ce qui bascule.
+
+## Profils sans niveau (ajoutés le 2026-08-30)
+
+Upstream a ajouté `venec` et `lancelot` (commit `b5e9661`) **sans niveau attribué** — « les
+quatre premiers servent à se caler, ceux-là à éprouver l'outil sur ce qu'il n'a pas vu ». Ils ne
+prouvent donc rien sur la calibration ; le tableau ci-dessous dit ce que l'outil en fait.
+
+| | `venec` | `lancelot` |
+|---|---|---|
+| Pièces | `profile.json`, `session.md` | les huit |
+| `git-activity.json` | **absent** | présent, 64 PR |
+| `median_files_changed` | — | 6,5 → M → Blue |
+| `median_correction_commits_after_open` | — | **3** → Red (borne exacte de `MEDIAN_MAJORITY_MIN`) |
+| `context_files` | — | `agents_md = true`, compteurs 0 → Blue |
+| `median_concurrent_branches` | — | 1 → Green |
+| **Sortie** | ⛔ non évaluable, identité lue, piste « fournir `git-activity.json` » | 🔺 **Red par Intervention** seul |
+
+Ce que ça montre : le gate tient sur un dossier presque vide (aucun plantage, le lot continue),
+et le déclaratif de `lancelot` (« avancé, on n'orchestre plus, trois ou quatre sessions en
+parallèle, des règles par domaine ») est contredit par ses propres compteurs (`rules_count = 0`,
+médiane parallèle 1, 3 corrections par PR). Réserve : `lancelot` est Red sur la borne exacte
+(médiane 3) ; à 2,5 il serait Blue. `session.md` n'est pas lu (spec 00 § 3), le refus sur
+`venec` est un choix explicite, pas une limite.
+
+Figé par `tests/Calibration/UnattributedProfilesTest.php` ; `make evaluate venec lancelot`.

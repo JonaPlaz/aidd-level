@@ -152,7 +152,7 @@ src/
                          (symfony/console), TextRenderer, ApplicationFactory (câblage à la main)
 tests/                  un test par décision de scoring, tests/Calibration/ figeant les quatre
                          niveaux attribués par les organisateurs, tests/expected/ pour le rendu
-profiles/               les quatre profils fournis (voir Attribution ci-dessous) et leur README
+profiles/               les six profils fournis (quatre calibrés, deux sans niveau — voir Attribution)
 docs/                   specs/ (les décisions produit), calibration.md, journal.md
 ```
 
@@ -181,6 +181,9 @@ exige PHP ≥ 8.4.1). `make up` le construit et le lance ; les autres commandes 
 Les dossiers `profiles/perceval`, `profiles/bohort`, `profiles/leodagan` et `profiles/arthur`
 sont copiés tels quels depuis [`ai-driven-dev/laivel-up`](https://github.com/ai-driven-dev/laivel-up)
 (commit `89b9e35`, 2026-08-28), sous licence MIT — voir `profiles/ATTRIBUTION.md`.
+`profiles/venec` et `profiles/lancelot` viennent du même dépôt (commit `b5e9661`, 2026-08-30),
+**sans niveau attribué** : `venec` n'a pas de `git-activity.json` (sortie « non évaluable »),
+`lancelot` sort Red par Intervention. Ce sont les verdicts de l'outil, pas une calibration.
 
 ## En construction
 
