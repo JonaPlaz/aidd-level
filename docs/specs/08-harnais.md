@@ -109,9 +109,16 @@ ouvertes à la main en une matinée, hors skill, avec à chaque fois un pas du c
 (label, armement, merge synchrone tenté). `disable-model-invocation: true` sur `feature`
 (posé au chantier 0 sans motif écrit) obligeait un humain à taper `/feature` — l'inverse du
 but. Levé : la session lance le skill elle-même. Et le hook `guard-git` refuse `gh pr create`
-hors d'un run du skill (marqueur `<git common dir>/feature.lock`, posé au premier geste du
-skill, retiré au dernier, visible depuis les worktrees) et tout `gh pr merge` sans `--auto`
-ni `--disable-auto`. Une PR de docs passe aussi par une issue et `/feature`.
+hors d'un run du skill et tout `gh pr merge` sans `--auto` ni `--disable-auto`. Le run se
+prouve par un **verrou qui lui appartient** (remarque Codex sur la PR #41 : un verrou unique
+partagé cassait les runs concurrents en worktrees) : `<git common dir>/feature-locks/<n°>`,
+posé par `node .claude/hooks/feature-lock.js lock <n°>` au premier geste du skill, retiré
+par `unlock <n°>` au dernier, visible depuis tous les worktrees, jamais committé ; il
+n'autorise que les branches portant ce numéro (`feat/<n°>-…`, `docs/spec-<n°>` ;
+`trivial-<horodatage>` ↔ `trivial/…`). Les deux commandes sont dans la liste `allow` de
+`.claude/settings.json` : le run ne s'arrête pas pour une permission. Les flags globaux de
+`gh pr` (`-R/--repo`) sont parsés avant le sous-commande, jamais supposés absents. Une PR de
+docs passe aussi par une issue et `/feature`.
 
 **Iron rule** : une fois l'agent dev engagé sur une issue, le skill ne revient pas au routage ;
 il termine, ou s'arrête sur une borne.
@@ -125,7 +132,7 @@ Versionnés dans `.claude/settings.json` (sinon ils ne comptent pas), scripts da
 | Hook | Événement · matcher | Règle | Test de déclenchement (doute 7) |
 |---|---|---|---|
 | `guard-layers.js` | `PreToolUse` · `Edit\|Write` | fichier sous `src/Domain/` dont le contenu contient `use AiddLevel\Application` ou `use AiddLevel\Infrastructure` → exit 2 | écrire volontairement un `use` interdit, constater le refus |
-| `guard-git.js` | `PreToolUse` · `Bash` (`git commit`, `git push`) | commit : fichiers (index, ou `-a`) touchant `src/Domain/` **et** `src/Infrastructure/` → exit 2 ; chemin déclaré dans `.worktreeinclude` → exit 2. Push : `--force` ou `-f` nu → exit 2 (`--force-with-lease` seul admis, pour le rebase) | stager deux couches ; `git push --force` ; constater les refus |
+| `guard-git.js` | `PreToolUse` · `Bash` (`git commit`, `git push`, `gh pr create`, `gh pr merge`) | commit : fichiers (index, ou `-a`) touchant `src/Domain/` **et** `src/Infrastructure/` → exit 2 ; chemin déclaré dans `.worktreeinclude` → exit 2. Push : `--force` ou `-f` nu → exit 2 (`--force-with-lease` seul admis, pour le rebase). `gh pr create` : branche courante sans verrou `feature-locks/<n°>` correspondant → exit 2. `gh pr merge` sans `--auto` ni `--disable-auto` → exit 2 (chantier 16) | `.claude/hooks/tests/guard-git.test.js`, exécuté par la CI : deux couches stagées ; `git push --force` ; `gh pr create` sans verrou, avec le verrou d'un autre run, avec `-R` avant le sous-commande ; `gh pr merge --squash` ; et les voisins admis |
 | `format.js` | `PostToolUse` · `Edit\|Write` | fichier `*.php` → `make fmt FILE=…` (php-cs-fixer dans Docker, **version non vérifiée** pour PHP 8.5) | éditer un fichier mal indenté, constater la réécriture |
 | `journal.js` | `PostToolUseFailure` · `Bash` ; `SubagentStop` ; `Stop` (seulement hors `main` avec travail non committé) | ajoute une ligne à `docs/journal.md` (format § 6) avec `git rev-parse HEAD`, branche, et pour `PostToolUseFailure` la commande échouée — **le journal est alimenté par hook, pas par la bonne volonté du modèle** | faire échouer `make test`, constater la ligne |
 

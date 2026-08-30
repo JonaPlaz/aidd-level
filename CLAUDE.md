@@ -26,7 +26,8 @@
 
 - **Toute PR naît d'une issue et passe par `/feature <n°>`**, docs comprises. Le skill est
   invocable par la session ; le hook `guard-git` refuse `gh pr create` hors d'un run du skill
-  et tout `gh pr merge` synchrone (seuls `--auto` et `--disable-auto` passent).
+  (verrou par issue, `node .claude/hooks/feature-lock.js lock|unlock <n°>`) et tout
+  `gh pr merge` synchrone (seuls `--auto` et `--disable-auto` passent).
 - Ce que le skill garantit, dans l'ordre : label `to-review` ; attente du verdict Codex
   (`eyes` = en cours, `+1` = sans remarque, revue `COMMENTED` = remarques inline) ; une passe
   de correction ; **rebase et push d'abord**, puis une réponse tracée par remarque citant le SHA
