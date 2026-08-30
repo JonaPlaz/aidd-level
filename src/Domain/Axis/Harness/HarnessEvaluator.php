@@ -30,6 +30,12 @@ use AiddLevel\Domain\Profile\RepoFile;
  * User-facing text — every `Evidence` claim and `Note` text — is French: it is read by the
  * jury (docs/specs/00-vue-ensemble.md § Namespace, docs/specs/06-sortie-et-progression.md).
  * Pointer identifiers (file, field) stay as they are in the source JSON.
+ *
+ * `commits.ai_coauthored_ratio` only enters this axis to separate "prompts" from "rien" when
+ * `agents_md = false` and every counter is zero; a missing ratio (`null`) is never coerced
+ * into `0.0` — it turns the White verdict into a `Range(White, Red, 0)` with a note
+ * (docs/specs/02-axe-harness.md § Ratio absent), the same "signal absent" rule as
+ * docs/specs/05-robustesse.md, capped at the only level this counter pair leaves undecided.
  */
 final class HarnessEvaluator implements AxisEvaluator
 {
@@ -39,6 +45,10 @@ final class HarnessEvaluator implements AxisEvaluator
         .'ne peut pas sauter context engineering';
 
     private const string NO_LOOP_FOUND_NOTE = 'boucles : aucune relance bornée trouvée';
+
+    // docs/specs/02-axe-harness.md § Ratio absent.
+    private const string RATIO_ABSENT_NOTE =
+        'ratio absent : impossible de départager prompts de rien';
 
     /**
      * The four counter fields, mapped to their name in `git-activity.json › context_files`
@@ -88,7 +98,9 @@ final class HarnessEvaluator implements AxisEvaluator
         }
 
         $agentsMd = $contextFiles->agentsMd;
-        $ratio = $profile->gitActivity->aiCoauthoredRatio ?? 0.0;
+        // docs/specs/02-axe-harness.md § Ratio absent: `null` is not coerced into 0.0 — a
+        // missing ratio is a missing datum, not a claim of "no AI-authored commit".
+        $ratio = $profile->gitActivity->aiCoauthoredRatio;
         $counters = [
             'rules' => $contextFiles->rules,
             'skills' => $contextFiles->skills,
@@ -130,11 +142,25 @@ final class HarnessEvaluator implements AxisEvaluator
                 self::COUNTERS_WITHOUT_MEMORY_NOTE,
                 GitActivityPointer::of('context_files.agents_md', 'false'),
             );
-        } elseif ($ratio > 0.0) {
+        } elseif (null !== $ratio && $ratio > 0.0) {
             $level = HarnessLevel::Prompts;
             $evidences[] = new Evidence(
                 "prompts : commits co-écrits avec l'IA, aucun fichier de contexte",
                 GitActivityPointer::of('commits.ai_coauthored_ratio', (string) $ratio),
+            );
+        } elseif (null === $ratio) {
+            // The only piece that could still separate "prompts" (Red) from "rien" (White)
+            // is missing: the axis cannot decide between them, so it becomes a Range instead
+            // of a Confirmed White (docs/specs/02-axe-harness.md § Ratio absent).
+            return new AxisVerdict(
+                axis: Axis::Harness,
+                level: Level::White,
+                confidence: new Range(Level::White, Level::Red, missingSample: 0),
+                evidences: [],
+                notes: [new Note(
+                    self::RATIO_ABSENT_NOTE,
+                    GitActivityPointer::of('commits.ai_coauthored_ratio', 'absent'),
+                )],
             );
         } else {
             $level = HarnessLevel::None;
