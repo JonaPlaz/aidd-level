@@ -304,6 +304,45 @@ final class EvaluateProfileHandlerTest extends TestCase
     }
 
     #[Test]
+    public function aMissingHarnessRatioWithZeroCountersEndsUpLowConfidence(): void
+    {
+        // docs/specs/02-axe-harness.md § Ratio absent: agents_md=false, counters known at 0,
+        // ratio null — never white-filtered (the filter treats a missing ratio as "non nul",
+        // docs/specs/05 § Filtre) and HarnessEvaluator renders a Range, dragging the whole
+        // assessment status down to "évalué, confiance basse" end to end.
+        $profile = $this->profileWith(new GitActivity(
+            period: null,
+            pullRequestsTotal: 20,
+            medianFilesChanged: 10.0,
+            medianLinesChanged: 200.0,
+            medianCorrectionCommitsAfterOpen: 1.0,
+            mergedWithoutHumanEditAfterOpen: 5,
+            aiCoauthoredRatio: null,
+            maxConcurrentBranches: 2,
+            medianConcurrentBranches: 1.0,
+            contextFiles: new ContextFiles(agentsMd: false, rules: 0, skills: 0, hooks: 0, agents: 0),
+        ));
+
+        $handler = $this->handlerWithFixtureSource($profile);
+        $assessment = $handler->handle(new EvaluateProfile('unused'));
+
+        self::assertSame(AssessmentStatus::LowConfidence, $assessment->status);
+
+        $harness = null;
+        foreach ($assessment->verdicts as $verdict) {
+            if (Axis::Harness === $verdict->axis) {
+                $harness = $verdict;
+            }
+        }
+
+        self::assertNotNull($harness);
+        self::assertSame(Level::White, $harness->level);
+        self::assertInstanceOf(Range::class, $harness->confidence);
+        self::assertSame(Level::White, $harness->confidence->floor);
+        self::assertSame(Level::Red, $harness->confidence->ceiling);
+    }
+
+    #[Test]
     public function axisVerdictNotesReachTheAssessmentPrefixedByTheirAxis(): void
     {
         // Codex review of PR #24, remark 3: bohort's Parallelism axis carries a "peak

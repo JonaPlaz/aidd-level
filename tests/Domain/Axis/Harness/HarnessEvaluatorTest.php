@@ -273,6 +273,35 @@ final class HarnessEvaluatorTest extends TestCase
     }
 
     #[Test]
+    public function aMissingRatioWithNoMemoryFileAndZeroCountersIsARangeWithANote(): void
+    {
+        // docs/specs/02-axe-harness.md § Ratio absent: agents_md=false, counters known at 0,
+        // ratio null — the axis cannot decide between "prompts" (Red) and "rien" (White).
+        $verdict = $this->evaluator->evaluate($this->profile(
+            agentsMd: false,
+            rules: 0,
+            skills: 0,
+            hooks: 0,
+            agents: 0,
+            ratio: null,
+        ));
+
+        self::assertSame(Level::White, $verdict->level);
+        self::assertInstanceOf(Range::class, $verdict->confidence);
+        self::assertSame(Level::White, $verdict->confidence->floor);
+        self::assertSame(Level::Red, $verdict->confidence->ceiling);
+        self::assertSame(0, $verdict->confidence->missingSample);
+        self::assertSame([], $verdict->evidences);
+        self::assertCount(1, $verdict->notes);
+        self::assertSame(
+            'ratio absent : impossible de départager prompts de rien',
+            $verdict->notes[0]->text,
+        );
+        self::assertSame('commits.ai_coauthored_ratio', $verdict->notes[0]->pointer->field);
+        self::assertSame('absent', $verdict->notes[0]->pointer->value);
+    }
+
+    #[Test]
     public function countersWithoutAMemoryFileAreCappedAtPromptsWithANote(): void
     {
         // Constated case, unproven on real data (§ Règle): counters > 0, agents_md = false.

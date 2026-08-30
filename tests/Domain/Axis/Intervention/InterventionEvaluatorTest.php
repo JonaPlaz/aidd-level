@@ -202,6 +202,85 @@ final class InterventionEvaluatorTest extends TestCase
         self::assertSame([], $corroborationNotes);
     }
 
+    /**
+     * docs/specs/03-axe-intervention.md § Médiane sur la borne: `lancelot` (median 3, the
+     * Red/Blue border) and `bohort` (median 2, the Blue/Copper border) each get a note; the
+     * level and the status (sample far above the floor) are untouched.
+     *
+     * @return iterable<string, array{float, int, string}>
+     */
+    public static function borderMedians(): iterable
+    {
+        yield 'lancelot: médiane 3, borne Red/Blue' => [3.0, 63, "médiane 3 sur la borne exacte Red/Blue ; en dessous, l'axe serait Blue"];
+        yield 'bohort: médiane 2, borne Blue/Copper' => [2.0, 48, "médiane 2 sur la borne exacte Blue/Copper ; en dessous, l'axe serait Copper"];
+    }
+
+    #[Test]
+    #[DataProvider('borderMedians')]
+    public function aMedianExactlyOnABorderGetsANoteWithoutChangingLevelOrStatus(
+        float $median,
+        int $total,
+        string $expectedNoteText,
+    ): void {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile($median, $total));
+
+        self::assertInstanceOf(Confirmed::class, $verdict->confidence);
+
+        $borderNotes = array_filter(
+            $verdict->notes,
+            static fn (Note $note): bool => str_contains($note->text, 'sur la borne exacte'),
+        );
+        self::assertCount(1, $borderNotes);
+        $note = array_values($borderNotes)[0];
+        self::assertSame($expectedNoteText, $note->text);
+        self::assertSame('pull_requests.median_correction_commits_after_open', $note->pointer->field);
+        self::assertSame((string) (int) $median, $note->pointer->value);
+    }
+
+    /**
+     * @return iterable<string, array{float}>
+     */
+    public static function nonBorderMedians(): iterable
+    {
+        yield 'arthur: médiane 1, pas une borne' => [1.0];
+        yield 'perceval: médiane 4, marge d\'un point' => [4.0];
+        yield 'leodagan: médiane 0, gardé par le plancher, pas une borne' => [0.0];
+        yield 'échantillon pair: médiane 2,5' => [2.5];
+    }
+
+    #[Test]
+    #[DataProvider('nonBorderMedians')]
+    public function aMedianAwayFromABorderGetsNoBorderNote(float $median): void
+    {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile($median, 48));
+
+        $borderNotes = array_filter(
+            $verdict->notes,
+            static fn (Note $note): bool => str_contains($note->text, 'sur la borne exacte'),
+        );
+        self::assertSame([], $borderNotes);
+    }
+
+    #[Test]
+    public function aMedianOnTheBorderWithATotalBelowTheFloorGetsBothARangeAndTheNote(): void
+    {
+        $verdict = new InterventionEvaluator()->evaluate($this->profile(2.0, 4));
+
+        self::assertInstanceOf(Range::class, $verdict->confidence);
+        self::assertSame(Level::Blue, $verdict->confidence->floor);
+        self::assertSame(Level::Silver, $verdict->confidence->ceiling);
+
+        $borderNotes = array_filter(
+            $verdict->notes,
+            static fn (Note $note): bool => str_contains($note->text, 'sur la borne exacte'),
+        );
+        self::assertCount(1, $borderNotes);
+        self::assertSame(
+            "médiane 2 sur la borne exacte Blue/Copper ; en dessous, l'axe serait Copper",
+            array_values($borderNotes)[0]->text,
+        );
+    }
+
     private function profile(
         ?float $median,
         ?int $total,
