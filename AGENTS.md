@@ -30,6 +30,27 @@ une implémentation. `docs/calibration.md` est la preuve chiffrée sur les quatr
    confiance basse`, `non évaluable`).
 7. Un commit ne touche pas `src/Domain/` et `src/Infrastructure/` ensemble (gardé par hook).
 
+## Décisions figées — ne pas rouvrir sans nouvelle donnée
+
+| Décision | Où |
+|---|---|
+| Niveau = **minimum** des quatre axes ; cellule = minimum, pas valeur exacte | spec 00 § 2 |
+| **Médiane**, jamais maximum (Taille, En parallèle) | specs 01, 04 |
+| Intervention = médiane des commits correctifs après ouverture, bandes `≥ 3` Red, `≥ 2` Blue, `> 0` Copper (0,5 inclus), `= 0` Silver ; **aucune pièce ne donne l'auteur par commit**, le ratio humain/IA par branche est incalculable | spec 03 |
+| `declaratif.md` hors calcul ; `session.md`, `code/` **non lus** ; `pull-requests.json` écarté | specs 00 § 3, 03 |
+| Champ absent (`null`) ≠ zéro : jamais coercé, axe non observable → fourchette + note | spec 05 § Signal absent |
+| Harness cumule : behavior sans mémoire n'existe pas ; boucle = relance **et** borne | spec 02 |
+| Gold Intervention inatteignable par construction (cadrage automatisé non observable) | spec 03 |
+| Codex revoit **une fois** à l'ouverture ; `+1` = verdict favorable ; seule re-revue : `@codex review` si la correction change un seuil, un niveau ou la règle du minimum ; merge par `--auto`, jamais synchrone | spec 08, CLAUDE.md § Flow |
+
+## Où en est le projet
+
+Mis à jour à chaque fin de chantier — une ligne, pas un historique (l'historique est `ROADMAP.md`).
+
+- **2026-08-30** : chantiers 0–12 mergés. Profils `venec` et `lancelot` (sans niveau) ajoutés
+  (#35). En cours : 15 (auto-merge par Actions, #37), 13 (note « sur la borne », ratio absent,
+  spec #36). À spécifier : 14 (boucles resserrées). Reste : vidéo (Jonathan).
+
 ## Stack et commandes
 
 PHP 8.5, `symfony/console ^7.4`, PHPUnit 13. Tout tourne dans Docker (PHP local insuffisant).
