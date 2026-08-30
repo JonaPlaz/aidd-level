@@ -68,16 +68,27 @@ function parseGit(command) {
   return parseGitAll(command)[0] || null;
 }
 
-// `<git common dir>/feature-locks/`: shared by every worktree of the repository, inside
-// .git so it is never committed. Falls back to `<root>/.git/feature-locks` outside git.
-function locksDir(root) {
+// `<git common dir>`: shared by every worktree of the repository, inside .git so nothing
+// written under it is ever committed. Falls back to `<root>/.git` outside a git checkout.
+function commonDir(root) {
   const { execSync } = require('node:child_process');
   try {
-    const common = execSync('git rev-parse --path-format=absolute --git-common-dir', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-    return path.join(common, 'feature-locks');
+    return execSync('git rev-parse --path-format=absolute --git-common-dir', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch {
-    return path.join(root, '.git', 'feature-locks');
+    return path.join(root, '.git');
   }
+}
+
+// `<git common dir>/feature-locks/`: one file per /feature run, named by issue number
+// (or `trivial-<stamp>`, `roadmap-<stamp>`).
+function locksDir(root) {
+  return path.join(commonDir(root), 'feature-locks');
+}
+
+// `<git common dir>/roadmap-paused`: pause marker (spec 08 § 11.7) — survives the session
+// and is visible from every worktree, same directory as `feature-locks/`.
+function pausedMarker(root) {
+  return path.join(commonDir(root), 'roadmap-paused');
 }
 
 // Every `gh pr <subcommand> …` invocation of a shell command, with `gh pr` global flags
@@ -99,4 +110,4 @@ function parseGhPrAll(command) {
   return found;
 }
 
-module.exports = { readInput, projectRoot, relativePath, block, parseGit, parseGitAll, parseGhPrAll, locksDir };
+module.exports = { readInput, projectRoot, relativePath, block, parseGit, parseGitAll, parseGhPrAll, locksDir, commonDir, pausedMarker };

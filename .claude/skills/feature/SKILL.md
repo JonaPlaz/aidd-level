@@ -8,7 +8,8 @@ argument-hint: [issue-number] [--trivial]
 
 Issue → spec → dev → PR → review → merge. Un seul point d'arrêt humain : la validation d'une
 spec nouvelle. Tout le reste s'enchaîne. **Le skill possède la boucle de revue et le merge ;
-l'agent `dev` rend la main dès la PR ouverte.**
+l'agent `dev` rend la main dès la PR ouverte.** Lancé par un agent `front` (chantier 17), il ne
+travaille jamais dans le checkout principal : `W` est alors le worktree de l'agent `dev`.
 
 ## 0. Verrou du cycle
 

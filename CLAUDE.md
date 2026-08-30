@@ -35,3 +35,9 @@
   niveau ou la règle du minimum ; `gh pr merge --auto --squash --delete-branch` dans tous les
   cas ; ligne au journal avec pointeur.
 - Le cron `auto-merge-after-codex` (chantier 15) n'est qu'un filet pour un 👍 resté sans suite.
+- **`/roadmap` ouvre les fronts prêts** (dépendances mergées sur GitHub, spec présente, aucun
+  verrou ni chevauchement de sorties) et lance un agent `front` par front, en arrière-plan ;
+  `/feature` reste le cycle unitaire qu'il précharge (chantier 17).
+- Trois mots reconnus par la session pour la roadmap : « **pause roadmap** » (plus de nouveau
+  front, les fronts en cours vont au bout), « **stop roadmap** » (idem, plus arrêt des fronts
+  en cours et désarmement des PR), « **reprends la roadmap** » (seule façon de repartir).

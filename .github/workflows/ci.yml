@@ -32,4 +32,6 @@ jobs:
         run: vendor/bin/phpcpd --min-lines=5 --min-tokens=70 src
 
       - name: Hooks (violation tests)
-        run: node .claude/hooks/tests/guard-git.test.js
+        run: |
+          node .claude/hooks/tests/guard-git.test.js
+          node .claude/hooks/tests/roadmap-ready.test.js
