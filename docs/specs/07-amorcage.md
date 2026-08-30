@@ -36,6 +36,9 @@ rien d'autre que `.brief/` et `docs/`. Pas de `.git`.
 Rien de `src/` ni de `tests/` : le code n'est jamais le premier geste. Le harnais (`.claude/`,
 `.github/`) arrive à l'étape 6 du brief, par sa propre spec.
 
+Le partage `AGENTS.md` / `CLAUDE.md` décrit ci-dessus est celui du jour 1, non réécrit : voir
+spec 08 § 12 pour son évolution vers une source unique.
+
 ## Étape 2 — dépôt local
 
 ```

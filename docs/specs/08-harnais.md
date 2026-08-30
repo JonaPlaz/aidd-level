@@ -497,8 +497,8 @@ plateforme l'expire seule au bout de 7 jours.
 - **La validation de toute spec nouvelle** — seul point d'arrêt humain (§ 7), et la raison pour
   laquelle un front sans spec ne s'ouvre pas.
 - **Le retrait d'un `blocked`** : rien ne repart tant qu'il est là.
-- **Trois mots**, reconnus par la session (instruction du skill et de `CLAUDE.md § Flow`, pas un
-  hook — aucun hook ne peut arrêter un sous-agent) :
+- **Trois mots**, reconnus par la session (instruction du skill et d'`AGENTS.md § Flow d'une
+  PR`, pas un hook — aucun hook ne peut arrêter un sous-agent) :
   - « **pause roadmap** » : plus aucun front nouveau, tâche de remplissage annulée ; les fronts
     en cours vont au bout (leur travail est déjà dans une PR) ;
   - « **stop roadmap** » : idem, plus `TaskStop` sur chaque front en cours et
@@ -530,9 +530,9 @@ plateforme l'expire seule au bout de 7 jours.
 | `.claude/hooks/guard-git.js` | extension : checkout principal en lecture seule pour git dès qu'il y a plus d'un verrou ; verrou `roadmap-*` n'autorisant aucune branche |
 | `.claude/agents/front.md` | l'agent qui tient un cycle `feature` complet, en arrière-plan |
 | `.claude/settings.json` | hook `SessionStart`, `allow` de `roadmap-ready.js` |
-| `CLAUDE.md` § Flow | trois lignes : `/roadmap` ouvre les fronts prêts, `feature` reste le cycle unitaire, « pause / stop roadmap » |
+| `AGENTS.md` § Flow d'une PR | trois lignes : `/roadmap` ouvre les fronts prêts, `feature` reste le cycle unitaire, « pause / stop roadmap » |
 | `.claude/skills/feature/SKILL.md` | une phrase : lancé par un agent `front`, il ne travaille jamais dans le checkout principal |
-| `ROADMAP.md` | une ligne ajoutée : `| 17 | Lancement autonome de la roadmap | 08 § 11 | 16 | .claude/skills/roadmap/, .claude/hooks/, .claude/agents/front.md, CLAUDE.md | #46 | à faire |` |
+| `ROADMAP.md` | une ligne ajoutée : `| 17 | Lancement autonome de la roadmap | 08 § 11 | 16 | .claude/skills/roadmap/, .claude/hooks/, .claude/agents/front.md, AGENTS.md | #46 | à faire |` |
 
 Ce chantier ne touche ni `src/` ni `tests/` : aucune décision de scoring, aucun seuil de
 domaine. La règle 7 d'AGENTS.md (domaine + infrastructure) est sans objet.
