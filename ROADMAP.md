@@ -55,3 +55,6 @@ commit. Deux chantiers de lisibilité et de robustesse en découlent, sans touch
 | 14 | Détection de boucle resserrée — relance et borne à proximité, fixtures faux positifs (`while` + `budget` éloignés) | 02 § Boucles (à amender) | 13 | `src/Domain/Axis/Harness/Loop*`, `fixtures/`, `tests/` | — | à spécifier |
 | 15 | Auto-merge armé par GitHub Actions après le 👍 Codex — cron, chemin « sans remarque » ; fait au plus tôt, avant 13 (arbitré par Jonathan le 2026-08-30) | 08 § Armement par la plateforme (amendée 2026-08-30) | — | `.github/workflows/auto-merge-after-codex.yml` | — | à faire |
 | 16 | Cycle imposé par le harnais — `feature` invocable par la session, hook `guard-git` refuse `gh pr create` hors skill et `gh pr merge` synchrone | 08 § Le cycle est imposé (amendée 2026-08-30) | 15 | `.claude/hooks/guard-git.js`, `.claude/skills/feature/SKILL.md`, `CLAUDE.md` | — | à faire |
+| 15 | Auto-merge armé par GitHub Actions | 08 | — | — | — | **mergé** : #37 `19e2e83`, correctifs #39 `e3838c8` |
+| 16 | Cycle imposé par le harnais | 08 | 15 | — | — | **mergé** : #41 `7c64b11` |
+| 13 | Verdict fragile dit tel quel — note « médiane sur la borne » (Intervention, bornes 3 et 2) ; ratio IA absent jamais coercé en 0 (Harness) | 03, 02 | 12 | — | #40 | en cours : lancé par /feature depuis la session (2026-08-30) |
