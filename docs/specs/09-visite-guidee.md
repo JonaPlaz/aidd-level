@@ -17,7 +17,7 @@ que les specs et les panneaux en disent.
 | Il produit | Il ne produit pas |
 |---|---|
 | dix étapes parcourues et journalisées (§ 6) | aucune modification de `src/`, `tests/`, `fixtures/`, des panneaux ni des specs 00 à 08 |
-| une issue GitHub par écart relevé (§ 5) | aucune correction, aucun commit de correction pendant la visite |
+| les écarts posés au journal, tranchés en discussion à la clôture : une issue par écart retenu (§ 5) | aucune correction, et **aucune issue ouverte** pendant la visite |
 | une ligne de `ROADMAP.md` à la clôture (§ 7) | aucun agent `dev`, aucun agent `front`, aucun worktree |
 
 Conséquences directes, nommées pour ne pas se rejouer :
@@ -60,6 +60,13 @@ qui n'a de sens qu'ensemble (les sept fichiers de `src/Domain/Axis/Harness/`, pa
 3. **ce qu'on y voit** — le point saillant : un seuil et son origine, un cas dégradé, un
    pointeur rendu, une dépendance ;
 4. **la main rendue** — une question posée à Jonathan, ou l'invitation explicite à poursuivre.
+   **Un bloc n'est clos que par Jonathan, jamais par la session.** Tant qu'il n'a pas dit qu'il
+   avait fini ses remarques sur ce bloc, la session **note et attend** : elle ne passe pas au
+   bloc suivant, n'ouvre pas l'étape suivante, ne met pas au propre la note de journal, et ne
+   fait aucun autre geste. Une remarque reçue s'accuse et se garde ; elle ne se traite qu'une
+   fois le bloc rendu. Motif, constaté à l'étape 1 le 2026-08-31 : la session a agi sur la
+   première remarque alors que Jonathan n'avait pas terminé les siennes, et la suite de ses
+   remarques est arrivée sur un état déjà bougé.
 
 **`BLOC_MAX = 15 lignes non vides`, hors blocs de code délimités par ```**. C'est le seuil qui
 rend « petits blocs, jamais de pavé » (issue #61) vérifiable. Origine : **adaptation assumée** —
@@ -86,8 +93,9 @@ Trois règles de conduite, chacune tenue pendant tout le bloc :
 
 **Ouverture d'une étape** : un bloc d'annonce qui liste les fichiers couverts et les blocs
 prévus, pour que Jonathan puisse rediriger avant qu'on ne parte. **Clôture d'une étape** : un
-bloc de relevé — ce qui a été vu, les écarts trouvés et le numéro d'issue de chacun — puis la
-ligne de journal du § 6.
+bloc de relevé — ce qui a été vu et les écarts posés avec leur identifiant `<n>.<k>` (§ 5) —
+puis la ligne de journal du § 6. Aucun numéro d'issue n'y figure : les issues n'existent qu'après
+la discussion de clôture (§ 7.1, geste 1).
 
 **Démonstrations autorisées** — celles qui ne modifient aucun fichier suivi par git :
 `make up`, `make exec`, `make down`, `make evaluate <profil>`, `make demo`, `make self`,
@@ -151,8 +159,8 @@ Trois précisions que le tableau ne dit pas, et qui évitent une fausse piste :
 
 ## 5. Les écarts
 
-Un **écart** est ce que la visite constate et qui ne colle pas. Quatre familles, et elles se
-nomment dans l'issue parce qu'elles n'ont pas la même suite :
+Un **écart** est ce que la visite constate et qui ne colle pas. Quatre familles, nommées dès le
+relevé au journal parce qu'elles n'ont pas la même suite :
 
 | Famille | Ce que c'est |
 |---|---|
@@ -161,21 +169,51 @@ nomment dans l'issue parce qu'elles n'ont pas la même suite :
 | **c. spec contre spec** | deux specs, ou une spec et `AGENTS.md`, disent deux choses de la même règle |
 | **d. manque** | une décision de scoring sans test qui la fige, un seuil sans origine, un pointeur pendant, du code mort |
 
-**Règle, sans exception : aucune correction pendant la visite.** Un écart devient **une issue
-GitHub**, ouverte au fil de l'étape (cadre validé le 2026-08-30), et il est traité plus tard par
-`/feature <n°>` — la visite ne bloque pas et ne se transforme jamais en chantier de correction.
-Le motif est le même que celui du § 12.2 de la spec 08 : ce qui décide se pose là où ça se
-décide, pas dans le fil d'une conversation.
+**Règle, sans exception : aucune correction pendant la visite.** Et, depuis la décision de
+Jonathan du **2026-08-31**, qui remplace celle de la veille : **aucune issue ouverte pendant la
+visite**. Un écart se **pose au journal** au moment où il est vu, et il est **tranché à la
+clôture**, en discussion, avant la PR (§ 7.1, geste 1). Motif : poser d'abord, décider ensemble
+ensuite — une issue ouverte au fil crée du bruit dans le tracker avant que la discussion ait eu
+lieu. La visite ne bloque toujours pas et ne se transforme jamais en chantier de correction ;
+c'est le § 12.2 de la spec 08 appliqué au tracker : ce qui décide se pose là où ça se décide, pas
+dans le fil d'une conversation.
 
-**Contenu minimal d'une issue d'écart** — sans quoi elle ne vaut rien plus tard :
+**Poser un écart — la formule est littérale**, parce que le contrôle 4 du § 9 la lit. Dans la
+ligne de journal de l'étape, ou dans une ligne dédiée si l'étape est déjà journalisée
+(append-only, § 6) :
 
-1. le **pointeur** : `chemin:ligne` ou `chemin › champ`, et le SHA de `main` au moment du
-   constat ;
+```
+écart <n>.<k> [famille <a|b|c|d>] : <constat en une phrase> — <source contredite>
+```
+
+`<n>` est le numéro de l'étape, `<k>` le rang de l'écart dans cette étape. **Un identifiant
+désigne un écart et un seul, et ne se réutilise jamais** : c'est ce qui rend l'appariement du
+contrôle 4 fiable.
+
+Quatre exigences, sans quoi le relevé ne vaudra rien à la discussion de clôture :
+
+1. le **pointeur**, dans la colonne prévue : `chemin:ligne` ou `chemin › champ`, et le SHA de
+   `main` au moment du constat ;
 2. **ce qui est constaté**, en une phrase, avec la citation exacte du dépôt ;
 3. **ce que la source dit** : le § de spec, le point d'`AGENTS.md` ou le panneau contredit ;
-4. la **famille** (a, b, c ou d) et l'étape de la visite qui l'a trouvé.
+4. la **famille** (a, b, c ou d).
 
-**Labels et roadmap — la règle, pas une option.** Une issue d'écart porte le label
+**Trancher un écart — à la clôture, pas avant.** La discussion passe en revue tous les écarts
+posés. Chacun ressort par l'une de ces portes, et chaque décision s'écrit au journal, une ligne
+par pose, formule littérale elle aussi :
+
+```
+écart <n>.<k> → #<n°>                              (retenu : l'issue est ouverte à ce moment-là)
+écart <n>.<k> → écarté : <motif>                   (non retenu : le motif est écrit, pas sous-entendu)
+écart <n>.<k> → annulé : doublon, repris en écart <n>.<k'>
+```
+
+La troisième porte existe pour un seul cas, une erreur de pose : **le même identifiant employé
+deux fois**. Le journal étant append-only, la ligne fautive ne se retouche pas — le second écart
+est reposé sous un rang libre, et l'annulation dit lequel. Le contrôle 4 exige alors deux lignes
+de résolution pour cet identifiant, une par pose.
+
+**Labels et roadmap — la règle, pas une option.** Une issue d'écart **retenu** porte le label
 `to-implement` et **ne reçoit aucune ligne dans `ROADMAP.md`**. Les deux moitiés se tiennent :
 `to-implement` est le déclencheur du cycle (spec 08 § 1), et `/feature` traite lui-même le cas
 « spec absente » par son arrêt humain ; l'absence de ligne de roadmap la rend invisible de
@@ -184,16 +222,25 @@ qu'un cas dégradé nommé du même § (« ligne de roadmap absente pour une iss
 fermé, en silence. Une issue d'écart n'est donc traitable que par un `/feature <n°>` tapé
 explicitement — jamais par la roadmap autonome.
 
+**État constaté au 2026-08-31.** L'issue **#63** — formulation « axe bloquant / ex æquo » dans la
+sortie, sources `docs/specs/06-sortie-et-progression.md` et
+`src/Infrastructure/Render/TextRenderer.php` — avait été ouverte pendant l'étape 1 sous la règle
+du 2026-08-30, puis **fermée et reportée** à la discussion de clôture. Son constat vaut **écart
+posé de l'étape 1** : il se relève au journal à la formule ci-dessus et se tranche comme les
+autres. Une issue fermée ne peut pas servir de résolution (contrôle 4 du § 9) : si l'écart est
+retenu, c'est une **issue neuve** qui s'ouvre à la clôture. Aucune autre issue n'a été ouverte au
+fil de la visite.
+
 **Cas dégradés :**
 
-- **plusieurs constats, une seule cause** — une issue unique qui les liste. C'est la cause
-  racine qui décide du nombre d'issues, jamais le nombre de lignes fautives ;
-- **`gh` en échec, ou pas de réseau** — l'écart part quand même dans la ligne de journal de
-  l'étape, avec son pointeur et la mention exacte **« issue à ouvrir (étape `<n>`) »**. À la
-  reprise, l'issue est ouverte et une **nouvelle** ligne est ajoutée en fin de fichier, portant
-  la mention exacte **« issue ouverte pour l'étape `<n>` : #`<n°>` »** — le fichier est
-  append-only, la ligne d'origine ne se retouche pas. Ces deux formules sont littérales : le
-  contrôle 4 du § 9 les compte, et un report non apparié interdit la clôture ;
+- **plusieurs constats, une seule cause** — un seul écart posé, qui les liste, donc une seule
+  issue s'il est retenu. C'est la cause racine qui décide du nombre, jamais le nombre de lignes
+  fautives ;
+- **`gh` en échec, ou pas de réseau** — sans effet sur une étape : plus rien ne s'ouvre au fil,
+  et poser un écart n'est qu'une ligne de journal. À la **clôture**, en revanche, un `gh` muet
+  empêche d'ouvrir les issues retenues : la clôture s'arrête là, le constat va au journal avec
+  son pointeur, et elle reprend quand `gh` répond. **La PR de clôture ne part jamais avec un
+  écart retenu sans numéro** ;
 - **écart bloquant** — un fichier illisible, l'outil qui ne tourne plus : l'étape se poursuit
   en lecture, les blocs de démonstration sont sautés, et l'empêchement est journalisé comme
   écart ;
@@ -214,15 +261,17 @@ Colonnes du fichier, remplies ainsi — **une ligne physique, jamais coupée**, 
 sur une seule ligne du fichier :
 
 ```
-| <horodatage>Z | chantier 20 — étape <n> | session Claude Code (visite) | étape <n> « <titre> » parcourue ; <k> écart(s) : #<n°>, #<n°> | <chemins couverts> · `<sha court de main>` | <ce qui reste, ou —> |
+| <horodatage>Z | chantier 20 — étape <n> | session Claude Code (visite) | étape <n> « <titre> » parcourue ; écart <n>.<k> [famille <a|b|c|d>] : <constat> — <source> | <chemins couverts> · `<sha court de main>` | <ce qui reste, ou —> |
 ```
 
 Trois exigences, chacune pour une raison :
 
 - **le SHA court de `main`** ancre l'étape à un état du dépôt : sans lui, « le fichier disait
   ceci » n'est pas rejouable ;
-- **les numéros d'issue** figurent dans la ligne, ou la mention « aucun écart » ; c'est ce qui
-  rend le contrôle 4 du § 9 mécanique ;
+- **les écarts posés** figurent dans la ligne à la formule littérale du § 5, ou la ligne porte la
+  mention « aucun écart » ; **aucun numéro d'issue n'apparaît à ce stade** — les issues n'existent
+  qu'après la discussion de clôture, et ce sont les lignes de résolution du § 5 qui les citent.
+  C'est ce qui rend le contrôle 4 du § 9 mécanique ;
 - **append-only** : une ligne d'étape ne se réécrit jamais, un complément s'ajoute en fin de
   fichier.
 
@@ -247,7 +296,7 @@ La clôture est le **seul** moment où ce chantier écrit dans git, et elle prod
 Motif : une PR par tranche d'étapes multiplierait les cycles de revue sur un contenu qui ne
 décide rien, alors que les lignes de journal sont append-only et ne gênent personne tant
 qu'elles restent dans le checkout principal (§ 6) — leur seul risque, une base qui vieillit, est
-traité par le geste 3 et le § 7.2.
+traité par le geste 4 et le § 7.2.
 
 ### 7.1 La route docs-only, et pourquoi ce n'est pas l'étape 2 du skill
 
@@ -259,30 +308,45 @@ lui, est **déjà là, non committé, dans le checkout principal**. Un worktree 
 rouvrirait un chantier vide. Le skill prévoit déjà cette forme : son § 3 pose que `W`, le
 checkout qui a créé la PR, est « le worktree de l'agent `dev`, **ou le checkout courant** pour
 une PR `docs/spec-<n°>` ou `--trivial` » — la branche `docs/visite-61` joue ici le rôle qu'y joue
-`docs/spec-<n°>`, et le verrou `61` l'autorise (geste 2).
+`docs/spec-<n°>`, et le verrou `61` l'autorise (geste 3).
 
-Les huit gestes, dans cet ordre, tous dans le checkout principal :
+Les neuf gestes, dans cet ordre, tous dans le checkout principal :
 
-1. **Fronts en cours.** Si un front `/roadmap` est ouvert, déclarer « **pause roadmap** » et
+1. **Discussion des écarts, avant tout geste git.** Passer en revue avec Jonathan **tous** les
+   écarts posés au journal (§ 5), dans l'ordre de leur identifiant `<n>.<k>`. Chacun ressort
+   retenu ou écarté ; **les issues des écarts retenus s'ouvrent à ce moment-là**, et chaque
+   décision est écrite au journal par sa ligne de résolution (§ 5). Tant qu'un écart posé n'a pas
+   sa résolution, la clôture ne va pas plus loin (contrôle 4 du § 9).
+
+   **Une issue d'écart retenu reprend tout le contexte de l'écart posé**, recopié dans son corps,
+   jamais résumé : le **pointeur** et le **SHA de `main`** du constat, le **constat** avec sa
+   citation, la **source contredite** (§ de spec, point d'`AGENTS.md` ou panneau), la **famille**,
+   et la **référence à la ligne de journal** — identifiant `<n>.<k>` et horodatage. Le titre nomme
+   l'écart, le corps cite la spec concernée. Ce n'est pas de la courtoisie : `/feature <n°>` lit
+   le titre, le corps et la spec citée pour router (`SKILL.md` § 1) ; une issue qui se contente
+   de renvoyer au journal ne permet ni de reproduire l'écart ni de choisir entre « spec présente »
+   et « spec à écrire ». Le label est `to-implement`, sans ligne de `ROADMAP.md` (§ 5).
+2. **Fronts en cours.** Si un front `/roadmap` est ouvert, déclarer « **pause roadmap** » et
    attendre sa fin : dès qu'un **second** verrou `/feature` existe, `guard-git.js` refuse
    `commit` et `push` dans le checkout principal (garde `locksCount(root) > 1`, § 2).
-2. **Verrou.** `node .claude/hooks/feature-lock.js lock 61` — c'est lui qui autorise
+3. **Verrou.** `node .claude/hooks/feature-lock.js lock 61` — c'est lui qui autorise
    `gh pr create` sur une branche portant le numéro (`guard-git.js`, `(^|[-/])61([-/]|$)`).
-3. **Base fraîche.** `git fetch origin main`, puis branche `docs/visite-61` créée sur
+4. **Base fraîche.** `git fetch origin main`, puis branche `docs/visite-61` créée sur
    `origin/main` ; les fichiers append-only modifiés dans le checkout principal y sont
    réappliqués **en fin de fichier**, jamais en réécrivant les lignes ajoutées entre-temps par un
    autre chantier (§ 7.2).
-4. **Commit unique `docs:`**, portant : les lignes de journal (étapes, clôture, lignes
-   automatiques du hook — § 6), la ligne d'état de `ROADMAP.md`, la mise à jour de la **ligne
-   « Où en est le projet » d'`AGENTS.md`** (une ligne, pas un historique : c'est ce que ce §
-   d'`AGENTS.md` exige à chaque fin de chantier) et les corrections de chemin éventuelles du § 4.
-5. **PR `docs:`** avec le label `to-review` et `Closes #61`.
-6. **Revue et merge** : les étapes 1 à 5 du § 3 du skill `feature` — attente du verdict Codex,
+5. **Commit unique `docs:`**, portant : les lignes de journal (étapes, écarts posés et leurs
+   résolutions, clôture, lignes automatiques du hook — § 6), la ligne d'état de `ROADMAP.md`, la
+   mise à jour de la **ligne « Où en est le projet » d'`AGENTS.md`** (une ligne, pas un
+   historique : c'est ce que ce § d'`AGENTS.md` exige à chaque fin de chantier) et les
+   corrections de chemin éventuelles du § 4.
+6. **PR `docs:`** avec le label `to-review` et `Closes #61`.
+7. **Revue et merge** : les étapes 1 à 5 du § 3 du skill `feature` — attente du verdict Codex,
    une passe de correction menée par la session elle-même (jamais par un agent `dev`), réponse
    tracée par remarque, rebase, `gh pr merge --auto --squash --delete-branch`.
-7. **Déverrouillage** : `node .claude/hooks/feature-lock.js unlock 61`, sur toute sortie —
+8. **Déverrouillage** : `node .claude/hooks/feature-lock.js unlock 61`, sur toute sortie —
    mergé, `blocked` ou arrêt.
-8. **Reprise de la roadmap** : si le geste 1 a déclaré la pause, dire « **reprends la roadmap** »
+9. **Reprise de la roadmap** : si le geste 2 a déclaré la pause, dire « **reprends la roadmap** »
    **après** le merge et le déverrouillage. C'est la seule façon de retirer le marqueur
    `roadmap-paused` (`AGENTS.md`, les trois mots ; spec 08 § 11.7) : une clôture qui l'oublie
    laisse la file gelée pour tous les chantiers suivants, sans que rien ne le signale.
@@ -295,7 +359,7 @@ déjà suivie au chantier 19 sur l'issue #56 — PR #58 pour la spec, PR #59 pou
 Ligne à ajouter à `ROADMAP.md` (append-only, colonnes de la table) :
 
 ```
-| 20 | Visite guidée du projet — dix étapes commentées, une issue par écart, aucun code | 09 (2026-08-30) | 19 | `docs/specs/09-visite-guidee.md`, `docs/journal.md`, `ROADMAP.md`, `AGENTS.md` | #61 | spec écrite |
+| 20 | Visite guidée du projet — dix étapes commentées, écarts posés au journal et tranchés à la clôture, aucun code | 09 (2026-08-31) | 19 | `docs/specs/09-visite-guidee.md`, `docs/journal.md`, `ROADMAP.md`, `AGENTS.md` | #61 | spec écrite |
 ```
 
 **Les quatre fichiers touchés sont déclarés en sortie**, noms entiers, comme l'exige le § 7.6 de
@@ -309,7 +373,7 @@ pendant les dix étapes.
 
 Cette déclaration ne suffit pas, parce que la fenêtre qu'elle couvre n'est pas celle du risque :
 les lignes de journal s'accumulent pendant toute la visite, sur une base qui vieillit. D'où le
-geste 3 du § 7.1, écrit comme règle : **le commit de clôture part d'`origin/main` fraîchement
+geste 4 du § 7.1, écrit comme règle : **le commit de clôture part d'`origin/main` fraîchement
 récupéré et réapplique ses ajouts en fin de fichier.** Sur `docs/journal.md`, `ROADMAP.md` et la
 ligne « Où en est le projet », un conflit se résout **toujours** en gardant les lignes de l'autre
 chantier et en replaçant les siennes après — jamais l'inverse, ces fichiers étant append-only
@@ -372,20 +436,45 @@ clôture.
    Ce contrôle **ne peut pas échouer** : l'étape 10 est le reste (§ 4). Sa valeur est de
    **montrer** ce qui y tombe. Un reste attendu (fichiers d'outillage à la racine) se lit et se
    ferme ; un reste inattendu — un répertoire entier que personne n'a expliqué — est un écart de
-   famille **d** et prend son issue.
-4. **Chaque écart a son issue, et aucun report ne survit à la clôture.** Le journal étant
-   append-only, un report ne s'efface pas : il **s'apparie**. Les deux formules du § 5 sont
-   fixées pour être comptées, et la ligne d'appariement ne répète jamais la première :
+   famille **d**, posé au journal comme les autres (§ 5) et tranché à la clôture.
+4. **Chaque écart posé est tranché.** Le journal étant append-only, un écart posé ne s'efface
+   pas : il reçoit sa **ligne de résolution**. Les formules du § 5 sont littérales pour être
+   appariées par identifiant. Trois assertions, dans cet ordre, **toutes bloquantes pour la PR de
+   clôture** (§ 7.1, geste 1) :
 
    ```
-   grep -c 'issue à ouvrir (étape'      docs/journal.md   # les reports posés
-   grep -c 'issue ouverte pour l.étape' docs/journal.md   # attendu : le même compte
+   ids() { grep -oE "$1" docs/journal.md | grep -oE '[0-9]+\.[0-9]+' | sort; }
+   posés=$(ids 'écart [0-9]+\.[0-9]+ \[famille')
+   tranchés=$(ids 'écart [0-9]+\.[0-9]+ →')
+
+   echo "$posés" | uniq -d                                    # (a) identifiants posés deux fois
+   diff <(echo "$posés" | uniq -c) <(echo "$tranchés" | uniq -c)   # (b) attendu : vide
    ```
 
-   **Tant que les deux comptes diffèrent, la visite n'est pas finie et la clôture ne commence
-   pas** — c'est la seule condition d'arrêt de ce chantier en dehors des dix étapes. Ensuite :
-   chaque ligne d'étape porte soit « aucun écart », soit au moins un `#<n°>` ; chaque numéro
-   cité existe (`gh issue view <n°> --json state,title`).
+   **(a) unicité.** Tout identifiant listé est une erreur de pose : le même `<n>.<k>` a servi
+   deux fois. Il ne se corrige pas par réécriture — il exige la ligne `→ annulé : doublon, repris
+   en écart <n>.<k'>` du § 5 pour l'une des deux poses, et une pose neuve sous un rang libre pour
+   l'écart évincé. **Un doublon non annulé bloque la clôture.**
+
+   **(b) appariement par comptes, jamais par ensembles.** `uniq -c` conserve la multiplicité :
+   un identifiant posé deux fois exige **deux** lignes de résolution. Un `sort -u` des deux côtés
+   ferait passer une seule résolution pour deux poses — c'est exactement le trou que (a) et (b)
+   ferment ensemble. Toute ligne de `diff` est un écart posé sans décision, ou une décision sans
+   pose.
+
+   **(c) les issues retenues sont ouvertes et étiquetées.** Pour chaque `#<n°>` cité par une
+   ligne `→ #<n°>` :
+
+   ```
+   gh issue view <n°> --json state,labels \
+     --jq 'select(.state == "OPEN" and ([.labels[].name] | index("to-implement"))) | "ok"'
+   ```
+
+   Attendu : `ok` pour chacune. Une issue **fermée** — le cas de #63, fermée le 2026-08-31 (§ 5)
+   — ou **sans le label `to-implement`** ne vaut pas résolution d'un écart retenu : elle
+   n'entrerait dans aucun `/feature`. L'écart reçoit alors une issue neuve, et une nouvelle ligne
+   de résolution. Les lignes `→ écarté :` portent, elles, un motif non vide ; une étape sans écart
+   porte la mention « aucun écart » dans sa ligne.
 5. **La spec 09 est restée vraie.** À la clôture, chaque chemin cité entre accents graves dans ce
    fichier existe (`test -e`), et chaque `§` cité existe dans le fichier visé. Les noms courts du
    tableau du § 4 se résolvent d'abord par la règle « Lecture des cellules » du § 4 — préfixe
@@ -401,15 +490,16 @@ clôture.
 | Fichier | Rôle |
 |---|---|
 | `docs/specs/09-visite-guidee.md` | **créé** — ce fichier, committé avant la première étape |
-| `docs/journal.md` | dix lignes d'étape, une ligne de clôture, plus les lignes automatiques du hook `journal.js` produites entre-temps (§ 6) |
+| `docs/journal.md` | dix lignes d'étape, les écarts posés et leurs lignes de résolution, une ligne de clôture, plus les lignes automatiques du hook `journal.js` produites entre-temps (§ 6) |
 | `ROADMAP.md` | une ligne ajoutée (append-only), chantier **20** (§ 7.2) |
-| `AGENTS.md` | la ligne « Où en est le projet » mise à jour — une ligne, pas un historique (§ 7.1, geste 4) |
-| issues GitHub | une par écart relevé, hors dépôt, chacune pointée depuis le journal (§ 5) |
+| `AGENTS.md` | la ligne « Où en est le projet » mise à jour — une ligne, pas un historique (§ 7.1, geste 5) |
+| issues GitHub | une par écart **retenu** à la discussion de clôture, ouverte à ce moment-là et jamais avant, portant tout le contexte de l'écart posé, `OPEN` et étiquetée `to-implement` (§ 5, § 7.1 geste 1) |
 
 Ces quatre fichiers sont ceux déclarés dans la ligne de `ROADMAP.md` du § 7.2 : la table des
 sorties et la cellule « Sorties » disent la même chose, nom pour nom.
 
-Définition de fini, reprise de l'issue #61 et rendue vérifiable par le § 9 : les dix étapes
-parcourues et journalisées (contrôle 1), chaque écart relevé porteur de son issue (contrôle 4),
-ce fichier toujours vrai en fin de visite (contrôle 5), et le dépôt inchangé par la visite
-elle-même (contrôle 2).
+Définition de fini, reprise de l'issue #61, amendée par la décision du 2026-08-31 et rendue
+vérifiable par le § 9 : les dix étapes parcourues et journalisées (contrôle 1), **chaque écart
+posé tranché — issue ouverte et étiquetée pour un écart retenu, motif écrit pour un écart
+écarté** (contrôle 4), ce fichier toujours vrai en fin de visite (contrôle 5), et le dépôt
+inchangé par la visite elle-même (contrôle 2).
