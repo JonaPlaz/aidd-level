@@ -23,7 +23,8 @@ que les specs et les panneaux en disent.
 Conséquences directes, nommées pour ne pas se rejouer :
 
 - la règle 7 d'`AGENTS.md` (domaine et infrastructure dans un même commit) est **sans objet** :
-  ce chantier ne commit que `docs/journal.md`, `ROADMAP.md` et ce fichier ;
+  ce chantier ne commit que `docs/journal.md`, `ROADMAP.md`, la ligne « Où en est le projet »
+  d'`AGENTS.md` et ce fichier ;
 - le point de revue 10 d'`AGENTS.md` (« la doc suit le code ») est **sans objet** : la visite ne
   rend aucun panneau faux, elle constate qu'il l'est déjà et ouvre une issue ;
 - aucun test PHPUnit n'est ajouté. Les preuves de ce chantier sont le journal, les issues et les
@@ -128,6 +129,14 @@ est le document de conduite : il est lu avant l'étape 1 et ne compte dans aucun
 | 9 | Harnais IA | `.claude/README.md`, `.claude/settings.json`, `.claude/agents/` (`spec`, `dev`, `front`), `.claude/skills/` (`bootstrap`, `feature`, `roadmap`), `.claude/hooks/` (sept scripts et `tests/`), `.github/workflows/auto-merge-after-codex.yml`, `docs/harness.md`, `docs/journal.md`, `ROADMAP.md` | `08-harnais.md`, `07-amorcage.md`, `AGENTS.md § Flow d'une PR` |
 | 10 | Annexes | `Makefile`, `Dockerfile`, `compose.yaml`, `composer.json`, `composer.lock`, `phpunit.xml.dist`, `phpstan.neon.dist`, `.php-cs-fixer.dist.php`, `.github/workflows/ci.yml`, `scripts/self-profile.py`, `.gitignore`, `.worktreeinclude`, **et le reste** | `00` § 6, `08` (CI et armement) |
 
+**Lecture des cellules, et c'est ce qui rend le contrôle 5 du § 9 exécutable.** Dans la colonne
+« Spec ouverte », tout nom de fichier se lit sous `docs/specs/` (`05-robustesse.md` désigne
+`docs/specs/05-robustesse.md`, `00` désigne `docs/specs/00-vue-ensemble.md`). Dans la colonne des
+fichiers couverts, un nom court se lit sous le **dernier répertoire nommé avant lui dans la même
+cellule** (`Level.php` sous `src/Domain/`, `LoopDetector.php` sous `src/Domain/Axis/Harness/`,
+`evaluated.txt` sous `tests/expected/`, `arthur` sous `profiles/`). Le contrôle 5 applique cette
+résolution avant `test -e`.
+
 Trois précisions que le tableau ne dit pas, et qui évitent une fausse piste :
 
 - **la grille AIDD n'est pas un fichier de ce dépôt.** Sa table normative est
@@ -180,8 +189,11 @@ explicitement — jamais par la roadmap autonome.
 - **plusieurs constats, une seule cause** — une issue unique qui les liste. C'est la cause
   racine qui décide du nombre d'issues, jamais le nombre de lignes fautives ;
 - **`gh` en échec, ou pas de réseau** — l'écart part quand même dans la ligne de journal de
-  l'étape, avec son pointeur et la mention « issue à ouvrir » ; l'issue est ouverte à la reprise
-  et son numéro complète le journal par une **nouvelle** ligne, le fichier étant append-only ;
+  l'étape, avec son pointeur et la mention exacte **« issue à ouvrir (étape `<n>`) »**. À la
+  reprise, l'issue est ouverte et une **nouvelle** ligne est ajoutée en fin de fichier, portant
+  la mention exacte **« issue ouverte pour l'étape `<n>` : #`<n°>` »** — le fichier est
+  append-only, la ligne d'origine ne se retouche pas. Ces deux formules sont littérales : le
+  contrôle 4 du § 9 les compte, et un report non apparié interdit la clôture ;
 - **écart bloquant** — un fichier illisible, l'outil qui ne tourne plus : l'étape se poursuit
   en lecture, les blocs de démonstration sont sautés, et l'empêchement est journalisé comme
   écart ;
@@ -198,12 +210,11 @@ Une ligne de `docs/journal.md` **par étape terminée**, plus une ligne de clôt
 exactement le bon endroit : il enregistre « ce qui n'a pas produit de commit », et une visite
 n'en produit aucun.
 
-Colonnes du fichier, remplies ainsi :
+Colonnes du fichier, remplies ainsi — **une ligne physique, jamais coupée**, ce qui suit tient
+sur une seule ligne du fichier :
 
 ```
-| <horodatage>Z | chantier 20 — étape <n> | session Claude Code (visite) | étape <n>
-« <titre> » parcourue ; <k> écart(s) : #<n°>, #<n°> | <chemins couverts> · `<sha court de main>`
-| <ce qui reste, ou —> |
+| <horodatage>Z | chantier 20 — étape <n> | session Claude Code (visite) | étape <n> « <titre> » parcourue ; <k> écart(s) : #<n°>, #<n°> | <chemins couverts> · `<sha court de main>` | <ce qui reste, ou —> |
 ```
 
 Trois exigences, chacune pour une raison :
@@ -216,8 +227,18 @@ Trois exigences, chacune pour une raison :
   fichier.
 
 Les lignes s'écrivent dans `docs/journal.md` du checkout principal, sur `main`, sans commit ;
-elles restent non committées jusqu'à la clôture (§ 7). Le hook `journal.js` n'ajoute rien dans
-cet état, sa branche `Stop` sortant sans écrire quand la branche est `main`.
+elles restent non committées jusqu'à la clôture (§ 7).
+
+**Le journal contiendra plus que ces lignes, et la clôture ne promet pas un compte exact.**
+Vérifié le 2026-08-30 dans `.claude/hooks/journal.js` : seule la branche `Stop` du hook sort sans
+écrire quand la branche est `main` ; la branche `PostToolUseFailure` est traitée **avant** tout
+test de branche et ajoute une ligne dès qu'une commande `make`, `docker`, `composer`, `gh pr`,
+`gh api` ou un `git rebase|push|merge|cherry-pick` échoue — une démonstration ratée du § 3 en
+produit une, sur `main` comme ailleurs. Ces lignes automatiques sont **gardées telles quelles**
+et committées avec le reste à la clôture : elles disent ce qui s'est passé. Conséquence écrite
+une fois pour toutes : le chantier ajoute **les dix lignes d'étape, la ligne de clôture, et
+toute ligne produite par le hook entre-temps** ; le contrôle 1 du § 9 compte les lignes d'étape,
+jamais le total du fichier.
 
 ## 7. Clôture du chantier
 
@@ -225,34 +246,78 @@ La clôture est le **seul** moment où ce chantier écrit dans git, et elle prod
 `docs:` pour toute la visite** : pas de PR intermédiaire, quelle que soit la durée du parcours.
 Motif : une PR par tranche d'étapes multiplierait les cycles de revue sur un contenu qui ne
 décide rien, alors que les lignes de journal sont append-only et ne gênent personne tant
-qu'elles restent dans le checkout principal (§ 6).
+qu'elles restent dans le checkout principal (§ 6) — leur seul risque, une base qui vieillit, est
+traité par le geste 3 et le § 7.2.
 
-1. si un front `/roadmap` est ouvert, déclarer « **pause roadmap** » et attendre sa fin : dès
-   qu'un **second** verrou `/feature` existe, `guard-git.js` refuse `commit` et `push` dans le
-   checkout principal (garde `locksCount(root) > 1`, § 2) ;
-2. `/feature 61` : le verrou `61` est posé (`node .claude/hooks/feature-lock.js lock 61`), ce
-   qui autorise une branche portant ce numéro — **`docs/visite-61`** ;
-3. commit unique `docs:` portant les onze lignes de journal, la ligne d'état de `ROADMAP.md`, et
-   les corrections de chemin éventuelles du § 4 ; **aucun agent `dev` n'est lancé** : il n'y a
-   pas de code à écrire, et le travail est déjà dans le checkout principal ;
-4. PR `docs:` avec le label `to-review`, revue Codex à l'ouverture, une passe de correction,
-   `gh pr merge --auto --squash --delete-branch`, puis `unlock 61` — le § 3 du skill `feature`
-   s'applique tel quel.
+### 7.1 La route docs-only, et pourquoi ce n'est pas l'étape 2 du skill
+
+`/feature 61` est invoqué — toute PR passe par le cycle (`AGENTS.md § Flow d'une PR`) — mais son
+routage s'arrête au **chemin docs-only** : l'**étape 2 du skill (agent `dev` en worktree) n'est
+jamais empruntée**. Motif, et il est technique, pas de confort : l'agent `dev` travaille dans un
+worktree créé depuis `origin/main` (spec 08 § 2, `isolation: worktree`) ; le travail de clôture,
+lui, est **déjà là, non committé, dans le checkout principal**. Un worktree ne le verrait pas et
+rouvrirait un chantier vide. Le skill prévoit déjà cette forme : son § 3 pose que `W`, le
+checkout qui a créé la PR, est « le worktree de l'agent `dev`, **ou le checkout courant** pour
+une PR `docs/spec-<n°>` ou `--trivial` » — la branche `docs/visite-61` joue ici le rôle qu'y joue
+`docs/spec-<n°>`, et le verrou `61` l'autorise (geste 2).
+
+Les huit gestes, dans cet ordre, tous dans le checkout principal :
+
+1. **Fronts en cours.** Si un front `/roadmap` est ouvert, déclarer « **pause roadmap** » et
+   attendre sa fin : dès qu'un **second** verrou `/feature` existe, `guard-git.js` refuse
+   `commit` et `push` dans le checkout principal (garde `locksCount(root) > 1`, § 2).
+2. **Verrou.** `node .claude/hooks/feature-lock.js lock 61` — c'est lui qui autorise
+   `gh pr create` sur une branche portant le numéro (`guard-git.js`, `(^|[-/])61([-/]|$)`).
+3. **Base fraîche.** `git fetch origin main`, puis branche `docs/visite-61` créée sur
+   `origin/main` ; les fichiers append-only modifiés dans le checkout principal y sont
+   réappliqués **en fin de fichier**, jamais en réécrivant les lignes ajoutées entre-temps par un
+   autre chantier (§ 7.2).
+4. **Commit unique `docs:`**, portant : les lignes de journal (étapes, clôture, lignes
+   automatiques du hook — § 6), la ligne d'état de `ROADMAP.md`, la mise à jour de la **ligne
+   « Où en est le projet » d'`AGENTS.md`** (une ligne, pas un historique : c'est ce que ce §
+   d'`AGENTS.md` exige à chaque fin de chantier) et les corrections de chemin éventuelles du § 4.
+5. **PR `docs:`** avec le label `to-review` et `Closes #61`.
+6. **Revue et merge** : les étapes 1 à 5 du § 3 du skill `feature` — attente du verdict Codex,
+   une passe de correction menée par la session elle-même (jamais par un agent `dev`), réponse
+   tracée par remarque, rebase, `gh pr merge --auto --squash --delete-branch`.
+7. **Déverrouillage** : `node .claude/hooks/feature-lock.js unlock 61`, sur toute sortie —
+   mergé, `blocked` ou arrêt.
+8. **Reprise de la roadmap** : si le geste 1 a déclaré la pause, dire « **reprends la roadmap** »
+   **après** le merge et le déverrouillage. C'est la seule façon de retirer le marqueur
+   `roadmap-paused` (`AGENTS.md`, les trois mots ; spec 08 § 11.7) : une clôture qui l'oublie
+   laisse la file gelée pour tous les chantiers suivants, sans que rien ne le signale.
 
 Deux PR sur la même issue #61 (celle qui porte cette spec, celle de clôture) : c'est la forme
 déjà suivie au chantier 19 sur l'issue #56 — PR #58 pour la spec, PR #59 pour les panneaux.
 
+### 7.2 Sorties déclarées et fichiers append-only
+
 Ligne à ajouter à `ROADMAP.md` (append-only, colonnes de la table) :
 
 ```
-| 20 | Visite guidée du projet — dix étapes commentées, une issue par écart, aucun code | 09 (2026-08-30) | 19 | `docs/specs/09-visite-guidee.md` | #61 | spec écrite |
+| 20 | Visite guidée du projet — dix étapes commentées, une issue par écart, aucun code | 09 (2026-08-30) | 19 | `docs/specs/09-visite-guidee.md`, `docs/journal.md`, `ROADMAP.md`, `AGENTS.md` | #61 | spec écrite |
 ```
 
-**Les sorties déclarées se limitent à ce fichier**, et c'est délibéré : `docs/journal.md` et
-`ROADMAP.md` sont append-only et écrits par tous les chantiers ; les déclarer en sortie ferait
-écarter, par la condition 5 du § 11.3 de la spec 08 (chevauchement de sorties), tout front
-concurrent, alors que deux ajouts en fin de fichier ne se disputent rien. La dépendance est
-**19** : les quatre panneaux mergés au chantier 19 sont la matière de plusieurs étapes.
+**Les quatre fichiers touchés sont déclarés en sortie**, noms entiers, comme l'exige le § 7.6 de
+la spec 00 (`outputsOverlap` de `roadmap-ready.js` ne rapproche deux sorties que par égalité ou
+par parent délimité par `/`). Ne pas déclarer `docs/journal.md`, `ROADMAP.md` et `AGENTS.md`
+reviendrait à contourner le garde de chevauchement de `/roadmap` — la condition 5 du § 11.3 de
+la spec 08 — sur les trois fichiers que ce chantier modifie réellement. Le coût est borné : un
+chantier n'est un « front ouvert » qu'à partir de son verrou ou de sa PR (§ 11.3), donc la
+déclaration n'écarte les fronts concurrents que **pendant la fenêtre de la PR de clôture**, pas
+pendant les dix étapes.
+
+Cette déclaration ne suffit pas, parce que la fenêtre qu'elle couvre n'est pas celle du risque :
+les lignes de journal s'accumulent pendant toute la visite, sur une base qui vieillit. D'où le
+geste 3 du § 7.1, écrit comme règle : **le commit de clôture part d'`origin/main` fraîchement
+récupéré et réapplique ses ajouts en fin de fichier.** Sur `docs/journal.md`, `ROADMAP.md` et la
+ligne « Où en est le projet », un conflit se résout **toujours** en gardant les lignes de l'autre
+chantier et en replaçant les siennes après — jamais l'inverse, ces fichiers étant append-only
+(`AGENTS.md § Conventions`). Une tentative de rebase ; en cas de conflit qui résiste, arrêt,
+label `blocked` et ligne de journal, comme partout ailleurs dans le dépôt.
+
+La dépendance est **19** : les quatre panneaux mergés au chantier 19 sont la matière de
+plusieurs étapes.
 
 ## 8. Ce que la visite ne promet pas
 
@@ -275,13 +340,20 @@ Aucun test PHPUnit : ce chantier ne touche pas `src/`. `make test`, `make lint`,
 cinq contrôles ci-dessous se tapent à la main ; leur résultat va dans la ligne de journal de
 clôture.
 
-1. **Les dix étapes sont journalisées.**
+1. **Les dix étapes sont journalisées, chacune une fois.** Le compte agrégé ne suffit pas : une
+   étape manquante et une étape journalisée deux fois se compensent. Les dix numéros se
+   vérifient un par un, le `|` final bornant le numéro (« étape 1 | » ne se confond pas avec
+   « étape 10 | ») :
 
    ```
-   grep -c 'chantier 20 — étape' docs/journal.md      # attendu : 10
+   for n in $(seq 1 10); do
+     printf '%2s %s\n' "$n" "$(grep -cF "chantier 20 — étape $n |" docs/journal.md)"
+   done
    ```
 
-   Une étape manquante, ou une même étape journalisée deux fois, se lit dans le compte.
+   Attendu : dix lignes, **`1` sur chacune**. Un `0` est une étape non journalisée, un `2` une
+   étape journalisée deux fois ; les deux se corrigent par une ligne ajoutée en fin de fichier
+   qui dit lequel des doublons fait foi, jamais par réécriture.
 2. **La visite n'a rien modifié.** À la fin de chaque étape, et avant la clôture :
 
    ```
@@ -301,23 +373,41 @@ clôture.
    **montrer** ce qui y tombe. Un reste attendu (fichiers d'outillage à la racine) se lit et se
    ferme ; un reste inattendu — un répertoire entier que personne n'a expliqué — est un écart de
    famille **d** et prend son issue.
-4. **Chaque écart a son issue.** Chaque ligne de journal d'étape porte soit « aucun écart », soit
-   au moins un `#<n°>` ; chaque numéro cité existe et est ouvert
-   (`gh issue view <n°> --json state`). Une ligne qui décrit un écart sans numéro et sans la
-   mention « issue à ouvrir » du § 5 est le défaut que ce contrôle attrape.
+4. **Chaque écart a son issue, et aucun report ne survit à la clôture.** Le journal étant
+   append-only, un report ne s'efface pas : il **s'apparie**. Les deux formules du § 5 sont
+   fixées pour être comptées, et la ligne d'appariement ne répète jamais la première :
+
+   ```
+   grep -c 'issue à ouvrir (étape'      docs/journal.md   # les reports posés
+   grep -c 'issue ouverte pour l.étape' docs/journal.md   # attendu : le même compte
+   ```
+
+   **Tant que les deux comptes diffèrent, la visite n'est pas finie et la clôture ne commence
+   pas** — c'est la seule condition d'arrêt de ce chantier en dehors des dix étapes. Ensuite :
+   chaque ligne d'étape porte soit « aucun écart », soit au moins un `#<n°>` ; chaque numéro
+   cité existe (`gh issue view <n°> --json state,title`).
 5. **La spec 09 est restée vraie.** À la clôture, chaque chemin cité entre accents graves dans ce
-   fichier existe (`test -e`), et chaque `§` cité existe dans le fichier visé. Un chemin devenu
-   faux se corrige dans la PR de clôture (§ 5, cas dégradé) — c'est la seule modification de ce
-   fichier que la visite autorise.
+   fichier existe (`test -e`), et chaque `§` cité existe dans le fichier visé. Les noms courts du
+   tableau du § 4 se résolvent d'abord par la règle « Lecture des cellules » du § 4 — préfixe
+   `docs/specs/` pour la colonne des specs, dernier répertoire nommé dans la cellule pour la
+   colonne des fichiers — et c'est le chemin résolu qui est testé, jamais le nom nu. Ne sont pas
+   testés : les identifiants qui ne sont pas des chemins (`BLOC_MAX`, `AxisEvaluator`,
+   `to-implement`, `locksCount(root) > 1`, les commandes shell) et les fichiers jetables du
+   contrôle 3. Un chemin devenu faux se corrige dans la PR de clôture (§ 5, cas dégradé) — c'est
+   la seule modification de ce fichier que la visite autorise.
 
 ## 10. Sorties du chantier
 
 | Fichier | Rôle |
 |---|---|
 | `docs/specs/09-visite-guidee.md` | **créé** — ce fichier, committé avant la première étape |
-| `docs/journal.md` | onze lignes ajoutées : une par étape, une de clôture (§ 6) |
-| `ROADMAP.md` | une ligne ajoutée (append-only), chantier **20** (§ 7) |
+| `docs/journal.md` | dix lignes d'étape, une ligne de clôture, plus les lignes automatiques du hook `journal.js` produites entre-temps (§ 6) |
+| `ROADMAP.md` | une ligne ajoutée (append-only), chantier **20** (§ 7.2) |
+| `AGENTS.md` | la ligne « Où en est le projet » mise à jour — une ligne, pas un historique (§ 7.1, geste 4) |
 | issues GitHub | une par écart relevé, hors dépôt, chacune pointée depuis le journal (§ 5) |
+
+Ces quatre fichiers sont ceux déclarés dans la ligne de `ROADMAP.md` du § 7.2 : la table des
+sorties et la cellule « Sorties » disent la même chose, nom pour nom.
 
 Définition de fini, reprise de l'issue #61 et rendue vérifiable par le § 9 : les dix étapes
 parcourues et journalisées (contrôle 1), chaque écart relevé porteur de son issue (contrôle 4),
