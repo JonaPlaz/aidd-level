@@ -53,8 +53,10 @@ docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/art
 | `make fmt FILE=…` | formate un fichier PHP |
 
 Tout tourne dans un conteneur de développement vivant (PHP local insuffisant). Les commandes
-autres que `up`, `down` et `evaluate` échouent avec « Lance d'abord : make up » s'il ne
-tourne pas.
+autres que `up`, `build` et `down` exigent le conteneur déjà lancé, et échouent sinon avec
+« Lance d'abord : make up ». Tapée dans le conteneur, `make evaluate` s'exécute directement ;
+tapée hors du conteneur, elle vérifie elle-même le conteneur avant de s'y relayer — même
+message d'erreur s'il ne tourne pas.
 
 ## La sortie
 

@@ -77,13 +77,16 @@ Lecture bloc par bloc :
 
 - `évalué` — niveau et axe plafonnant certains ; rendu figé dans
   `tests/expected/evaluated.txt`.
-- `évalué, confiance basse` — l'échantillon est trop court pour trancher entre deux niveaux ;
-  une fourchette est rendue à la place d'un niveau unique ; rendu figé dans
-  `tests/expected/low-confidence.txt`.
-- `non évaluable` — un prérequis manque (dossier illisible, `profile.json` ou
-  `git-activity.json` absent, ou zéro PR sur la période) ; rendu figé dans
-  `tests/expected/not-assessable.txt`. N'arrête jamais l'évaluation des autres dossiers passés
-  en argument.
+- `évalué, confiance basse` — une fourchette est rendue à la place d'un niveau unique, par
+  deux chemins distincts : l'échantillon est trop court pour trancher entre deux niveaux (le
+  manque se compte en PR), ou le champ qui déciderait l'axe est absent de `git-activity.json`
+  — fourchette ouverte jusqu'à White, même quand le compte de PR est largement suffisant
+  (fixture `absent-signals`). Rendu figé dans `tests/expected/low-confidence.txt`.
+- `non évaluable` — un prérequis manque, chacun avec son message et sa piste : dossier
+  illisible, `profile.json` illisible ou absent, `git-activity.json` illisible ou absent,
+  `pull_requests.total` absent, ou `pull_requests.total` sous le plancher (zéro PR sur la
+  période). Rendu figé dans `tests/expected/not-assessable.txt`. N'arrête jamais l'évaluation
+  des autres dossiers passés en argument.
 
 ## Le format de pointeur
 
