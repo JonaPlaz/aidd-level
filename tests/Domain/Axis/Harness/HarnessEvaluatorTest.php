@@ -291,7 +291,13 @@ final class HarnessEvaluatorTest extends TestCase
         self::assertSame(Level::White, $verdict->confidence->floor);
         self::assertSame(Level::Red, $verdict->confidence->ceiling);
         self::assertSame(0, $verdict->confidence->missingSample);
-        self::assertSame([], $verdict->evidences);
+        // Codex review of PR #44: the facts actually observed (no memory file, every
+        // counter known at zero) stay cited as Evidence, so "Ce qui a mené là" explains why
+        // Blue to Gold are excluded even though the floor itself is undecided.
+        self::assertCount(2, $verdict->evidences);
+        self::assertSame('context_files.agents_md', $verdict->evidences[0]->pointer->field);
+        self::assertSame('false', $verdict->evidences[0]->pointer->value);
+        self::assertSame('context_files', $verdict->evidences[1]->pointer->field);
         self::assertCount(1, $verdict->notes);
         self::assertSame(
             'ratio absent : impossible de départager prompts de rien',

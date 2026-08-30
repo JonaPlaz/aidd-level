@@ -17,6 +17,7 @@ use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Profile\Profile;
 use AiddLevel\Domain\Profile\RepoContext;
 use AiddLevel\Domain\Profile\RepoFile;
+use AiddLevel\Domain\Threshold\HarnessThresholds;
 
 /**
  * The Harness axis (docs/specs/02-axe-harness.md): what the person built around the model —
@@ -142,7 +143,7 @@ final class HarnessEvaluator implements AxisEvaluator
                 self::COUNTERS_WITHOUT_MEMORY_NOTE,
                 GitActivityPointer::of('context_files.agents_md', 'false'),
             );
-        } elseif (null !== $ratio && $ratio > 0.0) {
+        } elseif (null !== $ratio && $ratio > HarnessThresholds::AI_RATIO_NONE) {
             $level = HarnessLevel::Prompts;
             $evidences[] = new Evidence(
                 "prompts : commits co-écrits avec l'IA, aucun fichier de contexte",
@@ -151,12 +152,24 @@ final class HarnessEvaluator implements AxisEvaluator
         } elseif (null === $ratio) {
             // The only piece that could still separate "prompts" (Red) from "rien" (White)
             // is missing: the axis cannot decide between them, so it becomes a Range instead
-            // of a Confirmed White (docs/specs/02-axe-harness.md § Ratio absent).
+            // of a Confirmed White (docs/specs/02-axe-harness.md § Ratio absent). The facts
+            // actually observed — no memory file, every counter known at zero — are still
+            // cited as Evidence, so "Ce qui a mené là" explains why Blue to Gold are ruled
+            // out even though the axis floor itself is undecided (Codex review of PR #44).
             return new AxisVerdict(
                 axis: Axis::Harness,
                 level: Level::White,
                 confidence: new Range(Level::White, Level::Red, missingSample: 0),
-                evidences: [],
+                evidences: [
+                    new Evidence(
+                        'aucun fichier mémoire',
+                        GitActivityPointer::of('context_files.agents_md', 'false'),
+                    ),
+                    new Evidence(
+                        sprintf('aucun compteur de contexte : %s', $this->countersLabel($counters)),
+                        $this->countersPointer($counters),
+                    ),
+                ],
                 notes: [new Note(
                     self::RATIO_ABSENT_NOTE,
                     GitActivityPointer::of('commits.ai_coauthored_ratio', 'absent'),
