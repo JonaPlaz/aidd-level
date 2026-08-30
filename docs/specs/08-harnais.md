@@ -209,3 +209,431 @@ journal avec l'URL de la PR ; `REVIEW_WAIT_MAX` est fixé d'après le délai mes
 Une issue étiquetée, le skill lancé, la PR ouverte avec la revue Codex, le merge automatique,
 puis `docker run … evaluate profiles/self` sur le dépôt lui-même. Deux minutes, muette,
 lisible sans le son (texte à l'écran, pas de voix).
+
+## 11. Lancement autonome de la roadmap (chantier 17, 2026-08-30)
+
+Demande de Jonathan (issue #46) : « j'arrive dans la session, je demande un truc — ou
+directement, tu lances tout ce qu'il y a à faire, si possible en parallèle, tout ce qui est
+sur la roadmap ». Constat de départ : la session lance `/feature <n°>` **un par un**, à la
+main, alors que le parallélisme est calculé depuis `ROADMAP.md` depuis le chantier 0 (§ 8) et
+que six fronts ont déjà tenu ensemble le 2026-08-29 (`docs/harness.md`). Ce qui manque n'est
+pas le parallélisme, c'est **le geste qui l'ouvre**.
+
+Les faits de plateforme cités ici viennent de la documentation Claude Code consultée le
+**2026-08-30** : pages *hooks*, *skills*, *sub-agents*, *scheduled tasks*, *goal*. Ce qui n'a
+pas pu y être vérifié est marqué **non vérifié**.
+
+### 11.1 (a) Le déclencheur : routine `SessionStart` ou skill invoqué ?
+
+| | Hook `SessionStart` | Skill `roadmap` invocable par le modèle |
+|---|---|---|
+| Ce qu'il peut faire | **injecter du contexte, rien d'autre** : sa sortie standard (ou le champ `additionalContext`) devient du texte que le modèle voit et peut suivre | tout ce que la session peut faire : lancer des sous-agents, appeler `gh`, écrire au journal |
+| Ce qu'il ne peut pas | **démarrer un tour** ; aucun outil ne s'exécute tant que Jonathan n'a pas envoyé un message (demande ouverte `anthropics/claude-code#10808`, « Autonomous Messages After SessionStart ») | s'invoquer sans qu'un tour existe — il lui faut un premier message, **ou** un tir de tâche planifiée (§ 11.5) |
+| Coût | s'exécute à chaque démarrage ; défaut documenté de délai : 600 s — un scan lent rend le démarrage collant | nul tant qu'il n'est pas invoqué : seule la `description` est en contexte, le corps se charge à l'invocation |
+| Matchers | `startup`, `resume`, `clear`, `compact`, `fork` | — |
+
+**Tranché : le skill décide, le hook ne fait que constater.**
+
+- `.claude/skills/roadmap/SKILL.md`, **sans** `disable-model-invocation` : sa description reste
+  en contexte, la session l'invoque elle-même dès le premier message de Jonathan, quel qu'en
+  soit le sujet. C'est la même levée qu'au chantier 16 pour `feature`, et le même motif : un
+  cycle qu'il faut taper à la main n'est pas un harnais.
+- Un cinquième hook, `SessionStart` (matcher `startup|resume|clear`), qui lance
+  `node .claude/hooks/roadmap-ready.js` et injecte **le tableau des fronts prêts** — des faits,
+  jamais un ordre. Il ne lance rien. Délai `ROADMAP_SCAN_TIMEOUT = 20 s` (adaptation assumée :
+  le défaut documenté de 600 s est inacceptable au démarrage ; 20 s couvre le `fetch` borné
+  ci-dessous plus quelques appels `gh`) ; dépassement, `gh` non authentifié, dépôt absent →
+  **sortie vide, exit 0**, le démarrage n'est jamais cassé.
+- **Tout scan commence par un `git fetch origin main` borné** à `FETCH_TIMEOUT = 10 s`
+  (`timeout 10 git fetch --quiet origin main`) : sans lui, `origin/main` date de la dernière
+  commande de Jonathan et la condition 6 du § 11.3 juge sur un état mort. Le `fetch` ne
+  modifie aucun checkout (il n'écrit que des références distantes), il est donc le seul geste
+  git que le script et la session s'autorisent. Échec ou dépassement → **frein « état distant
+  inconnu »** : le tableau s'affiche, la liste retenue est vide, rien ne s'ouvre.
+- Le hook et le skill appellent **le même script**, seule implémentation de la règle de
+  maturité (§ 11.3) : le hook pour afficher, le skill pour décider. Pas de règle en double
+  (règle 7 de la revue).
+
+Écarté, et pourquoi : `/loop` et `/goal` répondent au même besoin (« travailler une file
+d'issues étiquetées jusqu'à ce qu'elle soit vide » est un exemple de la page *goal*), mais ce
+sont des **commandes intégrées** : une commande intégrée invoquée par le modèle « arrive à
+Claude comme du texte, elle ne s'exécute pas » (page *scheduled tasks*). Elles restent la
+reprise en main de Jonathan (§ 11.7), pas le mécanisme.
+
+⚠️ **Constaté le 2026-08-30** : un skill dont le **frontmatter** change n'est pris en compte
+qu'au **tour suivant** (levée de `disable-model-invocation` sur `feature`, chantier 16). La doc
+dit seulement que les modifications de `SKILL.md` sont détectées « dans la session courante,
+sans redémarrage » ; la granularité au tour est **non vérifiée**. Conséquence pratique :
+`/roadmap` n'est invocable qu'au tour qui suit sa création — et si `.claude/skills/` n'existait
+pas au démarrage, il faut redémarrer (doc *skills*, « live change detection »).
+
+### 11.2 Vue d'ensemble de la boucle
+
+```
+premier message de Jonathan (n'importe lequel)
+  └─► skill /roadmap  (session principale — décide, ne code pas, ne touche pas à git)
+        ├─► verrou `roadmap-<horodatage>` — refusé si un autre existe : on sort sans rien faire
+        ├─┐ fenêtre de sélection, sous ce verrou :
+        │ ├─► git fetch origin main (borné FETCH_TIMEOUT)
+        │ ├─► node .claude/hooks/roadmap-ready.js  → freins, fronts prêts, créneaux libres
+        │ └─► réservation : feature-lock.js lock <n°> pour chaque front retenu
+        ├─► `roadmap-<horodatage>` RETIRÉ (fin de la fenêtre — quel que soit le chemin)
+        ├─► pour chaque front réservé (≤ MAX_CONCURRENT_FRONTS) : un sous-agent `front`,
+        │   lancé explicitement EN ARRIÈRE-PLAN
+        │     └─► skill `feature` préchargé : agent `dev` (worktree) → PR
+        │           → attente revue Codex → passe de correction → réponses tracées
+        │           → rebase → `gh pr merge --auto` → journal → unlock <n°>
+        ├─► tâche planifiée de remplissage (ROADMAP_REFILL_INTERVAL) qui ré-invoque /roadmap
+        └─► compte rendu : un tableau, une ligne par front
+```
+
+Trois profondeurs : session → `front` → `dev`. La limite documentée est de **trois couches
+sous la conversation principale** ; l'outil `Agent` n'est retiré qu'à la limite de profondeur,
+**y compris pour un sous-agent d'arrière-plan** (doc *sub-agents*, « premier filtre »). Donc
+`front` peut lancer `dev`. La limite de concurrence par défaut est de **20 sous-agents**
+(`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`) : à trois fronts, huit sous-agents au plus, elle n'est
+jamais atteinte.
+
+### 11.3 (b) Ce qui rend un front « prêt »
+
+Calculé, jamais jugé. `roadmap-ready.js` ne rend un front prêt que si **les six** conditions
+tiennent :
+
+1. **Une issue ouverte étiquetée `to-implement`** (`gh issue list --label to-implement --state open`)
+   et **sans** label `blocked`.
+2. **Ses dépendances sont mergées — l'état vient de GitHub, pas de `ROADMAP.md`.** Le graphe
+   (colonnes « dépend de », « Sorties », « Issue ») se lit dans `ROADMAP.md`, seul endroit où
+   il existe ; **l'état, lui, se lit sur GitHub**. Motif, remarque Codex sur la PR #48 : la
+   ligne d'état d'un chantier n'est ajoutée qu'à la PR suivante (§ 4 du skill `feature`), donc
+   un dépendant resterait inéligible pendant tout l'intervalle — le harnais s'auto-bloquerait
+   sur son propre retard d'écriture. Prédicat, pour chaque numéro cité en « dépend de » :
+   - son issue (colonne « Issue » de sa dernière ligne qui en déclare une) est **`CLOSED`** et
+     porte **au moins une PR `MERGED`** dans
+     `gh issue view <n°> --json state,closedByPullRequestsReferences` ;
+   - **repli** quand aucune issue n'est connue pour ce chantier (lignes 0, 15, 16 : colonne
+     `—`) : l'état de sa **dernière ligne** de `ROADMAP.md` contient `mergé` — `ROADMAP.md`
+     étant append-only, la dernière ligne fait foi, et ses « Sorties » sont celles de sa
+     dernière ligne qui en déclare (les lignes d'état écrivent `—`).
+   - une issue fermée **sans** PR mergée (fermée à la main, doublon) ne vaut **pas** mergée :
+     l'écart est imprimé, le dépendant reste écarté.
+   Conséquence assumée : `ROADMAP.md` redevient ce qu'il est, l'historique humain ; une ligne
+   d'état en retard ne bloque plus personne, et le § 4 du skill `feature` (ligne ajoutée dans
+   la PR suivante ou une PR `docs:`) n'est pas modifié par ce chantier.
+3. **Aucun verrou en cours sur ce numéro** : le fichier `<git common dir>/feature-locks/<n°>`
+   est absent (lu via `locksDir()` de `.claude/hooks/lib.js`, pas réimplémenté).
+4. **Aucune PR ouverte pour lui** : ni branche portant le numéro comme jeton
+   (`(^|[-/])<n°>([-/]|$)`, même règle que `guard-git`), ni corps contenant `Closes #<n°>`.
+5. **Aucun chevauchement de sorties** avec un front déjà ouvert ou retenu dans la même passe
+   (§ 8 : « deux chantiers sont simultanés si leurs specs ne partagent aucun fichier de
+   sortie ») ; `composer.json` compte pour un chantier à la fois (AGENTS.md).
+6. **Sa spec est présente dans `docs/specs/` et committée sur `origin/main`.** Un front dont la
+   spec manque n'est **jamais ouvert** : il ne consomme pas de créneau, il est listé « à
+   spécifier » dans le compte rendu. Motif : une spec nouvelle est le seul arrêt humain (§ 7) ;
+   en ouvrir trois d'un coup transformerait un arrêt en trois.
+
+**Freins globaux** — chacun vide la liste retenue et se dit dans la sortie ; aucun n'ouvre quoi
+que ce soit :
+
+1. **`blocked` quelque part** : une **PR ouverte** *ou* une **issue ouverte** portant le label
+   `blocked` (`gh pr list --state open --label blocked`, `gh issue list --state open --label
+   blocked` — la première suffit à freiner). Le prédicat est unique et couvre les deux, par
+   cohérence avec le § 11.6.3 : le quota Codex se pose sur la PR, un cadrage impossible se pose
+   sur l'issue, et les deux doivent geler la file.
+2. **Pause déclarée** : le marqueur `<git common dir>/roadmap-paused` existe (§ 11.7).
+3. **État distant inconnu** : le `git fetch origin main` borné a échoué (§ 11.1).
+
+C'est un état lisible de `gh` et du disque, **sans mémoire à tenir entre deux invocations** :
+un tir de la tâche de remplissage repart de zéro et retrouve les mêmes freins.
+
+Cas dégradés, tous silencieux et sans ouverture : ligne de roadmap illisible ou absente pour
+une issue ; « dépend de » citant un chantier inconnu ; dépendance sans issue ni ligne `mergé` ;
+issue fermée sans PR mergée ; deux lignes contradictoires (la dernière gagne, l'écart est
+signalé dans la sortie) ; `gh` en échec ou hors ligne ; dépôt git absent. Le script **ne bloque
+jamais** et n'écrit rien hors de son marqueur de pause : il imprime, exit 0.
+
+### 11.4 (c) Plafond de fronts simultanés
+
+`MAX_CONCURRENT_FRONTS = 3`, constante nommée dans `roadmap-ready.js` avec sa justification en
+commentaire, citée par le skill.
+
+Origine : § 8 et `ROADMAP.md` (« la spec du harnais prévoit de commencer à trois », doute 6 du
+brief). Ce n'est pas une limite de plateforme (20 sous-agents concurrents par défaut) mais une
+limite d'intégration : le check `ci` est requis en mode `strict`, chaque merge remet les autres
+branches en retard (cascade constatée le 2026-08-29, ~3 min par PR), et le quota de revues
+Codex s'épuise (~25 revues en une soirée, `docs/harness.md`). Six fronts ont tenu une fois ;
+trois est le pas suivant assumé, **à réviser au journal** dès qu'une passe complète tourne sans
+`blocked`.
+
+Ordre de service quand plus de fronts sont prêts que de créneaux : **numéro de chantier
+croissant** — déterministe, et le plus petit numéro est le plus ancien de la chaîne de
+dépendances.
+
+### 11.5 (d) Ce que fait la session pendant l'attente
+
+**Chaque front possède sa boucle.** Un sous-agent `front` (`.claude/agents/front.md`) tient,
+pour son issue, exactement le cycle du § 3 — à ceci près que **son verrou par numéro a déjà été
+réservé par la sélection** (§ 11.5, sélection atomique) : il le trouve posé, ne le repose pas,
+et c'est lui qui le **retire** à son pas terminal. Puis agent `dev`, PR, attente de la revue
+d'ouverture (`REVIEW_WAIT_MAX = 20 min`, inchangé), une passe de correction, réponses tracées,
+rebase, `gh pr merge --auto --squash --delete-branch`, déverrouillage, journal. Le skill
+`feature` lui est **préchargé** (`skills: feature`) : son contenu entre dans le contexte du
+sous-agent au démarrage (doc *sub-agents*), ce qui n'est possible que depuis la levée de
+`disable-model-invocation` au chantier 16.
+
+| | `front` |
+|---|---|
+| `model` / `effort` | `sonnet` / `high` |
+| Pourquoi | pas de production de code (c'est `dev`), mais des décisions : cette remarque touche-t-elle un seuil ? faut-il `blocked` ? — l'effort va où se prennent les décisions (§ 2) |
+| `maxTurns` | 120 — arithmétique : jusqu'à 20 sondages de revue + 20 sondages de merge à 60 s, plus le routage, la correction et les réponses. **Adaptation assumée**, revue au journal si atteinte |
+| `permissionMode` | `acceptEdits` |
+| `isolation` | — (aucune : il ne modifie aucun fichier) |
+| `tools` | Read, Grep, Glob, Bash, **Agent** (sans quoi il ne peut pas lancer `dev` ; nom d'outil `Agent` d'après la doc *sub-agents* — **à confirmer à l'épreuve**) |
+| `background` | **`true`, explicitement.** Exigence, pas un défaut : la doc *sub-agents* décrit `background` comme le champ de frontmatter qui « garde un sous-agent en arrière-plan même quand Claude veut le résultat », et le comportement par défaut est **non vérifié** (les deux lectures de la page divergent). Un front lancé au premier plan bloquerait la session pendant toute sa boucle de revue et supprimerait le parallélisme : le skill demande en plus, à chaque appel, un lancement en arrière-plan, et l'épreuve du § 11.9 échoue si la session n'est pas rendue à Jonathan dans la foulée |
+
+**Le `front` ne touche jamais au checkout principal.** Les opérations git sur une branche
+restent au propriétaire du checkout (§ 3) : c'est l'agent `dev`, relancé dans son worktree.
+Motif : l'incident du chantier 11 (`docs/harness.md`, « un commit a atterri sur `main` local
+pendant qu'un fond changeait de branche ») deviendrait la norme à trois fronts. Deux garde-fous :
+
+- `roadmap` pose un verrou `roadmap-<horodatage>` **le temps de la sélection** (§ 11.2) ;
+- **extension de `guard-git`** : dès que **plus d'un verrou** est présent, un `git checkout`,
+  `switch`, `rebase`, `merge`, `commit` ou `push` dont le `cwd` est le **checkout principal**
+  (`git rev-parse --git-dir` == `--git-common-dir`) est refusé (exit 2). Et un verrou
+  `roadmap-*` **n'autorise aucune branche** à `gh pr create`, comme `trivial-*` n'autorise que
+  `trivial/…`.
+
+**Sélection atomique.** `feature-lock.js lock` est **idempotent** : il réécrit le fichier sans
+rien signaler. Il réserve, il n'exclut pas — deux invocations simultanées de `/roadmap`
+(un tir de la tâche de remplissage pendant que Jonathan en lance une) verrouilleraient toutes
+deux le même numéro et ouvriraient deux fronts dessus. L'exclusion est donc portée par le
+verrou `roadmap-<horodatage>`, avec ces règles :
+
+- il est posé **avant** le `fetch` et tenu **jusqu'à la réservation** des verrous par issue
+  incluse ; toute la fenêtre « je lis l'état / je décide / je réserve » est sous ce verrou ;
+- une invocation qui trouve **un verrou `roadmap-*` déjà présent sort immédiatement**, sans
+  scanner, sans ouvrir, en le disant — elle ne « remplit pas les créneaux libres » au passage :
+  le tir suivant le fera dix minutes plus tard ;
+- il est **retiré sur chaque chemin terminal**, sans exception : file vide, aucun front
+  ouvrable, frein global, pause, stop, annulation de la tâche, erreur de scan, dépassement de
+  `ROADMAP_SCAN_TIMEOUT`. Le propriétaire est **l'invocation de `/roadmap` qui l'a posé**, et
+  elle le retire elle-même — jamais un front, jamais la session à sa place. Un verrou
+  `roadmap-*` trouvé au démarrage d'une session (invocation morte en route) est signalé au
+  journal et retiré : il n'a plus de propriétaire vivant. Sans cette règle, l'épreuve « plus
+  aucun verrou à la fin » (§ 11.9) serait insatisfaisable.
+
+Le verrou `roadmap-*` ne dure donc que quelques secondes : le garde-fou de checkout ci-dessus
+repose sur les **verrous par numéro**, pas sur lui — deux fronts ouverts, deux verrous, checkout
+principal en lecture seule.
+
+**La session, elle**, ne fait rien de git (hors le `fetch` borné du § 11.1) ni de `gh` pendant
+l'attente. Elle : annonce en une ligne les fronts ouverts ; répond à Jonathan s'il demande
+autre chose ; à chaque retour de front (le résultat d'un sous-agent d'arrière-plan « parvient à
+Claude comme une notification d'achèvement dans un tour ultérieur », doc *sub-agents*),
+**rappelle `/roadmap`** pour remplir le créneau libéré.
+
+**Un seul propriétaire de la ligne de journal par front : le front lui-même.** Il l'écrit à son
+pas terminal (mergé, `blocked`, borne atteinte), avec pointeur — PR et SHA (§ 6). **La session
+n'ajoute rien** : elle ne sait du front que ce qu'il lui a rapporté, une ligne écrite depuis
+elle serait un doublon sans pointeur propre. Ce qui s'y ajoute mécaniquement, et qui n'est pas
+un doublon : le hook `journal.js` écrit **une ligne par fin de sous-agent** sur `SubagentStop`
+(`agent terminé : <type>`, avec branche et SHA courts). Vérifié dans `.claude/hooks/journal.js`
+le 2026-08-30 : la condition « hors `main` avec travail non committé » ne s'applique **qu'à**
+l'événement `Stop` ; `SubagentStop` écrit inconditionnellement. Les deux lignes se distinguent
+par leur colonne acteur (`hook journal.js (SubagentStop)` contre le front) : la première dit
+qu'un agent s'est arrêté, la seconde dit ce qu'il a produit. Aucune modification de
+`journal.js` n'est demandée par ce chantier ; à trois fronts, elle produit six lignes
+mécaniques (trois `front`, trois `dev`), c'est le prix de la trace.
+
+**Remplissage sans Jonathan.** Qu'une session inactive soit réveillée par la fin d'un
+sous-agent d'arrière-plan est **non vérifié** hors `/goal`. Le skill ne s'appuie donc pas
+dessus : à son premier passage il planifie **une** tâche récurrente (`CronCreate`,
+`ROADMAP_REFILL_INTERVAL = 10 min`, aligné sur le cron `auto-merge-after-codex` du chantier 15)
+dont l'invite est `/roadmap`. Les tâches planifiées « ne se déclenchent que pendant que Claude
+Code tourne et est inactif », entre deux tours, et un tir manqué n'est pas rattrapé (doc
+*scheduled tasks*) — c'est un rattrapage, pas une horloge. Le décalage volontaire (« jitter »)
+peut retarder un tir infra-horaire jusqu'à la moitié de l'intervalle : sans conséquence.
+
+**La boucle porte sa borne** (spec 02 : une boucle est une relance **et** une borne) :
+`roadmap` **annule sa propre tâche** (`CronDelete`) dès qu'il ne reste ni front prêt ni front
+en cours, ou dès que le frein global s'applique (une PR ouverte `blocked`). À défaut, la
+plateforme l'expire seule au bout de 7 jours.
+
+### 11.6 (e) Bornes et arrêts
+
+1. `MAX_CONCURRENT_FRONTS` — au-delà, on attend un merge.
+2. **Spec absente = pas de front** (§ 11.3, condition 6). Au plus **un** agent `spec` lancé à
+   la fois, et il se termine sur « spec écrite, à valider » : arrêt humain (§ 7), inchangé.
+3. **`blocked` n'est jamais levé par un agent** : une issue **ou** une PR ouverte étiquetée
+   `blocked` gèle l'ouverture de tout nouveau front jusqu'à un geste de Jonathan (frein global
+   1 du § 11.3 — même prédicat des deux côtés).
+4. **Quota Codex** : un front qui lit un message de quota épuisé pose `blocked`, journalise et
+   s'arrête (§ 3, inchangé) ; le frein global (§ 11.3) empêche alors les autres fronts de
+   partir brûler ce qu'il reste. Un front déjà lancé va au bout de sa passe.
+5. `REVIEW_WAIT_MAX = 20 min` par front, inchangé.
+6. **Rebase en cascade** — amendement au § 8 : « une tentative de rebase, puis `blocked` » vaut
+   pour un rebase **en conflit** — un seul essai, inchangé, c'est là que le jugement humain
+   manque. Un rebase **mécanique** (sans conflit), parce qu'un autre front a mergé entre-temps,
+   se rejoue, et le front **compte ses rebases mécaniques réels** jusqu'à
+   `REBASE_MECHANICAL_MAX = 6`, puis `blocked`. La borne `MAX_CONCURRENT_FRONTS − 1` posée au
+   premier jet est **fausse** (remarque Codex sur la PR #48) : avec le re-remplissage, la file
+   se recharge, et un front lent peut être doublé par bien plus de N − 1 pairs. Origine de 6 :
+   `2 × MAX_CONCURRENT_FRONTS`, soit deux vagues complètes de fronts — au-delà, la branche est
+   manifestement trop lente pour la file et la faire tourner encore ne fait qu'occuper un
+   créneau. **Adaptation assumée**, révisée au journal ; le compteur est celui du front,
+   remis à zéro à chaque front, et le nombre de rebases effectués va dans sa ligne de journal.
+   Sans cet amendement, ouvrir trois fronts produit mécaniquement deux `blocked` à
+   l'intégration.
+7. **Aucun front ne peut poser de question.** L'outil `AskUserQuestion` est retiré de tout
+   sous-agent (doc *sub-agents*, premier filtre) : toute question devient `blocked` + journal +
+   compte rendu. Corollaire de permissions : la liste `allow` de `.claude/settings.json` doit
+   couvrir tout ce qu'un front exécute (`gh`, `git`, `make`, `sleep`, `feature-lock.js`, et à
+   ajouter `node .claude/hooks/roadmap-ready.js`) — un sous-agent d'arrière-plan « fait
+   remonter chaque demande de permission dans la session principale », et une demande non
+   couverte bloquerait les trois fronts d'un coup.
+8. `maxTurns` de `front` (120) et de `dev` (80), inchangés par ailleurs.
+
+### 11.7 (f) Ce que Jonathan garde
+
+- **La validation de toute spec nouvelle** — seul point d'arrêt humain (§ 7), et la raison pour
+  laquelle un front sans spec ne s'ouvre pas.
+- **Le retrait d'un `blocked`** : rien ne repart tant qu'il est là.
+- **Trois mots**, reconnus par la session (instruction du skill et de `CLAUDE.md § Flow`, pas un
+  hook — aucun hook ne peut arrêter un sous-agent) :
+  - « **pause roadmap** » : plus aucun front nouveau, tâche de remplissage annulée ; les fronts
+    en cours vont au bout (leur travail est déjà dans une PR) ;
+  - « **stop roadmap** » : idem, plus `TaskStop` sur chaque front en cours et
+    `gh pr merge <n> --disable-auto` sur les PR armées — sinon une PR se merge après l'arrêt.
+    Les worktrees gardent leur travail (§ 7). Une ligne de journal par front arrêté ;
+  - « **reprends la roadmap** » : la seule façon de repartir.
+- **La pause survit à la session.** Une pause qui ne vivrait que dans le contexte serait perdue
+  au `/clear`, au redémarrage, ou au premier tir de la tâche de remplissage d'une autre session
+  — Jonathan aurait dit « pause » et la file repartirait dans son dos. Elle s'écrit donc sur le
+  disque : `node .claude/hooks/roadmap-ready.js pause` crée
+  **`<git common dir>/roadmap-paused`** (même répertoire que `feature-locks/`, hors de l'index,
+  visible de tous les worktrees), horodaté et portant le mot qui l'a posée (`pause` ou `stop`).
+  Il est lu par `roadmap-ready.js` (frein global 2, § 11.3) **et** par le skill, qui sort sans
+  rien ouvrir — y compris quand il est appelé par la tâche planifiée. « reprends la roadmap »
+  exécute `roadmap-ready.js resume`, qui retire le marqueur ; Jonathan peut aussi le supprimer
+  à la main. Le hook `SessionStart` affiche « roadmap en pause depuis <horodatage> » à la place
+  du tableau : une pause oubliée se voit au démarrage suivant.
+- **La reprise en main documentée** : `/goal <condition>` (« … jusqu'à ce que la file d'issues
+  `to-implement` soit vide ») ou `/loop 10m /roadmap`, tapés par lui, si un jour la tâche
+  planifiée ne suffit pas. Le skill imprime la ligne prête à coller dans son compte rendu.
+
+### 11.8 Sorties du chantier
+
+| Fichier | Rôle |
+|---|---|
+| `.claude/skills/roadmap/SKILL.md` | le skill, invocable par le modèle, `argument-hint: [--dry-run]` |
+| `.claude/hooks/roadmap-ready.js` | la règle de maturité, seule implémentation ; `fetch` borné puis lecture de `gh` et de `ROADMAP.md` ; imprime freins, fronts prêts, retenus, à spécifier. Sous-commandes `pause` / `resume` / (défaut) `scan` ; seule chose qu'il écrit : le marqueur `roadmap-paused` |
+| `.claude/hooks/tests/roadmap-ready.test.js` | tests unitaires, exécutés par la CI (comme `guard-git.test.js`) |
+| `.claude/hooks/guard-git.js` | extension : checkout principal en lecture seule pour git dès qu'il y a plus d'un verrou ; verrou `roadmap-*` n'autorisant aucune branche |
+| `.claude/agents/front.md` | l'agent qui tient un cycle `feature` complet, en arrière-plan |
+| `.claude/settings.json` | hook `SessionStart`, `allow` de `roadmap-ready.js` |
+| `CLAUDE.md` § Flow | trois lignes : `/roadmap` ouvre les fronts prêts, `feature` reste le cycle unitaire, « pause / stop roadmap » |
+| `.claude/skills/feature/SKILL.md` | une phrase : lancé par un agent `front`, il ne travaille jamais dans le checkout principal |
+| `ROADMAP.md` | une ligne ajoutée : `| 17 | Lancement autonome de la roadmap | 08 § 11 | 16 | .claude/skills/roadmap/, .claude/hooks/, .claude/agents/front.md, CLAUDE.md | #46 | à faire |` |
+
+Ce chantier ne touche ni `src/` ni `tests/` : aucune décision de scoring, aucun seuil de
+domaine. La règle 7 d'AGENTS.md (domaine + infrastructure) est sans objet.
+
+### 11.9 Tests / épreuve
+
+**Unitaire** (`roadmap-ready.test.js`, en CI — la règle de maturité est du code, elle se teste
+comme `guard-git`). Chaque cas est un `ROADMAP.md` de fixture plus un état `gh` injecté par
+fichier JSON, jamais par le réseau :
+
+1. dépendance dont l'issue est ouverte → front écarté ;
+2. dépendance dont l'issue est `CLOSED` avec une PR `MERGED`, **et dont la ligne d'état
+   `ROADMAP.md` manque encore** → dépendance satisfaite : c'est le cas que la première version
+   ratait ;
+3. dépendance dont l'issue est `CLOSED` **sans** PR mergée → écarté, écart imprimé ;
+4. dépendance sans issue (colonne `—`), deux lignes pour le même chantier, la dernière dit
+   `mergé` → satisfaite par le repli (règle « la dernière ligne gagne ») ;
+5. sorties partagées avec un front déjà ouvert → écarté ;
+6. verrou `feature-locks/<n°>` présent → écarté ;
+7. PR ouverte portant le numéro, ou `Closes #<n°>` dans le corps → écarté ;
+8. spec absente de `origin/main` → classé « à spécifier », jamais retenu ;
+9. une PR ouverte `blocked` → **liste retenue vide**, frein annoncé ; **idem pour une issue
+   ouverte `blocked`** (les deux cas sont testés séparément) ;
+10. marqueur `roadmap-paused` présent → liste vide, frein « pause » ; `resume` le retire et la
+    liste revient ;
+11. `git fetch` en échec ou dépassant `FETCH_TIMEOUT` → liste vide, frein « état distant
+    inconnu » ;
+12. cinq fronts prêts → **trois** retenus, dans l'ordre croissant ;
+13. `gh` en échec, `ROADMAP.md` illisible, hors dépôt git → sortie vide, exit 0.
+
+Deux cas se testent hors du script, à l'épreuve, parce qu'ils portent sur la conduite du skill :
+un verrou `roadmap-*` présent → la seconde invocation sort sans scanner ; toute sortie du skill
+(y compris frein et erreur) → plus aucun verrou `roadmap-*`.
+
+**Épreuve de bout en bout** — la preuve demandée par l'issue #46 : **deux issues prêtes, deux
+fronts ouverts, deux PR mergées sans geste humain.**
+
+1. Deux issues `to-implement`, specs déjà sur `origin/main`, sorties disjointes (au besoin, deux
+   chantiers de documentation).
+2. Jonathan ouvre la session et écrit **un message quelconque** (l'épreuve échoue s'il a dû
+   taper `/roadmap`, `/feature`, `/goal` ou `/loop`).
+3. Attendu, sans autre geste : **la session rendue à Jonathan dans la foulée** (preuve que les
+   fronts tournent en arrière-plan) ; deux sous-agents `front` en cours ; deux PR ouvertes avec
+   label `to-review` ; deux verrous par numéro présents pendant le run et **aucun verrou
+   `roadmap-*` au-delà de la sélection**, **plus aucun verrou du tout à la fin** ; deux PR
+   `mergedAt` non nul, mergées en squash, branches supprimées ; chaque commit portant le
+   trailer `Co-Authored-By: Claude <noreply@anthropic.com>` ; une ligne de journal par front
+   avec pointeur (PR, SHA).
+4. Preuve du plafond : quatre issues prêtes → trois fronts, le quatrième ouvert seulement après
+   un merge, par un tir de la tâche de remplissage (visible au journal : l'horodatage du
+   quatrième front est postérieur au `mergedAt` du premier).
+5. Preuve du frein : poser `blocked` sur une PR ouverte, invoquer `/roadmap` → rien n'est
+   ouvert, le motif est dit ; recommencer avec le label sur une **issue** ouverte.
+6. Preuve du garde-fou git : depuis le checkout principal, avec deux verrous présents, tenter
+   `git checkout -b x` → refus du hook (test de déclenchement par violation, § 4).
+7. Preuve du mot d'arrêt : « stop roadmap » pendant deux fronts → tâche annulée, fronts
+   arrêtés, PR désarmées (`--disable-auto`), deux lignes au journal.
+8. Preuve de la pause persistante : « pause roadmap », puis `/clear` **et** redémarrage de la
+   session → le hook `SessionStart` annonce la pause, un tir de la tâche de remplissage n'ouvre
+   rien ; « reprends la roadmap » → le marqueur disparaît et la file repart.
+9. Preuve de la ligne de journal : une ligne du front par PR, avec PR et SHA, **plus** les
+   lignes mécaniques de `journal.js` sur `SubagentStop` — et aucune ligne écrite par la session.
+
+Chaque constat va dans `docs/harness.md` (« ce qui a tenu » / « ce qui a été coupé »), avec
+l'URL des PR — c'est ce fichier, pas la spec, qui dira si trois fronts se conduisent.
+
+### 11.10 Non vérifié, à constater à l'épreuve
+
+- Réveil d'une session inactive à la fin d'un sous-agent d'arrière-plan **hors `/goal`** : non
+  vérifié ; d'où la tâche de remplissage.
+- Nom exact de l'outil de délégation (`Agent`) dans le champ `tools` d'un agent.
+- Comportement d'un `CronCreate` posé par le modèle vis-à-vis des permissions ; disponibilité
+  du planificateur (`CLAUDE_CODE_DISABLE_CRON`).
+- Granularité du rechargement d'un frontmatter de skill (au tour suivant : constaté, non
+  documenté).
+- Trois worktrees `dev` **plus** trois `front` en arrière-plan : jamais tenu ; six worktrees ont
+  tenu le 2026-08-29, mais sans agents superviseurs concurrents.
+- Comportement par défaut d'un sous-agent (premier plan ou arrière-plan) : **non vérifié**, la
+  page *sub-agents* se lit dans les deux sens ; d'où le `background: true` explicite.
+- `REBASE_MECHANICAL_MAX`, `MAX_CONCURRENT_FRONTS`, `FETCH_TIMEOUT` et
+  `ROADMAP_SCAN_TIMEOUT` sont des adaptations assumées : elles se révisent au journal, pas dans
+  le code sans trace.
+
+### Historique des arbitrages du § 11
+
+Le texte ci-dessus fait foi ; cette table dit seulement d'où viennent ses décisions.
+
+| Arbitrage | Où il a atterri |
+|---|---|
+| 2026-08-30, Jonathan : la session **ouvre les fronts d'office**, en l'annonçant d'une ligne ; si le premier message demande autre chose, elle le traite d'abord | § 11.1, § 11.5 |
+| 2026-08-30, Jonathan : agent `front` en `sonnet` / `high`, à revoir au journal | § 11.5 |
+| 2026-08-30, Jonathan : « pause » **et** « stop » ; « stop » désarme les `--auto` | § 11.7 |
+| 2026-08-30, Jonathan : hook `SessionStart` gardé, retiré s'il ne se déclenche pas au test ou rend le démarrage collant | § 11.1 |
+| 2026-08-30, Jonathan : `ROADMAP_REFILL_INTERVAL = 10 min`, à confirmer à l'épreuve | § 11.5 |
+| 2026-08-30, Jonathan : épreuve sur deux issues de documentation | § 11.9 |
+| 2026-08-30, Codex (PR #48) : la maturité d'une dépendance se lit sur GitHub, pas dans la ligne d'état de `ROADMAP.md`, en retard par construction | § 11.3 condition 2 |
+| 2026-08-30, Codex (PR #48) : le frein `blocked` couvre les issues autant que les PR | § 11.3 frein 1, § 11.6.3 |
+| 2026-08-30, Codex (PR #48) : la pause doit survivre à la session → marqueur sur disque, mot de reprise | § 11.7 |
+| 2026-08-30, Codex (PR #48) : `MAX_CONCURRENT_FRONTS − 1` faux avec re-remplissage → `REBASE_MECHANICAL_MAX = 6`, un seul essai en conflit (remplace l'arbitrage du même jour) | § 11.6.6 |
+| 2026-08-30, Codex (PR #48) : le verrou `roadmap-*` se retire sur chaque chemin terminal, propriétaire nommé | § 11.5 |
+| 2026-08-30, Codex (PR #48) : sélection atomique — `lock` idempotent ne fait pas exclusion | § 11.2, § 11.5 |
+| 2026-08-30, Codex (PR #48) : un seul propriétaire de la ligne de journal par front | § 11.5 |
+| 2026-08-30, Codex (PR #48) : lancement en arrière-plan exigé, jamais supposé | § 11.5 |
+| 2026-08-30, Codex (PR #48) : `git fetch origin main` borné avant tout scan | § 11.1, § 11.3 frein 3 |
