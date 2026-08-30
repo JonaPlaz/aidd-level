@@ -50,11 +50,15 @@ Une relance sans borne n'est pas une boucle au sens de la grille, c'est un risqu
 - **Preuve structurelle** : chaque ligne du rendu porte un pointeur vérifiable, `fichier ›
   champ = valeur` (`Evidence`, `Pointer` — `src/Domain/Evidence.php`, `src/Domain/Pointer.php`),
   rien ne s'affirme sans lui.
-- **`null` jamais coercé en zéro** : un champ absent rend l'axe non observable, jamais un score
-  dégradé silencieux (spec 05 § *Signal absent*).
+- **`null` jamais coercé en zéro** : un champ absent n'est jamais traité comme une valeur
+  zéro ; l'axe devient non observable seulement quand le signal décideur (et son repli, s'il
+  existe) manquent tous les deux — un champ secondaire avec repli disponible reste observable
+  via ce repli (spec 05 § *Signal absent*).
 - **Fourchette et confiance basse** : sous le plancher d'échantillon (`SampleFloors`), le
-  verdict sort en fourchette (plancher observé → Gold) avec le manque chiffré, jamais un point
-  inventé (spec 01 § Confiance ; spec 05).
+  verdict sort en fourchette (plancher observé → plafond de l'axe) avec le manque chiffré,
+  jamais un point inventé — plafond Gold pour Taille, Harness et En parallèle, Silver pour
+  Intervention où Gold est inatteignable par construction (spec 01 § Confiance ; specs 02, 04,
+  05).
 
 ## Comment on explique
 
