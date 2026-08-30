@@ -65,3 +65,4 @@ commit. Deux chantiers de lisibilité et de robustesse en découlent, sans touch
 | 18 | Mémoire projet — source unique `AGENTS.md`, `CLAUDE.md` en 12 lignes ; arbitrages intégrés à la spec avant commit ; point 9 de revue ; relevé du cron le 2026-08-31 | 08 § 12 (2026-08-30) | 17 | `AGENTS.md`, `CLAUDE.md`, `.claude/skills/feature/`, `.claude/agents/spec.md`, `docs/specs/07`, `docs/journal.md` | #49 | spec validée le 2026-08-30, en cours |
 | 14 | Détection de boucle resserrée | 02 § Boucles | 13 | — | #45 | **mergé** : #50 `9b8e0e1` |
 | 18 | Mémoire projet | 08 § 12 | 17 | — | #49 | **mergé** : #53 `fddc825` |
+| 19 | READMEs d'architecture — panneaux une page : `.claude/README.md` (harnais), `src/README.md` (hexagonal), pointeurs vers specs, zéro duplication (source unique `AGENTS.md`) | 00 § 7 (à amender) | 18 | `.claude/README.md`, `src/README.md` | #56 | à spécifier |
