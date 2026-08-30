@@ -234,19 +234,31 @@ final class HarnessEvaluator implements AxisEvaluator
             );
         }
 
-        $loopFile = LoopDetector::detect($repoContext);
-        if (null === $loopFile) {
+        $loopMatch = LoopDetector::detect($repoContext);
+        if (null === $loopMatch) {
             $notes[] = new Note(
                 self::NO_LOOP_FOUND_NOTE,
                 new Pointer('repo-context/', 'bounded retry', 'none found'),
             );
+
+            $unboundedRetry = LoopDetector::detectUnboundedRetry($repoContext);
+            if (null !== $unboundedRetry) {
+                $notes[] = new Note(
+                    sprintf('relance non bornée trouvée dans `%s`', $unboundedRetry->file->path),
+                    new Pointer(
+                        sprintf('repo-context/%s', $unboundedRetry->file->path),
+                        'unbounded retry',
+                        sprintf('line %d', $unboundedRetry->line),
+                    ),
+                );
+            }
 
             return [HarnessLevel::Behavior, $evidences, $notes];
         }
 
         $evidences[] = new Evidence(
             'boucles : relance bornée détectée dans repo-context/',
-            new Pointer(sprintf('repo-context/%s', $loopFile->path), 'loop', 'retry and bound pattern matched'),
+            new Pointer(sprintf('repo-context/%s', $loopMatch->file->path), 'loop', $loopMatch->describe()),
         );
 
         return [HarnessLevel::Loops, $evidences, $notes];

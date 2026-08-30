@@ -8,59 +8,320 @@ use AiddLevel\Domain\Profile\RepoContext;
 use AiddLevel\Domain\Profile\RepoFile;
 
 /**
- * Finds a bounded retry loop under `repo-context/` (docs/specs/02-axe-harness.md § Boucles):
- * a restart pattern and a bound pattern in the same eligible file. A restart without a bound
- * is a risk, not a loop in the grid's sense — both must be present.
+ * Finds a bounded retry loop under `repo-context/` (docs/specs/02-axe-harness.md § Boucles,
+ * § « détection resserrée », chantier 14): a restart pattern and a bound pattern within
+ * `LoopThresholds::PROXIMITY_LINES` lines of each other, in the same eligible orchestration
+ * surface (§ 3). A restart without a nearby bound is a risk, not a loop — both must be close.
+ *
+ * Files are scanned in the order `RepoContext` provides them (`RepoContextReader` sorts
+ * paths), and — within a file — comments are stripped with a two-state automaton (§ 2) before
+ * any pattern is applied, so a comment that merely *talks about* a retry never counts.
  */
 final class LoopDetector
 {
-    /** Eligible orchestration surfaces: CI, Makefile, scripts, common script extensions. */
-    private const array ELIGIBLE_EXTENSIONS = ['.sh', '.js', '.ts', '.py', '.yml', '.yaml'];
-
-    /** `docs/` never counts, even a brainstorm that talks about retries (arthur's fixture). */
+    /**
+     * `docs/` never counts, even a brainstorm that talks about retries (arthur's fixture) —
+     * checked first, before any other rule (§ 3).
+     */
     private const string EXCLUDED_PREFIX = 'docs/';
 
-    public static function detect(RepoContext $repoContext): ?RepoFile
+    /**
+     * A segment of the path that marks it as an orchestration script, whatever the tool that
+     * put it there (`.claude/hooks/`, `.cursor/hooks/`, `.git/hooks/` all match `hooks/` —
+     * never the marque itself, spec 00 § 3).
+     *
+     * @var list<string>
+     */
+    private const array SCRIPT_DIR_SEGMENTS = ['scripts', 'bin', 'tools', 'hooks', '.husky'];
+
+    /**
+     * @var list<string>
+     */
+    private const array SCRIPT_EXTENSIONS = ['.sh', '.bash', '.js', '.mjs', '.ts', '.py'];
+
+    public static function detect(RepoContext $repoContext): ?LoopMatch
     {
         foreach ($repoContext->files as $file) {
-            if (self::isEligible($file->path) && self::hasBoundedRetry($file->content)) {
-                return $file;
+            if (!self::isEligible($file)) {
+                continue;
+            }
+
+            $scan = self::scan($file);
+            $pair = self::findPair($scan['retries'], $scan['bounds']);
+            if (null === $pair) {
+                continue;
+            }
+
+            return new LoopMatch(
+                $file,
+                $pair['retry']['line'],
+                $pair['retry']['token'],
+                $pair['bound']['line'],
+                $pair['bound']['token'],
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * The first eligible file, in reading order, that names a relance (`retry`, `rerun`,
+     * `until` — never `while`, never a counted loop, § 5) with no bound anywhere in its
+     * window. Only meant to be consulted when `detect()` found no loop at all.
+     */
+    public static function detectUnboundedRetry(RepoContext $repoContext): ?UnboundedRetryMatch
+    {
+        foreach ($repoContext->files as $file) {
+            if (!self::isEligible($file)) {
+                continue;
+            }
+
+            $scan = self::scan($file);
+            $line = self::findUnboundedNamedRetryLine($scan['retries'], $scan['bounds']);
+            if (null === $line) {
+                continue;
+            }
+
+            return new UnboundedRetryMatch($file, $line);
+        }
+
+        return null;
+    }
+
+    /**
+     * A whitelist of orchestration-file roles (docs/specs/02-axe-harness.md § 3), never of
+     * marques: CI (GitHub workflows, GitHub composite actions, GitLab CI), Make, and scripts
+     * living under a recognizable orchestration directory or at the repo-context root.
+     */
+    private static function isEligible(RepoFile $file): bool
+    {
+        $path = $file->path;
+
+        if (str_starts_with($path, self::EXCLUDED_PREFIX)) {
+            return false;
+        }
+
+        if (1 === preg_match('#^\.github/workflows/[^/]+\.ya?ml$#i', $path)) {
+            return true;
+        }
+
+        if (1 === preg_match('#^\.github/actions/[^/]+/action\.ya?ml$#i', $path)) {
+            return true;
+        }
+
+        if ('.gitlab-ci.yml' === $path) {
+            return true;
+        }
+
+        $basename = basename($path);
+        if (in_array($basename, ['Makefile', 'makefile', 'GNUmakefile'], true) || str_ends_with($basename, '.mk')) {
+            return true;
+        }
+
+        if (!str_contains($path, '/') && str_ends_with($path, '.sh')) {
+            return true;
+        }
+
+        $segments = explode('/', $path);
+        array_pop($segments);
+        if ([] === array_intersect($segments, self::SCRIPT_DIR_SEGMENTS)) {
+            return false;
+        }
+
+        foreach (self::SCRIPT_EXTENSIONS as $extension) {
+            if (str_ends_with($path, $extension)) {
+                return true;
+            }
+        }
+
+        return !str_contains($basename, '.') && self::hasShebang($file->content);
+    }
+
+    private static function hasShebang(string $content): bool
+    {
+        $firstLine = strtok($content, "\r\n");
+
+        return false !== $firstLine && str_starts_with($firstLine, '#!');
+    }
+
+    /**
+     * @return array{
+     *     retries: list<array{line: int, token: string, named: bool}>,
+     *     bounds: list<array{line: int, token: string}>,
+     * }
+     */
+    private static function scan(RepoFile $file): array
+    {
+        $retries = [];
+        $bounds = [];
+
+        foreach (self::activeLines($file->content) as $lineNumber => $line) {
+            $countedToken = self::matchCounted($line);
+            if (null !== $countedToken) {
+                // The counted loop carries both roles at once: the cap is inside the
+                // expression that restarts (§ 4).
+                $retries[] = ['line' => $lineNumber, 'token' => $countedToken, 'named' => false];
+                $bounds[] = ['line' => $lineNumber, 'token' => $countedToken];
+                continue;
+            }
+
+            $retryToken = self::firstMatch(LoopPatterns::RETRY, $line);
+            if (null !== $retryToken) {
+                $named = null !== self::firstMatch(LoopPatterns::RETRY_NAMED, $line);
+                $retries[] = ['line' => $lineNumber, 'token' => $retryToken, 'named' => $named];
+            }
+
+            $boundToken = self::firstMatch(LoopPatterns::BOUND, $line);
+            if (null !== $boundToken) {
+                $bounds[] = ['line' => $lineNumber, 'token' => $boundToken];
+            }
+        }
+
+        return ['retries' => $retries, 'bounds' => $bounds];
+    }
+
+    /**
+     * Ligne à ligne, avec un état de bloc (§ 2): a line-comment (`#`, `//`) is dropped whole;
+     * `/*` opens a block in which *every* line is dropped, whatever it contains, until `*\/`
+     * closes it — or the file ends, in which case the rest of the file is dropped too. Line
+     * numbers of the lines kept never move: they are the real line number of the file.
+     *
+     * @return array<int, string> keyed by the real 1-based line number
+     */
+    private static function activeLines(string $content): array
+    {
+        if ('' === $content) {
+            return [];
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $content);
+        if (false === $lines) {
+            // Binary content: preg_split can fail on invalid UTF-8. No match, never an
+            // exception (docs/specs/02-axe-harness.md § Cas dégradés).
+            return [];
+        }
+
+        $active = [];
+        $inBlock = false;
+
+        foreach ($lines as $index => $line) {
+            $lineNumber = $index + 1;
+
+            if ($inBlock) {
+                if (str_contains($line, '*/')) {
+                    $inBlock = false;
+                }
+                continue;
+            }
+
+            $trimmed = ltrim($line);
+            if (str_starts_with($trimmed, '#') || str_starts_with($trimmed, '//')) {
+                continue;
+            }
+
+            if (str_contains($line, '/*')) {
+                $inBlock = true;
+                continue;
+            }
+
+            $active[$lineNumber] = $line;
+        }
+
+        return $active;
+    }
+
+    private static function matchCounted(string $line): ?string
+    {
+        foreach (LoopPatterns::COUNTED as $pattern) {
+            $result = @preg_match($pattern, $line, $matches);
+            if (1 !== $result) {
+                continue;
+            }
+
+            $length = (int) $matches[2];
+            if ($length >= 1 && $length <= LoopThresholds::COUNTED_MAX) {
+                return $matches[1];
             }
         }
 
         return null;
     }
 
-    private static function isEligible(string $path): bool
+    private static function firstMatch(string $pattern, string $line): ?string
     {
-        if (str_starts_with($path, self::EXCLUDED_PREFIX)) {
-            return false;
+        $result = @preg_match($pattern, $line, $matches);
+        if (1 !== $result) {
+            return null;
         }
 
-        if (str_starts_with($path, '.github/workflows/')) {
-            return true;
-        }
+        return $matches[0];
+    }
 
-        if (str_starts_with($path, 'scripts/')) {
-            return true;
-        }
+    /**
+     * The valid pair (distance ≤ `LoopThresholds::PROXIMITY_LINES`) with the smallest
+     * distance wins — a Makefile target literally named `retry:` must not steal a farther
+     * pairing away from the `until` that actually restarts something closer to its bound
+     * (TP1). Ties break on the earliest line, so the result stays deterministic.
+     *
+     * @param list<array{line: int, token: string, named: bool}> $retries
+     * @param list<array{line: int, token: string}>              $bounds
+     *
+     * @return array{
+     *     retry: array{line: int, token: string, named: bool},
+     *     bound: array{line: int, token: string},
+     * }|null
+     */
+    private static function findPair(array $retries, array $bounds): ?array
+    {
+        $best = null;
+        $bestKey = null;
 
-        if ('Makefile' === $path || str_ends_with($path, '/Makefile')) {
-            return true;
-        }
+        foreach ($retries as $retry) {
+            foreach ($bounds as $bound) {
+                $distance = abs($retry['line'] - $bound['line']);
+                if ($distance > LoopThresholds::PROXIMITY_LINES) {
+                    continue;
+                }
 
-        foreach (self::ELIGIBLE_EXTENSIONS as $extension) {
-            if (str_ends_with($path, $extension)) {
-                return true;
+                $key = [$distance, min($retry['line'], $bound['line']), $retry['line'], $bound['line']];
+                if (null === $bestKey || $key < $bestKey) {
+                    $bestKey = $key;
+                    $best = ['retry' => $retry, 'bound' => $bound];
+                }
             }
         }
 
-        return false;
+        return $best;
     }
 
-    private static function hasBoundedRetry(string $content): bool
+    /**
+     * The first named retry occurrence (in line order) with no bound anywhere within its
+     * window — checked against every bound in the file, not just the ones already scanned,
+     * since a bound may sit either before or after the retry it caps.
+     *
+     * @param list<array{line: int, token: string, named: bool}> $retries
+     * @param list<array{line: int, token: string}>              $bounds
+     */
+    private static function findUnboundedNamedRetryLine(array $retries, array $bounds): ?int
     {
-        return 1 === preg_match(LoopPatterns::RETRY, $content)
-            && 1 === preg_match(LoopPatterns::BOUND, $content);
+        foreach ($retries as $retry) {
+            if (!$retry['named']) {
+                continue;
+            }
+
+            $hasNearbyBound = false;
+            foreach ($bounds as $bound) {
+                if (abs($retry['line'] - $bound['line']) <= LoopThresholds::PROXIMITY_LINES) {
+                    $hasNearbyBound = true;
+                    break;
+                }
+            }
+
+            if (!$hasNearbyBound) {
+                return $retry['line'];
+            }
+        }
+
+        return null;
     }
 }
