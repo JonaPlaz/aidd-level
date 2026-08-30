@@ -2,7 +2,6 @@
 name: feature
 description: Démarre un chantier depuis une issue GitHub — spec si absente (arrêt humain pour validation), puis implémentation, PR, une revue Codex à l'ouverture, une passe de correction avec réponse tracée, merge automatique. Spec : docs/specs/08-harnais.md.
 argument-hint: [issue-number] [--trivial]
-disable-model-invocation: true
 ---
 
 # /feature <n°>
@@ -10,6 +9,14 @@ disable-model-invocation: true
 Issue → spec → dev → PR → review → merge. Un seul point d'arrêt humain : la validation d'une
 spec nouvelle. Tout le reste s'enchaîne. **Le skill possède la boucle de revue et le merge ;
 l'agent `dev` rend la main dès la PR ouverte.**
+
+## 0. Verrou du cycle
+
+Le hook `guard-git` refuse `gh pr create` hors d'un run de ce skill et tout `gh pr merge`
+synchrone. Premier geste, avant tout : `echo <n°> > "$(git rev-parse --path-format=absolute
+--git-common-dir)/feature.lock"`. Dernier geste, sur toute sortie (mergé, `blocked`, spec à
+valider) : supprimer ce fichier. Un verrou déjà présent à l'entrée = un run précédent s'est
+arrêté sans nettoyer : le signaler au journal, l'écraser, continuer.
 
 ## 1. Routage (une seule fois — iron rule)
 

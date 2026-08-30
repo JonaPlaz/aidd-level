@@ -14,6 +14,11 @@ const command = (input.tool_input && input.tool_input.command) || '';
 
 // Every git invocation of a chained command is checked: `git add -A && git commit`,
 // `git fetch origin && git push --force`.
+// `gh pr create` only inside a /feature run (marker written by the skill next to the git
+// common dir, so worktrees see it); `gh pr merge` only with --auto or --disable-auto — a
+// synchronous merge is never part of the flow (spec 08 § Le cycle est imposé, chantier 16).
+checkGh(command, projectRoot(input));
+
 const invocations = parseGitAll(command);
 for (const [index, git] of invocations.entries()) {
   const root = git.cPath ? path.resolve(projectRoot(input), git.cPath) : projectRoot(input);
@@ -86,5 +91,31 @@ function checkCommit(git, root, priorAdds) {
   const touchesInfra = [...files].some((f) => f.startsWith('src/Infrastructure/'));
   if (touchesDomain && touchesInfra) {
     block('guard-git: a commit must not touch src/Domain and src/Infrastructure together (AGENTS.md rule 7). Split the commit.');
+  }
+}
+
+
+function checkGh(command, root) {
+  const segments = command.split(/&&|\|\||;|\||\n/);
+  for (const segment of segments) {
+    const m = /^\s*(?:\(\s*)?(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*gh\s+pr\s+(create|merge)\b(.*)$/s.exec(segment);
+    if (!m) continue;
+    const [, sub, args] = m;
+    if (sub === 'create' && !fs.existsSync(featureLock(root))) {
+      block('guard-git: gh pr create outside a /feature run is refused; open the issue and run /feature <n°> (CLAUDE.md § Flow).');
+    }
+    if (sub === 'merge' && !/\s--(auto|disable-auto)(\s|$)/.test(` ${args} `)) {
+      block('guard-git: synchronous gh pr merge is refused; arm with --auto (spec 08).');
+    }
+  }
+}
+
+// `<git common dir>/feature.lock`: written by the feature skill at start, removed at the end.
+function featureLock(root) {
+  try {
+    const common = execSync('git rev-parse --path-format=absolute --git-common-dir', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return path.join(common, 'feature.lock');
+  } catch {
+    return path.join(root, '.git', 'feature.lock');
   }
 }
