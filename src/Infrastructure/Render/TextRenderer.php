@@ -258,15 +258,28 @@ final class TextRenderer
         }
 
         if ($verdict->confidence instanceof Range) {
-            $lines[] = $this->wrapped(
-                '    fourchette : ',
-                sprintf(
-                    'entre %s et %s (manque %d PR)',
-                    $this->levelName($verdict->confidence->floor),
-                    $this->levelName($verdict->confidence->ceiling),
-                    $verdict->confidence->missingSample,
-                ),
-            );
+            // A missing pull-request sample always counts at least one PR short of the floor
+            // (SampleCheck::confidence); `missingSample === 0` is never a short sample, it is
+            // the field itself that is absent (docs/specs/05-robustesse.md § Signal absent) —
+            // "manque N PR" would misreport a missing field as a missing sample.
+            $lines[] = 0 === $verdict->confidence->missingSample
+                ? $this->wrapped(
+                    '    fourchette : ',
+                    sprintf(
+                        'entre %s et %s',
+                        $this->levelName($verdict->confidence->floor),
+                        $this->levelName($verdict->confidence->ceiling),
+                    ),
+                )
+                : $this->wrapped(
+                    '    fourchette : ',
+                    sprintf(
+                        'entre %s et %s (manque %d PR)',
+                        $this->levelName($verdict->confidence->floor),
+                        $this->levelName($verdict->confidence->ceiling),
+                        $verdict->confidence->missingSample,
+                    ),
+                );
         }
 
         return $lines;
@@ -315,7 +328,10 @@ final class TextRenderer
             );
 
             $verdict = $verdictsByAxis[$recommendation->axis->name] ?? null;
-            if (null !== $verdict && $verdict->confidence instanceof Range) {
+            // `missingSample === 0` is a missing field, not a short sample (see
+            // axisDetailLines()): the gesture itself already says "fournir le champ …", no
+            // "N PR de plus" would make sense on top of it (docs/specs/05 § Signal absent).
+            if (null !== $verdict && $verdict->confidence instanceof Range && 0 !== $verdict->confidence->missingSample) {
                 $lines[] = $this->wrapped(
                     '     pour lever le doute : ',
                     sprintf('%d PR de plus (échantillon insuffisant)', $verdict->confidence->missingSample),

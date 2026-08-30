@@ -159,6 +159,20 @@ final class TextRendererTest extends TestCase
     }
 
     #[Test]
+    public function aMissingFieldRangeIsNeverReportedAsAShortSample(): void
+    {
+        // docs/specs/05-robustesse.md § Signal absent: `missingSample = 0` is a missing field
+        // (here, Harness's `commits.ai_coauthored_ratio`), never a short pull-request sample —
+        // "manque N PR" and "N PR de plus (échantillon insuffisant)" must not appear.
+        $rendered = new TextRenderer()->render($this->missingRatioAssessment());
+
+        self::assertStringContainsString('fourchette : entre White et Red', $rendered);
+        self::assertStringNotContainsString('manque', $rendered);
+        self::assertStringNotContainsString('échantillon insuffisant', $rendered);
+        self::assertStringContainsString('fournir le champ commits.ai_coauthored_ratio', $rendered);
+    }
+
+    #[Test]
     public function rendersANotAssessableAssessmentLikeTheExpectedFixture(): void
     {
         $rendered = new TextRenderer()->render($this->notAssessableAssessment());
@@ -316,6 +330,74 @@ final class TextRendererTest extends TestCase
             verdicts: [$size, $harness, $intervention, $parallelism],
             recommendations: $recommendations,
             notes: $notes,
+        );
+    }
+
+    /**
+     * docs/specs/02-axe-harness.md § Ratio absent: `agents_md = false`, every counter known
+     * at zero, `commits.ai_coauthored_ratio` absent — Harness renders `Range(White, Red, 0)`,
+     * the missing field, not a short pull-request sample.
+     */
+    private function missingRatioAssessment(): Assessment
+    {
+        $identity = new ProfileIdentity('fixture', 'développeur solo', [], []);
+
+        $harness = new AxisVerdict(
+            axis: Axis::Harness,
+            level: Level::White,
+            confidence: new Range(Level::White, Level::Red, 0),
+            evidences: [
+                new Evidence('aucun fichier mémoire', new Pointer('git-activity.json', 'context_files.agents_md', 'false')),
+                new Evidence(
+                    'aucun compteur de contexte : 0 règle, 0 skill, 0 hook, 0 agent',
+                    new Pointer('git-activity.json', 'context_files', '{rules:0, skills:0, hooks:0, agents:0}'),
+                ),
+            ],
+            notes: [
+                new Note('ratio absent : impossible de départager prompts de rien', new Pointer('git-activity.json', 'commits.ai_coauthored_ratio', 'absent')),
+            ],
+        );
+
+        $size = new AxisVerdict(
+            axis: Axis::Size,
+            level: Level::Red,
+            confidence: new Confirmed(),
+            evidences: [
+                new Evidence('S (median_files_changed = 2)', new Pointer('git-activity.json', 'pull_requests.median_files_changed', '2')),
+            ],
+        );
+
+        $intervention = new AxisVerdict(
+            axis: Axis::Intervention,
+            level: Level::Red,
+            confidence: new Confirmed(),
+            evidences: [
+                new Evidence('après coup, sur la majorité', new Pointer('git-activity.json', 'pull_requests.median_correction_commits_after_open', '4')),
+            ],
+        );
+
+        $parallelism = new AxisVerdict(
+            axis: Axis::Parallelism,
+            level: Level::Red,
+            confidence: new Confirmed(),
+            evidences: [
+                new Evidence('0 (médiane)', new Pointer('git-activity.json', 'parallelism.median_concurrent_branches', '0')),
+            ],
+        );
+
+        $cappingAxes = [Axis::Harness];
+        $verdicts = [$size, $harness, $intervention, $parallelism];
+        $recommendations = new RecommendationPolicy()->recommend($verdicts, $cappingAxes, Level::Red);
+
+        return new Assessment(
+            status: AssessmentStatus::LowConfidence,
+            identity: $identity,
+            level: Level::White,
+            ceiling: Level::Red,
+            cappingAxes: $cappingAxes,
+            verdicts: $verdicts,
+            recommendations: $recommendations,
+            notes: [],
         );
     }
 
