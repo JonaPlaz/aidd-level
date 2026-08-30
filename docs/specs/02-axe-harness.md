@@ -34,6 +34,22 @@ règles/agents sont comptés sans fichier mémoire ; la grille cumule, le niveau
 sauter context engineering ». ⚠️ **Non vérifié** sur donnée réelle, aucun profil fourni
 n'est dans ce cas.
 
+## Ratio absent — jamais coercé en zéro
+
+Ajouté le 2026-08-30 (chantier 13). `commits.ai_coauthored_ratio` n'entre dans cet axe que
+pour départager « prompts » de « rien », quand `agents_md = false` et tous les compteurs à
+zéro. Un ratio **absent** (`null`) n'est pas un ratio nul : dans ce cas, règle commune de la
+spec 05 § *Signal absent*, mais avec le plafond réellement observable — `agents_md` et les
+compteurs sont lus et connus, seul le bas de l'axe est indécis :
+
+- verdict `Range(White, Red, 0)` ;
+- note pointée « ratio absent : impossible de départager prompts de rien »
+  (`git-activity.json › commits.ai_coauthored_ratio = absent`).
+
+Le filtre White du use case (spec 05 § Filtre) traite déjà `null` comme « non nul » ; l'axe
+s'aligne. Test : `agents_md = false`, compteurs 0, ratio `null` → fourchette [White, Red] et
+note ; ratio `0` → White sans note (0 est une valeur).
+
 ## Boucles — le seul signal absent du fichier
 
 `git-activity.json` n'a **aucun champ** pour les boucles. Détection dans `repo-context/`,

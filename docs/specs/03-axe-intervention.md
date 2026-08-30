@@ -35,6 +35,27 @@ dans les pièces fournies ». C'est une limite assumée, pas un seuil inventé.
 Signal absent (`null`) : règle commune de la spec 05 § *Signal absent* — `Range(White, plafond
 de l'axe, 0)` et une note par champ manquant.
 
+## Médiane sur la borne — le verdict tient, sa fragilité est dite
+
+Ajouté le 2026-08-30 (`lancelot`, PR #35). Les médianes de compteurs entiers tombent sur des
+entiers et les seuils sont des entiers : un verdict **sur la borne exacte** est le cas courant,
+pas l'exception (`lancelot` 3 = borne Red, `bohort` 2 = borne Blue, `arthur` 1 = borne Copper).
+Le niveau ne change pas — 3 **est** « sur la majorité » — mais la sortie ne doit pas lire
+`lancelot` (marge nulle) du même ton que `perceval` (4, marge d'un point).
+
+Règle : quand la médiane est **égale** à la constante qui ouvre son niveau
+(`MEDIAN_MAJORITY_MIN`, `MEDIAN_PARTIAL`, `MEDIAN_KEY_STEPS`), une note, pointée, nomme la
+borne et le niveau voisin :
+
+- `Intervention : médiane 3 sur la borne exacte Red/Blue ; en dessous, l'axe serait Blue`
+  (`git-activity.json › pull_requests.median_correction_commits_after_open = 3`)
+
+Elle ne dit **pas** combien de PR feraient basculer : la distribution n'est pas fournie
+(`pull-requests.json` écarté, ci-dessous). Statut inchangé (`évalué`) : ce n'est ni un
+échantillon court ni un signal absent. Médiane 0 n'est pas concernée (Silver est déjà gardé
+par le plancher d'échantillon). Les autres axes ne sont pas concernés par ce chantier :
+Taille et En parallèle rendent des bandes, pas des crans d'un point.
+
 ## Corroboration, jamais décision
 
 `merged_without_human_edit_after_open` est **non monotone** avec le niveau (3/63, 10/48,
@@ -62,4 +83,5 @@ Quatre profils → valeurs ci-dessus · fixture médiane 0 avec `total = 8` → 
 [Copper, Silver], « 4 PR manquantes » · fixture médiane 0 avec `total = 30` → Silver.
 Médiane absente → `Range(White, Silver, 0)` + note pointée « = absent » · bornes exactes :
 `total = 12` médiane 0 → Silver, `total = 11` → fourchette, `total = 5` médiane 2 → Blue,
-`total = 4` → fourchette.
+`total = 4` → fourchette · médiane sur la borne : 3, 2, 1 → note « sur la borne exacte »
+(`lancelot`, `bohort`, `arthur`) ; 4 et 0 → pas de note ; 2,5 → Blue sans note.
