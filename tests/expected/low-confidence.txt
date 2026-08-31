@@ -8,9 +8,10 @@ Niveau par axe
   +--------------+----------------------------+-----------------------------------+
   | Axe          | Niveau                     | Constat                           |
   +--------------+----------------------------+-----------------------------------+
-  | Harness      | 🔹 Blue–🥉 Copper ← niveau | context engineering sans behavior |
-  |              | global (incertain)         |                                   |
-  | En parallèle | 🟢 Green–🥇 Gold (incertain) | 1 (médiane)                       |
+  | Harness      | entre 🔹 Blue et 🥉 Copper ← | context engineering sans behavior |
+  |              | niveau global (incertain)  |                                   |
+  | En parallèle | entre 🟢 Green et 🥇 Gold  | 1 (médiane)                       |
+  |              | (incertain)                |                                   |
   | Intervention | 🟢 Green                   | après coup, sur une partie        |
   | Taille       | 🔺 Red                     | S (median_files_changed = 2)      |
   +--------------+----------------------------+-----------------------------------+
