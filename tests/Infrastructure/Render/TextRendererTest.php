@@ -51,8 +51,8 @@ final class TextRendererTest extends TestCase
         );
         // Table cells (docs/specs/06 § 5.4): axis and level live in separate padded columns,
         // so each blocking axis is asserted as its own table row.
-        self::assertMatchesRegularExpression('/\| Harness\s+\| 🥉 Copper \(bloque\)/', $rendered);
-        self::assertMatchesRegularExpression('/\| Intervention\s+\| 🥉 Copper \(bloque\)/', $rendered);
+        self::assertMatchesRegularExpression('/\| Harness\s+\| 🥉 Copper ← niveau global/', $rendered);
+        self::assertMatchesRegularExpression('/\| Intervention\s+\| 🥉 Copper ← niveau global/', $rendered);
     }
 
     /**
@@ -64,7 +64,7 @@ final class TextRendererTest extends TestCase
     {
         $rendered = new TextRenderer()->render($this->evaluatedAssessment());
 
-        $section = $this->blockContaining($rendered, 'Ce qui a mené là');
+        $section = $this->blockContaining($rendered, 'Les preuves des axes qui limitent');
 
         self::assertStringContainsString('behavior sans boucles', $section);
         self::assertStringContainsString('règles et agents versionnés', $section);
@@ -241,7 +241,9 @@ final class TextRendererTest extends TestCase
         $rendered = new TextRenderer()->render($this->missingRatioAssessment());
 
         self::assertStringContainsString('fourchette : entre ❖ White et 🔺 Red', $rendered);
-        self::assertStringNotContainsString('manque', $rendered);
+        // Le titre « Ce qui manque pour X » contient légitimement « manque » : l'interdit
+        // porte sur la formule d'échantillon court, jamais rendue pour un champ absent.
+        self::assertStringNotContainsString('PR de plus', $rendered);
         self::assertStringContainsString('fournir le champ commits.ai_coauthored_ratio', $rendered);
     }
 
@@ -343,17 +345,9 @@ final class TextRendererTest extends TestCase
     {
         $rendered = new TextRenderer()->render($this->evaluatedAssessment());
 
-        $notesSection = substr($rendered, (int) strpos($rendered, 'Notes'));
-        $pointerLines = array_values(array_filter(
-            explode("\n", $notesSection),
-            static fn (string $line): bool => str_contains($line, '(').str_contains($line, '›') && str_contains($line, ' › '),
-        ));
-
-        self::assertSame(\count($pointerLines), \count(array_unique($pointerLines)));
-
-        // "prérequis qualité" cites sonar-measures.json, never seen before this block.
-        $beforeNotes = substr($rendered, 0, (int) strpos($rendered, 'Notes'));
-        self::assertStringNotContainsString('duplicated_lines_density', $beforeNotes);
+        self::assertStringNotContainsString("\nNotes\n", $rendered);
+        self::assertStringNotContainsString('Écarté du calcul', $rendered);
+        self::assertStringNotContainsString('duplicated_lines_density', $rendered);
     }
 
     /**
@@ -412,7 +406,8 @@ final class TextRendererTest extends TestCase
 
         self::assertStringContainsString('art<hur>', $rendered);
         self::assertStringContainsString('<claim with a tag-looking bit>', $rendered);
-        self::assertStringContainsString('<a note>', $rendered);
+        // Les notes ne sortent plus sur un profil évalué (2026-08-31) : l'échappement du
+        // texte utilisateur reste couvert par l'identité et la claim ci-dessus.
     }
 
     /**
@@ -426,7 +421,7 @@ final class TextRendererTest extends TestCase
         $start = strpos($rendered, $heading);
         self::assertNotFalse($start, sprintf('Bloc "%s" absent du rendu.', $heading));
 
-        $nextHeadings = ['Déjà acquis', "Comment monter d'un cran", 'Notes'];
+        $nextHeadings = ['Déjà acquis', 'Ce qui manque pour', 'Les preuves des axes qui limitent'];
         $end = null;
         foreach ($nextHeadings as $nextHeading) {
             if ($nextHeading === $heading || str_starts_with($nextHeading, $heading)) {

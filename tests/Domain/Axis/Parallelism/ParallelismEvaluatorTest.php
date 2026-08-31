@@ -141,7 +141,7 @@ final class ParallelismEvaluatorTest extends TestCase
         $verdict = new ParallelismEvaluator()->evaluate(self::profile(2.0, 2, self::ABOVE_FLOOR_PR_TOTAL));
 
         self::assertSame(
-            '2 chantiers de front en médiane, sous le seuil de 3 de Copper.',
+            "d'habitude 2 chantiers menés en même temps (médiane), sous le seuil de 3 de Copper.",
             $verdict->evidences[0]->claim,
         );
     }
