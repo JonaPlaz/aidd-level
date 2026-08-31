@@ -1,5 +1,6 @@
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
 Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le niveau
                  est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
@@ -7,7 +8,20 @@ Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent t
 
 Ce qui a mené là
 ----------------
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
+  +--------------+--------------------+----------------------------------------------------+
+  | Axe          | Niveau             | Constat                                            |
+  +--------------+--------------------+----------------------------------------------------+
+  | Harness      | 🥉 Copper (bloque) | context engineering acquis : un fichier mémoire    |
+  |              |                    | est versionné à la racine du dépôt ; Green et      |
+  |              |                    | Copper demandent en plus une règle, un agent ou un |
+  |              |                    | hook versionné.                                    |
+  | En parallèle | 🥇 Gold            | 4 chantiers de front en médiane, habituellement :  |
+  |              |                    | au moins le seuil de 3 de Gold.                    |
+  | Intervention | 🥉 Copper (bloque) | médiane 1 corrections après ouverture : aux étapes |
+  |              |                    | clés (0 < médiane < 2).                            |
+  | Taille       | 🥇 Gold            | 29 fichiers modifiés en médiane : bande XL (> 20), |
+  |              |                    | satisfait de Green à Gold.                         |
+  +--------------+--------------------+----------------------------------------------------+
 
   Harness — 🥉 Copper : l'un des deux axes qui bloquent
     context engineering acquis : un fichier mémoire est versionné à la racine du dépôt ; Green et

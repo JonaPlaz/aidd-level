@@ -1,5 +1,6 @@
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
 Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le niveau
                  est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
@@ -7,7 +8,14 @@ Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent t
 
 Ce qui a mené là
 ----------------
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
+  +--------------+--------------------+--------------------------------+
+  | Axe          | Niveau             | Constat                        |
+  +--------------+--------------------+--------------------------------+
+  | Harness      | 🥉 Copper (bloque) | behavior sans boucles          |
+  | En parallèle | 🥇 Gold            | 4 (médiane)                    |
+  | Intervention | 🥉 Copper (bloque) | aux étapes clés                |
+  | Taille       | 🥇 Gold            | XL (median_files_changed = 29) |
+  +--------------+--------------------+--------------------------------+
 
   Harness — 🥉 Copper : l'un des deux axes qui bloquent
     behavior sans boucles

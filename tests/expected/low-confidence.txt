@@ -1,5 +1,6 @@
-Niveau AIDD : entre 🔹 Blue et 🥉 Copper — perceval (développeur solo)
-❖ White  🔺 Red  [🔹 Blue  🟢 Green  🥉 Copper]  🥈 Silver  🥇 Gold
+perceval — développeur solo
+Niveau AIDD : entre 🔹 Blue et 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  [🔹 Blue  🟢 Green  🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué, confiance basse — Harness (manque 4 PR) et En parallèle (manque 2 PR) ; le
             niveau est donné en fourchette.
 Niveau suivant : 🟢 Green — il faut que Harness y monte.
@@ -7,8 +8,14 @@ Niveau suivant : 🟢 Green — il faut que Harness y monte.
 
 Ce qui a mené là
 ----------------
-  Harness 🔹 Blue–🥉 Copper (bloque, fourchette) · En parallèle 🟢 Green–🥇 Gold (fourchette)
-  Intervention 🟢 Green · Taille 🔺 Red
+  +--------------+----------------------------------------+-----------------------------------+
+  | Axe          | Niveau                                 | Constat                           |
+  +--------------+----------------------------------------+-----------------------------------+
+  | Harness      | 🔹 Blue–🥉 Copper (bloque, fourchette) | context engineering sans behavior |
+  | En parallèle | 🟢 Green–🥇 Gold (fourchette)          | 1 (médiane)                       |
+  | Intervention | 🟢 Green                               | après coup, sur une partie        |
+  | Taille       | 🔺 Red                                 | S (median_files_changed = 2)      |
+  +--------------+----------------------------------------+-----------------------------------+
 
   Harness — 🔹 Blue : l'axe qui bloque
     context engineering sans behavior

@@ -49,8 +49,10 @@ final class TextRendererTest extends TestCase
             .'deux',
             $rendered,
         );
-        self::assertStringContainsString('Harness 🥉 Copper (bloque)', $rendered);
-        self::assertStringContainsString('Intervention 🥉 Copper (bloque)', $rendered);
+        // Table cells (docs/specs/06 § 5.4): axis and level live in separate padded columns,
+        // so each blocking axis is asserted as its own table row.
+        self::assertMatchesRegularExpression('/\| Harness\s+\| 🥉 Copper \(bloque\)/', $rendered);
+        self::assertMatchesRegularExpression('/\| Intervention\s+\| 🥉 Copper \(bloque\)/', $rendered);
     }
 
     /**
