@@ -100,7 +100,7 @@ final class InterventionEvaluator implements AxisEvaluator
 
         $evidences = [
             new Evidence(
-                claim: $this->claimFor($level),
+                claim: $this->claimFor($level, $median),
                 pointer: GitActivityPointer::of(self::MEDIAN_FIELD, self::formatNumber($median)),
             ),
         ];
@@ -154,13 +154,43 @@ final class InterventionEvaluator implements AxisEvaluator
         return SampleCheck::confidence($sample, SampleFloors::MIN_PR_SAMPLE, $level, Level::Silver);
     }
 
-    private function claimFor(Level $level): string
+    /**
+     * The median and the threshold that situates it, at most two named thresholds
+     * (docs/specs/06-sortie-et-progression.md § 3 — "aucun chiffre nu"): the one of the level
+     * reached, plus — for Blue and Copper only — the one just below, since two thresholds
+     * bound those two bands on both sides.
+     */
+    private function claimFor(Level $level, float $median): string
     {
+        $value = self::formatNumber($median);
+
         return match ($level) {
-            Level::Red => self::CLAIM_MAJORITY,
-            Level::Blue => self::CLAIM_PARTIAL,
-            Level::Copper => self::CLAIM_KEY_STEPS,
-            Level::Silver => self::CLAIM_NEVER,
+            Level::Red => sprintf(
+                'médiane %s corrections après ouverture : %s (≥ %d).',
+                $value,
+                self::CLAIM_MAJORITY,
+                InterventionThresholds::MEDIAN_MAJORITY_MIN,
+            ),
+            Level::Blue => sprintf(
+                'médiane %s corrections après ouverture : %s (%d ≤ médiane < %d).',
+                $value,
+                self::CLAIM_PARTIAL,
+                InterventionThresholds::MEDIAN_PARTIAL,
+                InterventionThresholds::MEDIAN_MAJORITY_MIN,
+            ),
+            Level::Copper => sprintf(
+                'médiane %s corrections après ouverture : %s (%d < médiane < %d).',
+                $value,
+                self::CLAIM_KEY_STEPS,
+                InterventionThresholds::MEDIAN_NEVER,
+                InterventionThresholds::MEDIAN_PARTIAL,
+            ),
+            Level::Silver => sprintf(
+                'médiane %s correction après ouverture : %s (= %d).',
+                $value,
+                self::CLAIM_NEVER,
+                InterventionThresholds::MEDIAN_NEVER,
+            ),
             default => throw new \LogicException(sprintf(
                 'InterventionThresholds::levelForMedian() is not expected to return %s.',
                 $level->name,

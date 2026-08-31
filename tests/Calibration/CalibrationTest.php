@@ -50,6 +50,29 @@ final class CalibrationTest extends TestCase
     }
 
     /**
+     * docs/specs/06-sortie-et-progression.md § 12, test 14: the one real-profile snapshot the
+     * chantier fixes, `arthur` — the profile `docs/sortie.md` and `README.md` both recopy, so
+     * this test is the guard-rail for review point 10 ("la doc suit le code"). The three other
+     * calibrated profiles stay covered by `rendersTheCalibratedLevelAndCappingAxes()` above,
+     * without their own snapshot (§ 12: figer les quatre ferait payer chaque reformulation de
+     * phrase quatre fois, sans rien prouver de plus).
+     */
+    #[Test]
+    public function rendersArthurExactlyLikeTheFixedSnapshot(): void
+    {
+        $handler = ApplicationFactory::createHandler();
+        $renderer = ApplicationFactory::createRenderer();
+
+        $assessment = $handler->handle(new EvaluateProfile(self::PROFILES_DIR.'/arthur'));
+        $rendered = $renderer->render($assessment);
+
+        self::assertSame(
+            file_get_contents(__DIR__.'/../expected/arthur.txt'),
+            $rendered,
+        );
+    }
+
+    /**
      * @return iterable<string, array{0: string, 1: Level, 2: list<Axis>}>
      */
     public static function calibratedProfiles(): iterable
@@ -88,8 +111,9 @@ final class CalibrationTest extends TestCase
     }
 
     /**
-     * The "Ce qui a mené là" block only, up to the blank line that ends it
-     * (`TextRenderer::render()` joins its blocks with a blank line).
+     * The "Ce qui a mené là" block only, up to the next known block heading — not the first
+     * blank line, which the block also uses between its own axis entries
+     * (docs/specs/06-sortie-et-progression.md § 5.2).
      */
     private function cappingAxesSection(string $rendered): string
     {
@@ -97,8 +121,14 @@ final class CalibrationTest extends TestCase
         $start = strpos($rendered, $heading);
         self::assertNotFalse($start, sprintf('Bloc "%s" absent du rendu.', $heading));
 
-        $end = strpos($rendered, "\n\n", $start);
+        $end = null;
+        foreach (['Déjà acquis', "Comment monter d'un cran", 'Notes'] as $nextHeading) {
+            $position = strpos($rendered, "\n\n".$nextHeading, $start);
+            if (false !== $position && (null === $end || $position < $end)) {
+                $end = $position;
+            }
+        }
 
-        return false !== $end ? substr($rendered, $start, $end - $start) : substr($rendered, $start);
+        return null !== $end ? substr($rendered, $start, $end - $start) : substr($rendered, $start);
     }
 }

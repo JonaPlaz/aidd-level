@@ -118,7 +118,12 @@ final class HarnessEvaluator implements AxisEvaluator
             $level = HarnessLevel::Behavior;
             $evidences[] = $this->agentsMdEvidence();
             $evidences[] = new Evidence(
-                sprintf('behavior : %s', $this->countersLabel($counters)),
+                sprintf(
+                    'behavior acquis : %s ; au moins un compteur non nul, c\'est le « behavior » '
+                    .'que Green et Copper demandent, Silver et Gold demandent en plus une boucle '
+                    .'bornée.',
+                    $this->countersLabel($counters),
+                ),
                 $this->countersPointer($counters),
             );
         } elseif ($agentsMd && false !== $firstNullCounter) {
@@ -292,10 +297,16 @@ final class HarnessEvaluator implements AxisEvaluator
         return null;
     }
 
+    /**
+     * Harness's cells are not numbers (docs/specs/06-sortie-et-progression.md § 3, cas
+     * dégradé — "ce qui est en place, pas un volume") — the échelle here is spelled out in
+     * words instead of a threshold: what is present, and what the next cell adds on top.
+     */
     private function agentsMdEvidence(): Evidence
     {
         return new Evidence(
-            'context engineering : fichier mémoire présent',
+            'context engineering acquis : un fichier mémoire est versionné à la racine du '
+            .'dépôt ; Green et Copper demandent en plus une règle, un agent ou un hook versionné.',
             GitActivityPointer::of('context_files.agents_md', 'true'),
         );
     }

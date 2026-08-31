@@ -52,14 +52,14 @@ final readonly class SizeEvaluator implements AxisEvaluator
         if (null !== $files && $files > SizeThresholds::FILES_SIGNAL_MIN) {
             $band = SizeThresholds::bandForFiles($files);
             $signalEvidence = new Evidence(
-                claim: self::claimFor($band),
+                claim: self::claimForFiles($band, $files),
                 pointer: GitActivityPointer::of('pull_requests.median_files_changed', (string) $files),
             );
             $notes = [];
         } elseif (null !== $lines) {
             $band = SizeThresholds::bandForLines($lines);
             $signalEvidence = new Evidence(
-                claim: self::claimFor($band),
+                claim: self::claimForLines($band, $lines),
                 pointer: GitActivityPointer::of('pull_requests.median_lines_changed', (string) $lines),
             );
             $notes = [
@@ -173,18 +173,76 @@ final readonly class SizeEvaluator implements AxisEvaluator
     }
 
     /**
-     * The plain claim naming the band and the range of grid cells it satisfies
-     * (docs/specs/01-axe-taille.md § Correspondance palier → niveau). Rendered to the reader,
-     * hence written in French (docs/specs/06-sortie-et-progression.md).
+     * The claim names the band, the value measured and the threshold that bounds it
+     * (docs/specs/06-sortie-et-progression.md § 3 — "aucun chiffre nu"): at most two named
+     * thresholds, the one of the band reached. Files decide first (§ Signal).
      */
-    private static function claimFor(SizeBand $band): string
+    private static function claimForFiles(SizeBand $band, float $files): string
     {
+        $value = self::formatNumber($files);
+
         return match ($band) {
-            SizeBand::S => 'S → satisfait Red',
-            SizeBand::M => 'M → satisfait Blue',
-            SizeBand::L => 'L → satisfait de Green à Gold',
-            SizeBand::XL => 'XL → satisfait de Green à Gold',
+            SizeBand::S => sprintf(
+                '%s fichiers modifiés en médiane : bande S (≤ %d), satisfait Red.',
+                $value,
+                SizeThresholds::FILES_S_MAX,
+            ),
+            SizeBand::M => sprintf(
+                '%s fichiers modifiés en médiane : bande M (≤ %d), satisfait Blue.',
+                $value,
+                SizeThresholds::FILES_M_MAX,
+            ),
+            SizeBand::L => sprintf(
+                '%s fichiers modifiés en médiane : bande L (≤ %d), satisfait de Green à Gold.',
+                $value,
+                SizeThresholds::FILES_L_MAX,
+            ),
+            SizeBand::XL => sprintf(
+                '%s fichiers modifiés en médiane : bande XL (> %d), satisfait de Green à Gold.',
+                $value,
+                SizeThresholds::FILES_L_MAX,
+            ),
         };
+    }
+
+    /**
+     * Same échelle, on the lines fallback (§ Signal — used only when files is absent or zero).
+     */
+    private static function claimForLines(SizeBand $band, float $lines): string
+    {
+        $value = self::formatNumber($lines);
+
+        return match ($band) {
+            SizeBand::S => sprintf(
+                '%s lignes modifiées en médiane : bande S (≤ %d), satisfait Red.',
+                $value,
+                SizeThresholds::LINES_S_MAX,
+            ),
+            SizeBand::M => sprintf(
+                '%s lignes modifiées en médiane : bande M (≤ %d), satisfait Blue.',
+                $value,
+                SizeThresholds::LINES_M_MAX,
+            ),
+            SizeBand::L => sprintf(
+                '%s lignes modifiées en médiane : bande L (≤ %d), satisfait de Green à Gold.',
+                $value,
+                SizeThresholds::LINES_L_MAX,
+            ),
+            SizeBand::XL => sprintf(
+                '%s lignes modifiées en médiane : bande XL (> %d), satisfait de Green à Gold.',
+                $value,
+                SizeThresholds::LINES_L_MAX,
+            ),
+        };
+    }
+
+    /**
+     * A whole median (e.g. 29.0) renders as "29", a fractional one keeps its decimal — the
+     * same rendering `InterventionEvaluator::formatNumber()` uses.
+     */
+    private static function formatNumber(float $value): string
+    {
+        return rtrim(rtrim(sprintf('%.4f', $value), '0'), '.');
     }
 
     private static function levelFor(SizeBand $band): Level

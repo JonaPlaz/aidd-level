@@ -16,10 +16,10 @@ l'échantillon d'Intervention est « jamais » (médiane 0).
 - `context_files.agents_md = true` + compteurs > 0 + boucle bornée détectée dans
   `repo-context/.github/workflows/ci.yml` (`retry` + `max_attempts: 3`) → Gold sur Harness.
 - `pull_requests.median_correction_commits_after_open = 0`, `total = 40 ≥ 12` → Silver sur
-  Intervention, **plafond de l'axe** : la note portée par chaque verdict Intervention
-  (« Gold sur cet axe demanderait la preuve que le cadrage lui-même est automatisé ; non
-  observable dans les pièces fournies ») est la preuve que Gold n'est pas juste non atteint
-  ici, il est hors de portée par construction.
+  Intervention, **plafond de l'axe** : la sortie le dit sur sa ligne *Niveau suivant*
+  (« hors d'atteinte ici : l'axe Intervention plafonne à Silver, « cadrage compris » ne se
+  constate dans aucune pièce fournie », docs/specs/06-sortie-et-progression.md § 5.1) — la
+  preuve que Gold n'est pas juste non atteint ici, il est hors de portée par construction.
 
 ## Niveau attendu
 

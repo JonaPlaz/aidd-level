@@ -63,7 +63,7 @@ final class SizeEvaluatorTest extends TestCase
 
         self::assertCount(1, $verdict->evidences);
         $evidence = $verdict->evidences[0];
-        self::assertSame('L → satisfait de Green à Gold', $evidence->claim);
+        self::assertSame('13 fichiers modifiés en médiane : bande L (≤ 20), satisfait de Green à Gold.', $evidence->claim);
         self::assertSame(
             'git-activity.json › pull_requests.median_files_changed = 13',
             (string) $evidence->pointer,

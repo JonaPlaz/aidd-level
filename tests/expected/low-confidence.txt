@@ -1,36 +1,53 @@
-❖ 🔺 [🔹 🟢 🥉] 🥈 🥇
-axe bloquant : Harness
-🔹 Blue – 🥉 Copper — perceval (développeur solo)
-évalué, confiance basse
-Niveau : entre Blue et Copper
+Niveau AIDD : entre 🔹 Blue et 🥉 Copper — perceval (développeur solo)
+❖ White  🔺 Red  [🔹 Blue  🟢 Green  🥉 Copper]  🥈 Silver  🥇 Gold
+Fiabilité : évalué, confiance basse — Harness (manque 4 PR) et En parallèle (manque 2 PR) ; le
+            niveau est donné en fourchette.
+Niveau suivant : 🟢 Green — il faut que Harness y monte.
 
-Ce qui a mené là — l'axe qui plafonne : Harness
-  Harness : context engineering sans behavior
-    git-activity.json › context_files.agents_md = true
-    fourchette : entre Blue et Copper (manque 4 PR)
 
-Incertitude sur les autres axes
-  En parallèle : 1 (médiane)
-    git-activity.json › parallelism.median_concurrent_branches = 1
-    fourchette : entre Green et Gold (manque 2 PR)
+Ce qui a mené là
+----------------
+  Harness 🔹 Blue–🥉 Copper (bloque, fourchette) · En parallèle 🟢 Green–🥇 Gold (fourchette)
+  Intervention 🟢 Green · Taille 🔺 Red
 
-Acquis pour Green
-  Taille : S (median_files_changed = 2)
-    git-activity.json › pull_requests.median_files_changed = 2
-  Intervention : après coup, sur une partie
-    git-activity.json › pull_requests.median_correction_commits_after_open = 2
+  Harness — 🔹 Blue : l'axe qui bloque
+    context engineering sans behavior
+      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
+                          de contexte, sur la période du fichier.
+      git-activity.json › context_files.agents_md = true
+    fourchette : entre 🔹 Blue et 🥉 Copper
 
-Comment monter d'un cran — vers Green
-  1. Harness : ajouter au moins une règle, un agent ou un hook versionné, et câbler le hook dans la
-               configuration pour qu'il s'exécute sans coopération du modèle
-     pour lever le doute : 4 PR de plus (échantillon insuffisant)
 
-Prochaine quête
-  Harness : ajouter au moins une règle, un agent ou un hook versionné, et câbler le hook dans la
-            configuration pour qu'il s'exécute sans coopération du modèle.
-  champ à faire bouger : context_files.rules_count, skills_count, hooks_count, agents_count
-  preuve actuelle : git-activity.json › context_files.agents_md = true
+Déjà acquis pour 🟢 Green
+-------------------------
+  En parallèle — 🟢 Green (fourchette)
+    1 (médiane)
+      git-activity.json › parallelism.median_concurrent_branches = 1
+    fourchette : entre 🟢 Green et 🥇 Gold
+    pour trancher : 2 PR de plus
+
+  Intervention — 🟢 Green
+    après coup, sur une partie
+      git-activity.json › pull_requests.median_correction_commits_after_open = 2
+
+  Taille — 🔺 Red
+    S (median_files_changed = 2)
+      git-activity.json › pull_requests.median_files_changed = 2
+
+
+Comment monter d'un cran — vers 🟢 Green
+----------------------------------------
+  1. Harness (à faire en premier) — ajouter au moins une règle, un agent ou un hook versionné, et
+                                    câbler le hook dans la configuration pour qu'il s'exécute sans
+                                    coopération du modèle
+     Ce qui le prouvera : context_files.rules_count, skills_count, hooks_count, agents_count
+     Aujourd'hui : aucune preuve pointée pour ce champ pour l'instant.
+     pour trancher : 4 PR de plus (échantillon insuffisant)
+
 
 Notes
+-----
+Pièces du dossier
   · declaratif.md présent, non vérifié
+    profile.json — l'identité du profil et la liste des pièces annoncées.
     (profile.json › available = declaratif.md)

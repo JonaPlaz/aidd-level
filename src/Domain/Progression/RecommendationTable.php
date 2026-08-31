@@ -70,8 +70,11 @@ final class RecommendationTable
         "automatiser la validation (tests, lint, duplication) pour qu'aucune reprise "
         .'humaine ne soit nécessaire après ouverture';
 
+    // Réaligné mot pour mot sur la cellule Intervention → Gold de docs/specs/06 § Table des
+    // gestes (écart constaté le 2026-08-31, corrigé par le chantier 65).
     private const string INTERVENTION_GOLD =
-        "aucun geste : l'axe plafonne à Silver par construction";
+        "aucun geste : l'axe plafonne à Silver par construction — « cadrage compris » n'est "
+        .'pas observable dans les pièces fournies';
 
     private const string SIZE_ANY =
         'ne rien décréter : la taille habituelle monte quand le dispositif tient ; geste '

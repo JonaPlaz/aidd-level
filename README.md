@@ -60,22 +60,25 @@ message d'erreur s'il ne tourne pas.
 
 ## La sortie
 
-Quatre premières lignes d'une sortie réelle (`make evaluate arthur`) :
+L'en-tête entier d'une sortie réelle (`make evaluate arthur`), quatre lignes logiques :
 
 ```
-❖ 🔺 🔹 🟢 [🥉] 🥈 🥇
-axe bloquant : Harness et Intervention (ex æquo)
-🥉 Copper — arthur (développeur indépendant)
-Niveau atteint : Copper · niveau visé : Silver
+Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
+❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
+Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le niveau
+                 est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 ```
 
-Puis, un bloc par ligne :
+Puis, un bloc par ligne (docs/specs/06-sortie-et-progression.md § 5) :
 
-- « Ce qui a mené là » — le fait, avec son pointeur, pour chaque axe qui plafonne.
-- « Acquis » — les axes qui satisfont déjà le niveau visé.
-- « Comment monter d'un cran » — le geste ordonné vers le niveau suivant.
-- « Prochaine quête » — le geste isolé, le plus actionnable des précédents.
-- « Notes » — ce qui appuie sans jamais trancher.
+- « Ce qui a mené là » — la synthèse des quatre axes, puis chaque axe qui bloque en détail :
+  toutes ses preuves, chacune avec sa phrase et son pointeur.
+- « Déjà acquis pour X » — les axes qui ne bloquent pas, avec le niveau qu'ils atteignent.
+- « Comment monter d'un cran » — un geste par axe bloquant, ordonné par actionnabilité ; le
+  premier porte la mention « à faire en premier » (la prochaine quête).
+- « Notes » — trois familles fixes : écarté du calcul, pièces du dossier, qualité citée sans
+  jugement.
 
 Sortie complète, annotée bloc par bloc : `docs/sortie.md`.
 
