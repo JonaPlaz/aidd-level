@@ -38,27 +38,48 @@ tourner (`make up` d'abord, sinon le message « Lance d'abord : make up » le ra
 
 Tout tourne dans Docker : le PHP local n'est pas requis, seul le conteneur l'est.
 
+## Ce que l'outil lit
+
+Tout le dossier du profil est lu. Deux pièces notent : `git-activity.json` (les mesures d'où
+sortent les quatre axes) et `repo-context/` (la preuve des fichiers de contexte et des boucles).
+`profile.json` donne l'identité et la liste des pièces annoncées, `sonar-measures.json` est cité
+sans jugement. `session.md` et `code/` sont inventoriés mais jamais notés ; `declaratif.md`
+n'entre jamais dans le calcul — c'est le choix du sujet : seules les données agrégées et
+vérifiables décident. Détail : `docs/methode.md`.
+
 ## La sortie
 
-L'en-tête d'une sortie réelle (`make evaluate arthur`) :
+Le début d'une sortie réelle (`make evaluate arthur`) :
 
 ```
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
-Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le niveau
-                 est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
+
+Niveau par axe
+  +--------------+---------------------------+--------------------------------------------+
+  | Axe          | Niveau                    | Constat                                    |
+  +--------------+---------------------------+--------------------------------------------+
+  | Harness      | 🥉 Copper ← niveau global | context engineering acquis                 |
+  | En parallèle | 🥇 Gold                   | d'habitude 4 chantiers menés en même temps |
+  | Taille       | 🥇 Gold                   | ses PR touchent d'habitude 29 fichiers     |
+  +--------------+---------------------------+--------------------------------------------+
+
+Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux — c'est
+                 l'axe le plus bas qui donne le niveau attribué.
 ```
 
-Puis quatre blocs :
+Puis, dans l'ordre de lecture :
 
-- « Ce qui a mené là » — l'état des quatre axes en une ligne, puis le détail de chaque axe
-  qui bloque : chaque fait en une phrase, avec sa preuve (`fichier › champ = valeur`).
-- « Déjà acquis pour X » — les axes qui suffisent déjà pour le niveau suivant.
-- « Comment monter d'un cran » — un geste concret par axe bloquant, le premier marqué
-  « à faire en premier ».
-- « Notes » — ce qui a été vu mais ne décide pas : signaux écartés, qualité citée sans
-  jugement, pièces du dossier.
+- le tableau « Niveau par axe » — les quatre axes, leur niveau, un constat court ;
+  `← niveau global` marque la rangée dont le niveau est le niveau final ;
+- « Niveau suivant » — le niveau d'après et ce qu'il faut pour y monter ;
+- « Déjà acquis pour X » — les axes qui suffisent déjà pour le niveau suivant ;
+- « Ce qui manque pour X » — un geste concret par axe qui limite, le premier marqué
+  « à faire en premier » ;
+- « Les preuves des axes qui limitent » — chaque fait en une phrase, avec son reçu
+  vérifiable (`vérifier dans : fichier › champ = valeur`).
 
 Sortie complète commentée : `docs/sortie.md`. Méthode de calcul (quelles données, quels
 seuils, pourquoi) : `docs/methode.md`.
