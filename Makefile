@@ -14,7 +14,7 @@ export GID := $(shell id -g)
 # the best profile provided by the subject (leodagan: 1.7 %, arthur: 2.4 %).
 DUPLICATION_MAX_PCT := 3
 
-.PHONY: up exec down test lint dup demo self fmt evaluate require-up
+.PHONY: up build exec down test lint dup demo self fmt evaluate require-up
 
 # Fails with a clear message if the `php` service isn't running, instead of
 # letting `docker compose exec` print its own opaque error.
@@ -27,6 +27,11 @@ up:
 	# A vendor/ left by an earlier run as root would block Composer: take it back first.
 	$(COMPOSE) exec -T --user root php sh -c 'chown -R $(UID):$(GID) /app/vendor /app/composer.lock 2>/dev/null || true'
 	$(COMPOSE) exec -T php composer install --no-interaction --no-progress
+
+# Removed alias: without this explicit failure the catch-all `%:` rule below would
+# swallow `make build` and exit 0 without doing anything (Codex review of PR #74).
+build:
+	@echo "make build n'existe plus : utilise make up"; exit 1
 
 exec: require-up
 	$(COMPOSE) exec php sh
