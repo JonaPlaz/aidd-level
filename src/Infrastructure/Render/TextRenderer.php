@@ -361,8 +361,10 @@ final class TextRenderer
             $blocking = \in_array($axis, $assessment->cappingAxes, true);
             $ranged = $verdict->confidence instanceof Range;
 
+            // Spec 06 § 5.4 : une fourchette se dit « entre X et Y », jamais un tiret
+            // (Codex, PR #77).
             $level = $ranged
-                ? sprintf('%s–%s', $verdict->level->label(), $verdict->confidence->ceiling->label())
+                ? sprintf('entre %s et %s', $verdict->level->label(), $verdict->confidence->ceiling->label())
                 : $verdict->level->label();
 
             // « ← niveau global » : la rangée dont le niveau EST le niveau final — le mot
@@ -373,7 +375,11 @@ final class TextRenderer
             // Constat court (Jonathan, 2026-08-31) : la phrase complète était illisible en
             // cellule — seul le segment avant le premier « : » sort ici, la phrase entière
             // avec échelle et pointeur vit dans « Les preuves des axes qui limitent ».
-            $claim = [] === $verdict->evidences ? '' : $verdict->evidences[0]->claim;
+            // Un axe au signal absent n'a aucune Evidence : sa première note (« … = absent »)
+            // fournit le constat, la cellule ne reste jamais vide (Codex, PR #77).
+            $claim = [] !== $verdict->evidences
+                ? $verdict->evidences[0]->claim
+                : ($verdict->notes[0]->text ?? 'signal absent');
             $shortClaim = false !== ($cut = mb_strpos($claim, ' : ')) ? mb_substr($claim, 0, $cut) : rtrim($claim, '.');
 
             $rows[] = [
