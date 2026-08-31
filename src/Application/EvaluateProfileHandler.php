@@ -23,6 +23,7 @@ use AiddLevel\Domain\Profile\SonarMeasures;
 use AiddLevel\Domain\ProfileSource;
 use AiddLevel\Domain\Progression\RecommendationPolicy;
 use AiddLevel\Domain\Recommendation;
+use AiddLevel\Domain\Threshold\HarnessThresholds;
 
 /**
  * The only use case (docs/specs/00-vue-ensemble.md § 4.2): gate (via `ProfileSource`, §
@@ -193,13 +194,22 @@ final readonly class EvaluateProfileHandler
      */
     private function whiteVerdicts(GitActivity $gitActivity): array
     {
+        // docs/specs/06-sortie-et-progression.md § 2, invariant 4: this is one of the two
+        // producers allowed to write a claim, so it passes the same phrase + échelle format
+        // an AxisEvaluator does — the ratio and the memory flag are both real zeros here
+        // (docs/specs/05-robustesse.md § Filtre White), never an absent value.
         $evidences = [
             new Evidence(
-                "aucun commit co-écrit avec l'IA",
+                sprintf(
+                    "ratio de commits co-écrits avec l'IA à %s : aucun, sous le seuil Red (> %s).",
+                    self::formatNumber($gitActivity->aiCoauthoredRatio ?? 0.0),
+                    self::formatNumber(HarnessThresholds::AI_RATIO_NONE),
+                ),
                 new Pointer(self::ACTIVITY_FILE, self::RATIO_FIELD, self::formatNumber($gitActivity->aiCoauthoredRatio ?? 0.0)),
             ),
             new Evidence(
-                'aucun fichier de contexte',
+                'aucun fichier de contexte : agents_md à false, aucun compteur ; Blue demande '
+                .'au moins un fichier mémoire versionné.',
                 new Pointer(self::ACTIVITY_FILE, self::AGENTS_MD_FIELD, 'false'),
             ),
         ];
