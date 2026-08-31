@@ -39,16 +39,23 @@ Tests par violation : `.claude/hooks/tests/`. Règle exacte de chaque hook : `do
 ## La chaîne d'événements
 
 Un message de Jonathan invoque `/roadmap` ou `/feature <n°>` (skills invocables par le modèle) —
-jamais un hook, qui ne fait qu'injecter du contexte au démarrage (`SessionStart`) :
+jamais un hook, qui ne fait qu'injecter du contexte au démarrage (`SessionStart`). Deux chemins
+distincts convergent sur le même skill `feature` :
 
 ```
-message de Jonathan → skill /roadmap (ou /feature <n°> direct)
-  └─► agent front (par front retenu) → skill feature préchargé
-        └─► agent dev (worktree) : code, tests
+message de Jonathan
+  ├─► /roadmap : sélectionne les fronts prêts
+  │     └─► agent front (par front retenu, arrière-plan) → skill feature préchargé
+  │           └─► agent dev (worktree) : code, tests
+  │
+  └─► /feature <n°> direct : la session exécute le skill elle-même
+        └─► agent dev (worktree) : code, tests            [pas d'agent front]
+
+Dans les deux cas, à partir de l'agent dev :
               → gh pr create   [guard-git.js PreToolUse : verrou du numéro exigé]
               → PR + label to-review          [CI côté GitHub : pull_request]
               → Codex revoit à l'ouverture (réglage cloud, seul geste manuel)
-              → skill : correction, réponses tracées, rebase
+              → skill : correction, rebase et push, puis réponses tracées (SHA post-rebase)
               → gh pr merge --auto            [guard-git.js PreToolUse : --auto exigé]
               → mergedAt non nul → feature-lock.js unlock <n°>
         cron auto-merge-after-codex (schedule) : filet si le 👍 Codex reste sans suite
@@ -93,15 +100,21 @@ Cinq issues `to-implement`, sorties disjointes. Un message de Jonathan invoque `
         │   posé, pas de chevauchement de sorties, spec présente → 5 candidats
         ├─► MAX_CONCURRENT_FRONTS retenus (n° croissant) : 3 verrouillés, 2 en
         │   attente ; verrou roadmap-* retiré (fin de la sélection)
-        └─► 3 agents front, chacun en worktree, en arrière-plan :
-              front #A → dev #A → PR #A → Codex → correction → merge auto → unlock
-              front #B → dev #B → PR #B → Codex → correction → merge auto → unlock
-              front #C → dev #C → PR #C → Codex → correction → merge auto → unlock
+        └─► 3 agents front, chacun en arrière-plan (pas de worktree propre) :
+              front #A → dev #A (worktree) → PR #A → Codex → correction → merge auto → unlock
+              front #B → dev #B (worktree) → PR #B → Codex → correction → merge auto → unlock
+              front #C → dev #C (worktree) → PR #C → Codex → correction → merge auto → unlock
 front #B mergé en premier → créneau libre
-  └─► tâche planifiée (ROADMAP_REFILL_INTERVAL) rappelle /roadmap
-        └─► un 4e candidat prêt prend le créneau ; sinon rien ne s'ouvre
+  └─► si la session tourne et est inactive à ce moment : tâche planifiée
+        (ROADMAP_REFILL_INTERVAL) rappelle /roadmap
+        └─► un 4e candidat prêt prend le créneau ; sinon rien ne s'ouvre — un
+            déclenchement manqué n'est pas rattrapé automatiquement
 ```
 
-Le worktree isole le code de chaque front ; le verrou isole son numéro (aucune autre PR dessus
-tant qu'il tient) ; le checkout principal reste en lecture seule pour git dès que deux verrous
-coexistent (`guard-git.js`). Rien n'attend d'un front à l'autre, sauf le plafond de créneaux.
+Le worktree appartient à l'agent `dev` que chaque `front` lance : c'est lui qui isole le code et
+les opérations git sur la branche. Le verrou par issue est un signal d'autorisation, pas une
+exclusivité garantie : deux invocations directes de `/feature <n°>` sur le même numéro peuvent
+en théorie partager le même verrou ; le verrou sélecteur `roadmap-<horodatage>` réduit ce risque
+pour la sélection des fronts sans le supprimer. Le checkout principal reste en lecture seule pour
+git dès que deux verrous coexistent (`guard-git.js`). Rien n'attend d'un front à l'autre, sauf le
+plafond de créneaux.
