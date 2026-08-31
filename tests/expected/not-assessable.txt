@@ -1,12 +1,18 @@
-⛔ Non évaluable — git-activity.json absent ou invalide — colonne vertébrale, aucun axe n'est
-                  calculable sans lui
+⛔ Non évaluable — galahad (stagiaire)
 
 Ce qui a été lu
   identité : galahad (stagiaire)
 
-Piste technique
-  fournir un git-activity.json valide à la racine du dossier de profil (profiles/galahad/)
+Ce qui manque : git-activity.json absent ou invalide — colonne vertébrale, aucun axe n'est
+                calculable sans lui.
+Ce que ça empêche : les quatre axes se calculent depuis ce prérequis ; sans lui, aucun niveau ne
+                    peut être rendu.
+Pour débloquer : fournir un git-activity.json valide à la racine du dossier de profil
+                 (profiles/galahad/).
+
 
 Notes
+-----
+Écarté du calcul
   · profile.json lisible malgré tout
     (profiles/galahad/profile.json › id = galahad)

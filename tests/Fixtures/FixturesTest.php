@@ -17,6 +17,7 @@ use AiddLevel\Domain\Confidence\Range;
 use AiddLevel\Domain\Level;
 use AiddLevel\Domain\Progression\RecommendationPolicy;
 use AiddLevel\Infrastructure\Profile\DirectoryProfileSource;
+use AiddLevel\Infrastructure\Render\TextRenderer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -106,6 +107,23 @@ final class FixturesTest extends TestCase
         foreach ($assessment->verdicts as $verdict) {
             self::assertSame(Level::White, $verdict->level);
         }
+    }
+
+    /**
+     * docs/specs/06-sortie-et-progression.md § 2, invariant 5, § 12 test 2: `whiteVerdicts()`
+     * shares its two `Evidence` across the four axes — the rendered output must not repeat
+     * the same claim/pointer pair four times.
+     */
+    #[Test]
+    public function whiteSharedEvidenceIsRenderedOnlyOnce(): void
+    {
+        $assessment = $this->evaluate('white');
+        $rendered = new TextRenderer()->render($assessment);
+
+        $section = substr($rendered, (int) strpos($rendered, 'Ce qui a mené là'), (int) strpos($rendered, "Comment monter d'un cran") - (int) strpos($rendered, 'Ce qui a mené là'));
+
+        self::assertSame(1, substr_count($section, 'git-activity.json › commits.ai_coauthored_ratio = 0'));
+        self::assertSame(1, substr_count($section, 'git-activity.json › context_files.agents_md = false'));
     }
 
     #[Test]
