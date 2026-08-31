@@ -5,8 +5,9 @@
 justifient (chacun avec sa preuve), et ce qu'il faudrait changer pour passer au niveau
 suivant.
 
-Les profils évalués sont ceux fournis par le sujet, copiés tels quels dans `profiles/`
-(licence et provenance : `profiles/ATTRIBUTION.md`).
+Les profils d'exemple de `profiles/` sont fournis par le sujet, copiés tels quels (licence
+et provenance : `profiles/ATTRIBUTION.md`) ; l'outil évalue aussi tout dossier au même
+format — un chemin, une fixture, ou le dépôt lui-même (`make self`).
 
 ## Installation et lancement
 
