@@ -13,6 +13,9 @@ format — un chemin ou une fixture.
 
 ## Installation et lancement
 
+Prérequis : [Docker](https://docs.docker.com/get-docker/) (Docker Desktop sur Windows et
+macOS). Rien d'autre — pas de PHP local.
+
 ```
 make up            # une fois : construit et lance le conteneur, installe les dépendances
 make evaluate arthur
