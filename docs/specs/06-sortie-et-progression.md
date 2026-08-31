@@ -140,10 +140,10 @@ jamais une. C'est un manque de la table, il se corrige dans la table.
 Icône **et** nom du niveau, jamais la couleur seule ni l'icône seule (lecteur daltonien parmi les
 lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-tête** (§ 5.1), le **tableau de synthèse** des quatre axes (§ 5.4), **déjà acquis**
 (§ 5.4), **ce qui limite le niveau** — chaque axe limitant détaillé (§ 5.2) —, **comment monter
-d'un cran** (§ 5.5), les **notes** (§ 5.6). Ordre narratif arbitré le 2026-08-31 : l'état, les
+d'un cran** (§ 5.5), les **notes**, qui ne sortent plus que sur un profil non évaluable (§ 5.6). Ordre narratif arbitré le 2026-08-31 : l'état, les
 forces, puis ce qui limite, puis les gestes — jamais un manque avant les acquis.
 
-### 5.1 L'en-tête — cinq lignes logiques
+### 5.1 L'en-tête — quatre lignes logiques
 
 Ordre arbitré par Jonathan le 2026-08-31 : le lecteur rencontre la personne avant le verdict.
 
@@ -152,8 +152,6 @@ arthur — développeur indépendant
 Niveau AIDD : 🥉 Copper
 Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
-Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le
-                 niveau est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 ```
 
 - **ligne 1** — l'identité seule : `profile_id — role`, tels que `profile.json` les donne ;
@@ -162,11 +160,11 @@ Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent t
   icône**, le niveau atteint entre crochets. Une frise d'icônes nues ne se lit pas sans la grille
   sous les yeux, et ne se lit pas du tout si le terminal ne rend pas les emoji ;
 - **ligne 4 — la fiabilité (écart 1.7)** : § 6 ;
-- **ligne 5 — le niveau suivant (écarts 1.1 et 1.5)** : le mot « visé » disparaît — personne ne
-  vise ce niveau, il est simplement le suivant. La ligne nomme le niveau suivant (icône + nom)
-  **et sa condition de passage**, c'est-à-dire les axes qui doivent y monter.
+La ligne **« Niveau suivant » sort juste après le tableau du § 5.4** (ordre narratif du
+2026-08-31, écarts 1.1 et 1.5) : le mot « visé » disparaît, la ligne nomme le niveau suivant
+(icône + nom) **et sa condition de passage** — les axes qui doivent y monter.
 
-**En fourchette** (statut `évalué, confiance basse`), l'en-tête garde ses cinq lignes : la
+**En fourchette** (statut `évalué, confiance basse`), l'en-tête garde ses quatre lignes : la
 ligne 2 dit `Niveau AIDD : entre 🔹 Blue et 🥉 Copper — …`, la frise ouvre le crochet sur le
 plancher et le ferme sur le plafond (convention existante, conservée), la ligne 3 dit ce qui
 manque (§ 6.1) et la ligne 4 vise le cran au-dessus du **plancher**.
@@ -176,7 +174,7 @@ manque (§ 6.1) et la ligne 4 vise le cran au-dessus du **plancher**.
 | Cas | Ligne rendue |
 |---|---|
 | un seul axe bloque | `Niveau suivant : 🟢 Green — il faut que Harness y monte.` |
-| plusieurs axes bloquent | le niveau suivant, **les axes nommés un par un**, puis la phrase qui dit pourquoi ils sont plusieurs : chacun doit monter, le niveau est le plus bas des quatre axes, un axe haut n'en compense pas un bas |
+| plusieurs axes bloquent | le niveau suivant, **les axes nommés un par un**, puis la phrase qui dit pourquoi ils sont plusieurs : chacun doit monter — c'est l'axe le plus bas qui donne le niveau attribué |
 | le profil est déjà Gold | `Niveau suivant : aucun — 🥇 Gold est le dernier niveau de la grille.` |
 | le cran suivant est Gold et c'est Intervention qui bloque | le niveau suivant est nommé **hors d'atteinte ici** : l'axe Intervention plafonne à 🥈 Silver, « cadrage compris » ne se constate dans aucune pièce fournie (spec 03) |
 
@@ -310,30 +308,15 @@ Comment monter d'un cran — vers 🥈 Silver
 - un axe bloquant **en fourchette** garde sa ligne `pour trancher : <manque chiffré>` sous son
   geste, comme aujourd'hui.
 
-### 5.6 *Notes* — dédupliquées et raccourcies (écart 1.10)
+### 5.6 *Notes* — retirées de la sortie évaluée (2026-08-31)
 
-Trois familles, dans cet ordre fixe, chacune avec son intitulé **écrit une seule fois**, puis une
-ligne de phrase et une ligne de pointeur par valeur :
-
-| # | Intitulé rendu | Ce qui y va |
-|---|---|---|
-| 1 | Écarté du calcul | le pic non retenu, les signaux qui corroborent sans décider |
-| 2 | Pièces du dossier | cohérence annoncé / présent, présence du déclaratif |
-| 3 | Qualité, citée sans jugement | les mesures Sonar |
-
-Quatre règles de déduplication, toutes vérifiables :
-
-1. **une note qui redit un fait déjà rendu plus haut ne sort pas** — même pointeur, même valeur :
-   le bloc gagne, la note tombe. C'est ce qui retire la note « échantillon suffisant » (la ligne
-   *Fiabilité* le dit déjà) et la note « Gold sur cet axe demanderait… » (la ligne *Niveau
-   suivant* le dit déjà) ;
-2. **deux notes de même pointeur fusionnent** en une ;
-3. **le nom de l'axe ne préfixe pas la note** quand la phrase le dit déjà ;
-4. **une note tient en une phrase**, plus son pointeur.
-
-**Aucun plafond chiffré sur le nombre de notes** : un plafond couperait une note pointée, et la
-déduplication suffit. Une note dont la famille n'est pas déterminée par sa source se rend sous
-« Écarté du calcul » — c'est un manque à corriger là où la note est produite, pas au rendu.
+Arbitré par Jonathan le 2026-08-31, en remplacement de la déduplication du premier amendement :
+sur un profil `évalué` ou `évalué, confiance basse`, **le bloc Notes ne sort plus** — pics
+écartés, corroborations et mesures Sonar n'apprennent rien à la personne évaluée, et tout fait
+qui décide vit déjà dans les blocs pointés. Les notes restent portées par `Assessment::$notes`
+(rien n'est perdu pour un autre rendu) ; sur `non évaluable`, le bloc reste rendu : il dit ce
+qui a pu être lu malgré tout (§ 6.2). Le test du § 12 vérifie l'absence du bloc sur un profil
+évalué, et sa présence sur `non évaluable`.
 
 ## 6. Fiabilité de l'évaluation — Raccord avec les statuts
 

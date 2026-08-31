@@ -82,11 +82,11 @@ Les preuves des axes qui limitent
 
 Lecture bloc par bloc (docs/specs/06-sortie-et-progression.md § 5) :
 
-- **l'en-tête, cinq lignes** — l'identité d'abord (`profile_id — role`) ; le niveau ; l'échelle
+- **l'en-tête, quatre lignes** — l'identité d'abord (`profile_id — role`) ; le niveau ; l'échelle
   des sept niveaux, icône et nom, le niveau atteint entre crochets ; la fiabilité de l'évaluation (le statut canonique,
-  puis ce qu'il veut dire) ; le niveau suivant et sa condition de passage — ici deux axes
-  bloquent à la fois, nommés l'un et l'autre, avec la phrase qui rappelle que le niveau est le
-  minimum des quatre axes.
+  puis ce qu'il veut dire) ; puis, après le tableau, la ligne « Niveau suivant » et sa condition de passage — ici deux
+  axes limitent à la fois, nommés l'un et l'autre : c'est l'axe le plus bas qui donne le
+  niveau attribué.
 - le **tableau de synthèse** des quatre axes (colonnes Axe / Niveau / Constat, `← niveau
   global` sur la rangée dont le niveau est le niveau final), juste sous l'en-tête ;
 - « Ce qui limite le niveau » — puis chaque axe qui bloque en détail : toutes ses `Evidence`, chacune avec sa
@@ -96,12 +96,10 @@ Lecture bloc par bloc (docs/specs/06-sortie-et-progression.md § 5) :
 - « Déjà acquis pour X » — rendu avant ce qui limite : les axes qui ne bloquent pas, avec le niveau atteint et l'`Evidence`
   qui l'a décidé ; un axe en fourchette y garderait sa mention `(fourchette)` et sa ligne
   `pour trancher`.
-- « Comment monter d'un cran » — un geste par axe bloquant, dans l'ordre d'actionnabilité
+- « Ce qui manque pour X » — un geste par axe qui limite, dans l'ordre d'actionnabilité
   (Harness d'abord) ; le premier porte la mention « à faire en premier » et la ligne
-  « Aujourd'hui : » — c'est la « prochaine quête », qui n'a plus de bloc à elle.
-- « Notes » — trois familles fixes, chacune une fois : Écarté du calcul (pics non retenus,
-  signaux qui corroborent sans décider), Pièces du dossier, Qualité citée sans jugement. Une
-  note qui redit un fait déjà rendu plus haut ne sort pas.
+  « Aujourd'hui : ». Les notes ne sortent plus sur un profil évalué (2026-08-31) : elles ne
+  disaient rien que les blocs pointés ne disent déjà.
 
 ## Les trois statuts
 
@@ -131,6 +129,7 @@ la largeur de repli — elle n'est jamais tronquée.
 
 ## Ce que l'outil n'imprime jamais
 
-Pas de sortie `--json`. Pas de jugement de qualité : Sonar est cité, jamais jugé. Pas de
+Pas de sortie `--json`. Pas de jugement de qualité : Sonar n'entre jamais dans le niveau (et n'apparaît plus sur un
+profil évalué). Pas de
 contenu déclaratif interprété : `declaratif.md` n'entre dans aucun calcul, seule sa présence
 est notée.

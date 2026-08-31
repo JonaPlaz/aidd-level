@@ -29,7 +29,7 @@ tourner (`make up` d'abord, sinon le message « Lance d'abord : make up » le ra
 | `make exec` | ouvre un shell dans le conteneur |
 | `make evaluate arthur bohort` | évalue les profils nommés |
 | `make demo` | évalue les quatre profils fournis par le sujet |
-| `make self` | évalue le dépôt `aidd-level` lui-même (profil `profiles/self`) |
+| `make self` | le dépôt se note lui-même : `profiles/self` est fabriqué depuis ses propres commits et PRs, `make self` rend son verdict |
 | `make test` | lance les tests (PHPUnit) |
 | `make lint` | analyse statique du code (PHPStan) |
 | `make dup` | vérifie qu'aucun bloc de code n'est dupliqué dans `src/` |
@@ -40,7 +40,7 @@ Tout tourne dans Docker : le PHP local n'est pas requis, seul le conteneur l'est
 
 ## Ce que l'outil lit
 
-Tout le dossier du profil est lu. Deux pièces notent : `git-activity.json` (les mesures d'où
+Toutes les pièces du dossier sont inventoriées, deux seulement sont lues pour noter : `git-activity.json` (les mesures d'où
 sortent les quatre axes) et `repo-context/` (la preuve des fichiers de contexte et des boucles).
 `profile.json` donne l'identité et la liste des pièces annoncées, `sonar-measures.json` est cité
 sans jugement. `session.md` et `code/` sont inventoriés mais jamais notés ; `declaratif.md`
