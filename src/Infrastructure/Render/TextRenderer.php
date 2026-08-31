@@ -15,6 +15,7 @@ use AiddLevel\Domain\Note;
 use AiddLevel\Domain\Pointer;
 use AiddLevel\Domain\Progression\RecommendationPolicy;
 use AiddLevel\Domain\SourceGlossary;
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -37,6 +38,13 @@ final class TextRenderer
 {
     /** Sortie tenue sous 100 colonnes (docs/specs/06 § 2) — sauf la ligne de pointeur. */
     private const int MAX_WIDTH = 100;
+
+    /**
+     * Largeur maximale de la colonne « Constat » du tableau de synthèse (§ 5.4) : bornée pour
+     * que la rangée la plus large (bordures + Axe + Niveau + Constat) reste sous MAX_WIDTH —
+     * le tableau ne porte aucun pointeur, ses cellules peuvent se replier sans rien couper.
+     */
+    private const int SYNTHESIS_CLAIM_MAX_WIDTH = 50;
 
     /** @var array<string, true> keys are legend keys (§ 4), reset at the start of every render(). */
     private array $legendsShown = [];
@@ -177,26 +185,33 @@ final class TextRenderer
         // (LevelRule::apply() docblock; Codex review of PR #72, remark 1).
         $evaluated = AssessmentStatus::Evaluated === $assessment->status;
 
-        $levelPart = $evaluated
+        // Ordre d'en-tête (§ 5.1, arbitré par Jonathan le 2026-08-31) : l'identité d'abord,
+        // puis le niveau, puis l'échelle nommée — le lecteur rencontre la personne avant le
+        // verdict.
+        $identityLine = null !== $assessment->identity
+            // A long profile_id or role must not push the identity line past MAX_WIDTH — only
+            // pointer lines are exempt from wrapping (§ 2, invariant 3; Codex review of PR
+            // #72, remark 7).
+            ? $this->wrapped('', sprintf('%s — %s', $assessment->identity->id, $assessment->identity->role))
+            : null;
+
+        $levelLine = $evaluated
             ? sprintf('Niveau AIDD : %s', $floor->label())
             : sprintf('Niveau AIDD : entre %s et %s', $floor->label(), $ceiling->label());
 
-        // A long profile_id or role must not push the identity line past MAX_WIDTH — only
-        // pointer lines are exempt from wrapping (§ 2, invariant 3; Codex review of PR #72,
-        // remark 7).
-        $line1 = null !== $assessment->identity
-            ? $this->wrapped($levelPart.' — ', sprintf('%s (%s)', $assessment->identity->id, $assessment->identity->role))
-            : $levelPart;
+        $scaleLine = 'Échelle des niveaux : '
+            .($evaluated ? $this->levelBar($floor) : $this->levelRangeBar($floor, $ceiling));
 
-        $line2 = $evaluated ? $this->levelBar($floor) : $this->levelRangeBar($floor, $ceiling);
-
-        $line3 = $evaluated
+        $reliabilityLine = $evaluated
             ? 'Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.'
             : $this->lowConfidenceReliabilityLine($assessment);
 
-        $line4 = $this->nextLevelLine($floor, $assessment->cappingAxes);
+        $nextLine = $this->nextLevelLine($floor, $assessment->cappingAxes);
 
-        return implode("\n", [$line1, $line2, $line3, $line4]);
+        return implode("\n", array_values(array_filter(
+            [$identityLine, $levelLine, $scaleLine, $reliabilityLine, $nextLine],
+            static fn (?string $line): bool => null !== $line,
+        )));
     }
 
     /**
@@ -299,7 +314,7 @@ final class TextRenderer
     private function whatLedHereBlock(Assessment $assessment): string
     {
         $lines = [$this->sectionTitle('Ce qui a mené là')];
-        $lines[] = $this->synthesisLine($assessment);
+        $lines[] = $this->synthesisTable($assessment);
         $lines[] = '';
 
         $verdictsByAxis = $this->verdictsByAxis($assessment);
@@ -329,10 +344,10 @@ final class TextRenderer
      * pure recap of the lines rendered right below (excluded from § 12's pointer count on
      * purpose, it is the third named exception to rule 4).
      */
-    private function synthesisLine(Assessment $assessment): string
+    private function synthesisTable(Assessment $assessment): string
     {
         $verdictsByAxis = $this->verdictsByAxis($assessment);
-        $parts = [];
+        $rows = [];
         foreach (RecommendationPolicy::AXIS_ORDER as $axis) {
             $verdict = $verdictsByAxis[$axis->name] ?? null;
             if (null === $verdict) {
@@ -348,10 +363,27 @@ final class TextRenderer
             $mentions = array_filter([$blocking ? 'bloque' : null, $ranged ? 'fourchette' : null]);
             $suffix = [] !== $mentions ? sprintf(' (%s)', implode(', ', $mentions)) : '';
 
-            $parts[] = sprintf('%s %s%s', $this->axisLabel($axis), $level, $suffix);
+            $rows[] = [
+                $this->axisLabel($axis),
+                $level.$suffix,
+                [] === $verdict->evidences ? '' : $verdict->evidences[0]->claim,
+            ];
         }
 
-        return $this->wrappedOn('  ', ' · ', implode(' · ', $parts));
+        // Un vrai tableau aligné (arbitré par Jonathan le 2026-08-31) : le composant Table de
+        // symfony/console, sur un BufferedOutput — aucune dépendance à la largeur du terminal.
+        // Ses cellules ne portent jamais de pointeur : la colonne « Constat » peut donc se
+        // replier (setColumnMaxWidth) sans couper quoi que ce soit de vérifiable.
+        $buffer = new BufferedOutput();
+        $table = new Table($buffer);
+        $table->setHeaders(['Axe', 'Niveau', 'Constat']);
+        $table->setRows($rows);
+        $table->setColumnMaxWidth(2, self::SYNTHESIS_CLAIM_MAX_WIDTH);
+        $table->render();
+
+        $lines = explode("\n", rtrim($buffer->fetch(), "\n"));
+
+        return implode("\n", array_map(static fn (string $line): string => '  '.rtrim($line), $lines));
     }
 
     /**
