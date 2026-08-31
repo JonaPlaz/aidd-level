@@ -110,30 +110,44 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
     }
 
     /**
-     * The Green claim reflects the actual median (docs/specs/00-vue-ensemble.md § 4 —
-     * a claim must stay verifiable against its pointer), not just the level: exactly 1 reads
-     * as "one lane at a time", anything strictly between names the observed median so the
-     * claim never contradicts the pointer value it sits next to.
+     * The claim names the median and the threshold it sits against (docs/specs/06 § 3 —
+     * "aucun chiffre nu"), never a bare band name: exactly 1 reads as "one lane at a time",
+     * anything strictly between names the observed median so the claim never contradicts the
+     * pointer value it sits next to.
      */
     private static function claimForMedian(Level $level, float $median): string
     {
+        $value = self::formatNumber($median);
+
         return match ($level) {
-            Level::White => 'aucun chantier concurrent',
+            Level::White => sprintf(
+                '%s chantier concurrent en médiane : aucun, sous le seuil de %d de Green.',
+                $value,
+                ParallelismThresholds::MEDIAN_SOME_MIN,
+            ),
             Level::Green => self::greenClaim($median),
-            Level::Gold => 'au moins trois chantiers de front, habituellement',
-            default => 'médiane de chantiers concurrents observée',
+            Level::Gold => sprintf(
+                '%s chantiers de front en médiane, habituellement : au moins le seuil de %d de Gold.',
+                $value,
+                ParallelismThresholds::MEDIAN_HABITUAL_MIN,
+            ),
+            default => sprintf('%s chantiers concurrents en médiane', $value),
         };
     }
 
     private static function greenClaim(float $median): string
     {
         if (1.0 === $median) {
-            return 'un chantier à la fois';
+            return sprintf(
+                'un chantier à la fois : sous le seuil de %d de Copper.',
+                ParallelismThresholds::MEDIAN_HABITUAL_MIN,
+            );
         }
 
         return sprintf(
-            '%s chantiers de front en médiane, sous le seuil de 3 de Copper',
+            '%s chantiers de front en médiane, sous le seuil de %d de Copper.',
             self::formatNumber($median),
+            ParallelismThresholds::MEDIAN_HABITUAL_MIN,
         );
     }
 
