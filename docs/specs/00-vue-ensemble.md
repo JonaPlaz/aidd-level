@@ -294,8 +294,8 @@ liste : le pointeur du § 3 cesse d'être pendant, sans que le § 3 soit réécr
 **`docs/sortie.md` — les sorties.**
 
 - **la sortie réelle** d'un profil fourni, copiée telle quelle et **annotée bloc par bloc** :
-  frise des niveaux, axe bloquant, niveau atteint et niveau visé, « Ce qui a mené là »,
-  « Acquis », « Comment monter d'un cran », « Prochaine quête », « Notes » ;
+  l'en-tête (niveau, frise, fiabilité, niveau suivant et sa condition de passage), « Ce qui a
+  mené là », « Déjà acquis pour X », « Comment monter d'un cran », « Notes » ;
 - **les trois statuts** — `évalué`, `évalué, confiance basse`, `non évaluable` — et ce que
   l'utilisateur voit dans chacun ; chacun a son rendu figé dans `tests/expected/`
   (`evaluated.txt`, `low-confidence.txt`, `not-assessable.txt`, vérifié le 2026-08-30) ;
@@ -401,10 +401,10 @@ Quel panneau, pour quel chemin :
 | `src/Infrastructure/Render/**`, `src/Domain/Progression/**`, les statuts, `tests/expected/**` | `docs/sortie.md` **et** `README.md` |
 | `Makefile`, `Dockerfile`, `compose.yaml`, `bin/**` | `README.md` |
 
-La quatrième ligne vise **deux** fichiers, et c'est la seule : le `README.md` embarque les
-quatre premières lignes d'une sortie réelle (§ 7.3). Une forme de sortie qui change périme donc
-`docs/sortie.md` **et** cet extrait — les corriger séparément ferait mentir le `README.md` en
-suivant la table à la lettre.
+La quatrième ligne vise **deux** fichiers, et c'est la seule : le `README.md` embarque le
+bloc d'en-tête entier d'une sortie réelle (§ 7.3, amendé par docs/specs/06-sortie-et-progression.md
+§ 11). Une forme de sortie qui change périme donc `docs/sortie.md` **et** cet extrait — les
+corriger séparément ferait mentir le `README.md` en suivant la table à la lettre.
 
 **Où la règle est écrite : une seule fois, dans `AGENTS.md` › Code Review Rules, en point 10**
 (les points 1 à 9 sont inchangés et cités ailleurs — 08 § 12.1 : on ajoute à la fin, on ne
@@ -510,13 +510,13 @@ main dans la PR ; leur résultat va au journal. `make test`, `make lint`, `make 
 
    Sortie attendue : **vide**. **Le test ne juge que la prose** : les blocs délimités par ```
    sont retirés avant normalisation, exactement comme au test 1. Sans cette exclusion le test
-   serait insatisfaisable par construction — le § 7.3 met les **quatre premières lignes** d'une
+   serait insatisfaisable par construction — le § 7.3 met le **bloc d'en-tête entier** d'une
    sortie réelle dans le `README.md` et le § 7.2 la **même** sortie, complète, dans
-   `docs/sortie.md` : `axe bloquant : …` et `Niveau atteint : …` seraient comptées comme des
-   lignes dupliquées alors qu'elles sont la pièce à conviction, citée deux fois **exprès**. La
-   contrepartie est écrite : l'extrait du `README.md` est un **préfixe littéral** de la sortie de
-   `docs/sortie.md`, jamais une variante — une divergence entre les deux se voit à l'œil et
-   relève du test 5 et du point de revue 10, pas de ce `comm`.
+   `docs/sortie.md` : `Fiabilité : évalué — …` et `Niveau suivant : …` seraient comptées comme
+   des lignes dupliquées alors qu'elles sont la pièce à conviction, citée deux fois **exprès**.
+   La contrepartie est écrite : l'extrait du `README.md` est un **préfixe littéral** de la
+   sortie de `docs/sortie.md`, jamais une variante — une divergence entre les deux se voit à
+   l'œil et relève du test 5 et du point de revue 10, pas de ce `comm`.
 
    Le filtre `NF>=5` (adaptation assumée) écarte les titres et les en-têtes de table, qui se
    ressemblent sans rien dupliquer ; en dessous de cinq mots, une ligne n'énonce pas une règle.
