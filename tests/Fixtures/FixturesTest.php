@@ -120,7 +120,9 @@ final class FixturesTest extends TestCase
         $assessment = $this->evaluate('white');
         $rendered = new TextRenderer()->render($assessment);
 
-        $section = substr($rendered, (int) strpos($rendered, 'Ce qui a mené là'), (int) strpos($rendered, "Comment monter d'un cran") - (int) strpos($rendered, 'Ce qui a mené là'));
+        // « Les preuves des axes qui limitent » est désormais le dernier bloc (ordre narratif
+        // du 2026-08-31) : la tranche court jusqu'à la fin du rendu.
+        $section = substr($rendered, (int) strpos($rendered, 'Les preuves des axes qui limitent'));
 
         self::assertSame(1, substr_count($section, 'git-activity.json › commits.ai_coauthored_ratio = 0'));
         self::assertSame(1, substr_count($section, 'git-activity.json › context_files.agents_md = false'));

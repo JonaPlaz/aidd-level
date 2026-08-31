@@ -138,31 +138,34 @@ jamais une. C'est un manque de la table, il se corrige dans la table.
 ## 5. Format de sortie
 
 Icône **et** nom du niveau, jamais la couleur seule ni l'icône seule (lecteur daltonien parmi les
-lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-tête** (§ 5.1),
-**ce qui a mené là** — la ligne de synthèse des quatre axes, l'axe qui bloque détaillé (§ 5.2),
-puis les autres axes (§ 5.4) —, **comment monter d'un cran** (§ 5.5), les **notes** (§ 5.6).
+lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-tête** (§ 5.1), le **tableau de synthèse** des quatre axes (§ 5.4), **déjà acquis**
+(§ 5.4), **ce qui limite le niveau** — chaque axe limitant détaillé (§ 5.2) —, **comment monter
+d'un cran** (§ 5.5), les **notes**, qui ne sortent plus que sur un profil non évaluable (§ 5.6). Ordre narratif arbitré le 2026-08-31 : l'état, les
+forces, puis ce qui limite, puis les gestes — jamais un manque avant les acquis.
 
 ### 5.1 L'en-tête — quatre lignes logiques
 
+Ordre arbitré par Jonathan le 2026-08-31 : le lecteur rencontre la personne avant le verdict.
+
 ```
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
-Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le
-                 niveau est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 ```
 
-- **ligne 1** — le niveau et l'identité. `Level::label()` fournit déjà « icône + nom » ;
-- **ligne 2 — la frise (écart 1.2)** : les sept niveaux, **chacun avec son nom à côté de son
+- **ligne 1** — l'identité seule : `profile_id — role`, tels que `profile.json` les donne ;
+- **ligne 2** — le niveau : `Niveau AIDD : …`, `Level::label()` fournissant « icône + nom » ;
+- **ligne 3 — l'échelle nommée (écart 1.2)**, préfixée `Échelle des niveaux : ` : les sept niveaux, **chacun avec son nom à côté de son
   icône**, le niveau atteint entre crochets. Une frise d'icônes nues ne se lit pas sans la grille
   sous les yeux, et ne se lit pas du tout si le terminal ne rend pas les emoji ;
-- **ligne 3 — la fiabilité (écart 1.7)** : § 6 ;
-- **ligne 4 — le niveau suivant (écarts 1.1 et 1.5)** : le mot « visé » disparaît — personne ne
-  vise ce niveau, il est simplement le suivant. La ligne nomme le niveau suivant (icône + nom)
-  **et sa condition de passage**, c'est-à-dire les axes qui doivent y monter.
+- **ligne 4 — la fiabilité (écart 1.7)** : § 6 ;
+La ligne **« Niveau suivant » sort juste après le tableau du § 5.4** (ordre narratif du
+2026-08-31, écarts 1.1 et 1.5) : le mot « visé » disparaît, la ligne nomme le niveau suivant
+(icône + nom) **et sa condition de passage** — les axes qui doivent y monter.
 
 **En fourchette** (statut `évalué, confiance basse`), l'en-tête garde ses quatre lignes : la
-ligne 1 dit `Niveau AIDD : entre 🔹 Blue et 🥉 Copper — …`, la frise ouvre le crochet sur le
+ligne 2 dit `Niveau AIDD : entre 🔹 Blue et 🥉 Copper — …`, la frise ouvre le crochet sur le
 plancher et le ferme sur le plafond (convention existante, conservée), la ligne 3 dit ce qui
 manque (§ 6.1) et la ligne 4 vise le cran au-dessus du **plancher**.
 
@@ -171,7 +174,7 @@ manque (§ 6.1) et la ligne 4 vise le cran au-dessus du **plancher**.
 | Cas | Ligne rendue |
 |---|---|
 | un seul axe bloque | `Niveau suivant : 🟢 Green — il faut que Harness y monte.` |
-| plusieurs axes bloquent | le niveau suivant, **les axes nommés un par un**, puis la phrase qui dit pourquoi ils sont plusieurs : chacun doit monter, le niveau est le plus bas des quatre axes, un axe haut n'en compense pas un bas |
+| plusieurs axes bloquent | le niveau suivant, **les axes nommés un par un**, puis la phrase qui dit pourquoi ils sont plusieurs : chacun doit monter — c'est l'axe le plus bas qui donne le niveau attribué |
 | le profil est déjà Gold | `Niveau suivant : aucun — 🥇 Gold est le dernier niveau de la grille.` |
 | le cran suivant est Gold et c'est Intervention qui bloque | le niveau suivant est nommé **hors d'atteinte ici** : l'axe Intervention plafonne à 🥈 Silver, « cadrage compris » ne se constate dans aucune pièce fournie (spec 03) |
 
@@ -180,15 +183,14 @@ qu'elle explique quelque chose. C'est ce qui remplace « axe bloquant … (ex æ
 que la sortie n'emploie plus (§ 10), sans rien perdre de l'invariant : les axes ex æquo sont tous
 nommés, dans l'ordre du § 5.3, et aucune moyenne n'est jamais rendue.
 
-### 5.2 *Ce qui a mené là* — l'axe qui bloque, détaillé
+### 5.2 *Ce qui limite le niveau* — l'axe qui limite, détaillé
 
-Le bloc s'ouvre sur la ligne de synthèse du § 5.4, puis vient une entrée par axe bloquant, dans
-l'ordre du § 5.3. Chaque entrée porte, sur sa ligne de tête, le nom de l'axe, le niveau qu'il
+Le tableau du § 5.4 est rendu plus haut, sous l'en-tête ; ce bloc porte une entrée par axe
+limitant, dans l'ordre du § 5.3. Chaque entrée porte, sur sa ligne de tête, le nom de l'axe, le niveau qu'il
 atteint (icône + nom) et le fait qu'il bloque ; puis ses `Evidence` à la grammaire du § 2.
 
 ```
-Ce qui a mené là
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
+Ce qui limite le niveau
 
   Harness — 🥉 Copper : l'un des deux axes qui bloquent
     Un fichier mémoire est versionné à la racine du dépôt.
@@ -217,24 +219,33 @@ parallèle, Intervention, Taille**. Il est déjà porté par une seule constante
 
 Écart 1.6 : la sortie ne montrait que ce qui bloque, et la personne évaluée ne voyait jamais ce
 qu'elle avait déjà acquis. **Les quatre axes sont désormais rendus, sans exception**, en deux
-temps — tranché le 2026-08-31 : une ligne de synthèse, puis les autres axes en clair. Le tableau
-des quatre axes est écarté : sa colonne de pointeurs impose des rangées bien au-delà de
-`MAX_WIDTH`, et replier une cellule couperait un pointeur (§ 2, invariant 3).
+temps — tranché le 2026-08-31 : un tableau de synthèse aligné, puis les autres axes en clair. Le tableau est rendu par le
+composant Table de symfony/console sur un BufferedOutput — largeurs fixées dans le code, aucune
+dépendance au terminal (arbitré par Jonathan le 2026-08-31). Il ne porte aucun pointeur : seule
+sa colonne « Constat » se replie (constante SYNTHESIS_CLAIM_MAX_WIDTH, bornée pour que la rangée
+la plus large reste sous MAX_WIDTH), rien de vérifiable n'y est jamais coupé.
 
-**La ligne de synthèse**, en tête du bloc *Ce qui a mené là*, juste sous son titre :
+**Le tableau de synthèse**, rendu juste sous l'en-tête, avant *Déjà acquis* —
+colonnes Axe / Niveau / Constat, une rangée par axe, le « Constat » étant la phrase de la
+première `Evidence` de l'axe (celle qui décide) :
 
 ```
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
+  +--------------+--------------------+----------------------------------------------------+
+  | Axe          | Niveau             | Constat                                            |
+  +--------------+--------------------+----------------------------------------------------+
+  | Harness      | 🥉 Copper ← niveau global | context engineering acquis : un fichier mémoire …  |
+  | En parallèle | 🥇 Gold            | 4 chantiers de front en médiane, habituellement …  |
+  +--------------+--------------------+----------------------------------------------------+
 ```
 
 - **les quatre axes**, dans l'ordre du § 5.3 — Harness, En parallèle, Intervention, Taille —,
-  séparés par ` · ` ;
-- chacun : nom de l'axe, niveau atteint **icône et nom**, et une mention entre parenthèses quand
-  il y a lieu — `(bloque)` pour un axe qui plafonne, `(fourchette)` pour un axe non tranché,
-  `(bloque, fourchette)` pour les deux. **Jamais la couleur ni l'icône seule** pour dire lequel
-  bloque ;
-- un axe en fourchette y montre **plancher et plafond** : `Intervention 🔹 Blue–🥉 Copper
-  (fourchette)` ;
+  une rangée chacun ;
+- chacun : nom de l'axe, niveau atteint **icône et nom**, et une mention quand il y a lieu —
+  `← niveau global` sur la rangée (ou les rangées ex æquo) dont le niveau est le niveau final
+  (« bloque » était du jargon, remplacé le 2026-08-31), `(incertain)` pour un axe non tranché.
+  **Jamais la couleur ni l'icône seule** pour dire lequel limite ;
+- un axe en fourchette y montre **plancher et plafond** : `entre 🔹 Blue et 🥉 Copper
+  (incertain)` ;
 - **c'est une exception nommée à la règle 4** : la synthèse **récapitule des lignes pointées
   rendues juste en dessous**, elle n'affirme rien de neuf. Elle est exclue du contrôle du § 12 au
   même titre que la légende du § 4. Avec la légende et la pièce nommée par son chemin en `non
@@ -297,30 +308,15 @@ Comment monter d'un cran — vers 🥈 Silver
 - un axe bloquant **en fourchette** garde sa ligne `pour trancher : <manque chiffré>` sous son
   geste, comme aujourd'hui.
 
-### 5.6 *Notes* — dédupliquées et raccourcies (écart 1.10)
+### 5.6 *Notes* — retirées de la sortie évaluée (2026-08-31)
 
-Trois familles, dans cet ordre fixe, chacune avec son intitulé **écrit une seule fois**, puis une
-ligne de phrase et une ligne de pointeur par valeur :
-
-| # | Intitulé rendu | Ce qui y va |
-|---|---|---|
-| 1 | Écarté du calcul | le pic non retenu, les signaux qui corroborent sans décider |
-| 2 | Pièces du dossier | cohérence annoncé / présent, présence du déclaratif |
-| 3 | Qualité, citée sans jugement | les mesures Sonar |
-
-Quatre règles de déduplication, toutes vérifiables :
-
-1. **une note qui redit un fait déjà rendu plus haut ne sort pas** — même pointeur, même valeur :
-   le bloc gagne, la note tombe. C'est ce qui retire la note « échantillon suffisant » (la ligne
-   *Fiabilité* le dit déjà) et la note « Gold sur cet axe demanderait… » (la ligne *Niveau
-   suivant* le dit déjà) ;
-2. **deux notes de même pointeur fusionnent** en une ;
-3. **le nom de l'axe ne préfixe pas la note** quand la phrase le dit déjà ;
-4. **une note tient en une phrase**, plus son pointeur.
-
-**Aucun plafond chiffré sur le nombre de notes** : un plafond couperait une note pointée, et la
-déduplication suffit. Une note dont la famille n'est pas déterminée par sa source se rend sous
-« Écarté du calcul » — c'est un manque à corriger là où la note est produite, pas au rendu.
+Arbitré par Jonathan le 2026-08-31, en remplacement de la déduplication du premier amendement :
+sur un profil `évalué` ou `évalué, confiance basse`, **le bloc Notes ne sort plus** — pics
+écartés, corroborations et mesures Sonar n'apprennent rien à la personne évaluée, et tout fait
+qui décide vit déjà dans les blocs pointés. Les notes restent portées par `Assessment::$notes`
+(rien n'est perdu pour un autre rendu) ; sur `non évaluable`, le bloc reste rendu : il dit ce
+qui a pu être lu malgré tout (§ 6.2). Le test du § 12 vérifie l'absence du bloc sur un profil
+évalué, et sa présence sur `non évaluable`.
 
 ## 6. Fiabilité de l'évaluation — Raccord avec les statuts
 
@@ -562,12 +558,12 @@ S'y ajoutent :
 
 1. **Une phrase par pointeur, un pointeur par phrase** (§ 2). **Portée du contrôle, close** : il
    ne porte que sur les lignes rendues **depuis une `Evidence` ou une `Note`**. Sont hors champ,
-   parce qu'elles ne sont pas des affirmations sur le profil : les quatre lignes de l'en-tête
+   parce qu'elles ne sont pas des affirmations sur le profil : les cinq lignes de l'en-tête
    (§ 5.1), la frise, la ligne *Fiabilité*, les titres de bloc et leur soulignement, les
    intertitres, les lignes de tête d'axe, les intitulés de famille de notes, et les lignes du plan
    de progression (numéro, geste, « Ce qui le prouvera », « pour trancher »). Sont exclues
-   nommément, alors même qu'elles ressemblent à des affirmations : la légende du § 4, la ligne de
-   synthèse du § 5.4, et les lignes de `non évaluable` qui nomment une pièce plutôt qu'un champ
+   nommément, alors même qu'elles ressemblent à des affirmations : la légende du § 4, le tableau de
+   synthèse du § 5.4 (bordures, en-têtes et cellules comprises), et les lignes de `non évaluable` qui nomment une pièce plutôt qu'un champ
    (§ 6.2). Dans ce périmètre : le nombre de lignes contenant ` › ` égale le nombre d'`Evidence`
    et de `Note` rendues, et aucune ligne de pointeur n'est la première ligne de son entrée.
 2. **Toutes les `Evidence` d'un axe bloquant sont rendues** — le défaut corrigé était d'en perdre
@@ -577,13 +573,13 @@ S'y ajoutent :
 3. **Chaque chiffre porte son échelle** (§ 3), testé côté domaine, par axe et par bande : la
    phrase de l'`Evidence` contient la valeur du seuil nommé qui borne la bande, **lue depuis la
    constante**, jamais réécrite dans le test.
-4. **Les quatre axes sont dans la sortie** (§ 5.4) : la ligne de synthèse les porte tous les
-   quatre, dans l'ordre de `RecommendationPolicy::AXIS_ORDER`, chacun avec son niveau (icône +
-   nom), `(bloque)` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne, et
-   `(fourchette)` sur ceux — et seulement ceux — dont la confiance est un `Range` ; chaque axe qui
+4. **Les quatre axes sont dans la sortie** (§ 5.4) : le tableau de synthèse les porte tous les
+   quatre, une rangée par axe dans l'ordre de `RecommendationPolicy::AXIS_ORDER`, chacun avec son niveau (icône +
+   nom), `← niveau global` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne, et
+   `(incertain)` sur ceux — et seulement ceux — dont la confiance est un `Range` ; chaque axe qui
    ne bloque pas se retrouve ensuite sous `Déjà acquis`, avec son niveau et au moins un pointeur.
 5. **Un axe en fourchette qui ne bloque pas ne perd rien** (§ 5.4) : sur `fixtures/short-sample`,
-   Intervention et Taille — qui ne plafonnent pas — portent chacune leur mention `(fourchette)`,
+   Intervention et Taille — qui ne plafonnent pas — portent chacune leur mention `(incertain)`,
    leur ligne `fourchette : entre … et …` et leur ligne `pour trancher : …` ; la ligne *Fiabilité*
    les nomme toutes les deux, en plus de l'axe qui plafonne.
 6. **La condition de passage** (§ 5.1), un cas par ligne de la table du § 5.1 : `perceval` (un

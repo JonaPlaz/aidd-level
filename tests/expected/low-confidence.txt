@@ -1,42 +1,45 @@
-Niveau AIDD : entre 🔹 Blue et 🥉 Copper — perceval (développeur solo)
-❖ White  🔺 Red  [🔹 Blue  🟢 Green  🥉 Copper]  🥈 Silver  🥇 Gold
+perceval — développeur solo
+Niveau AIDD : entre 🔹 Blue et 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  [🔹 Blue  🟢 Green  🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué, confiance basse — Harness (manque 4 PR) et En parallèle (manque 2 PR) ; le
             niveau est donné en fourchette.
+
+Niveau par axe
+  +--------------+----------------------------+-----------------------------------+
+  | Axe          | Niveau                     | Constat                           |
+  +--------------+----------------------------+-----------------------------------+
+  | Harness      | entre 🔹 Blue et 🥉 Copper ← | context engineering sans behavior |
+  |              | niveau global (incertain)  |                                   |
+  | En parallèle | entre 🟢 Green et 🥇 Gold  | 1 (médiane)                       |
+  |              | (incertain)                |                                   |
+  | Intervention | 🟢 Green                   | après coup, sur une partie        |
+  | Taille       | 🔺 Red                     | S (median_files_changed = 2)      |
+  +--------------+----------------------------+-----------------------------------+
+
 Niveau suivant : 🟢 Green — il faut que Harness y monte.
-
-
-Ce qui a mené là
-----------------
-  Harness 🔹 Blue–🥉 Copper (bloque, fourchette) · En parallèle 🟢 Green–🥇 Gold (fourchette)
-  Intervention 🟢 Green · Taille 🔺 Red
-
-  Harness — 🔹 Blue : l'axe qui bloque
-    context engineering sans behavior
-      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
-                          de contexte, sur la période du fichier.
-      git-activity.json › context_files.agents_md = true
-    fourchette : entre 🔹 Blue et 🥉 Copper
 
 
 Déjà acquis pour 🟢 Green
 -------------------------
   En parallèle — 🟢 Green (fourchette)
     1 (médiane)
-      git-activity.json › parallelism.median_concurrent_branches = 1
+      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
+                          de contexte, sur la période du fichier.
+      vérifier dans : git-activity.json › parallelism.median_concurrent_branches = 1
     fourchette : entre 🟢 Green et 🥇 Gold
     pour trancher : 2 PR de plus
 
   Intervention — 🟢 Green
     après coup, sur une partie
-      git-activity.json › pull_requests.median_correction_commits_after_open = 2
+      vérifier dans : git-activity.json › pull_requests.median_correction_commits_after_open = 2
 
   Taille — 🔺 Red
     S (median_files_changed = 2)
-      git-activity.json › pull_requests.median_files_changed = 2
+      vérifier dans : git-activity.json › pull_requests.median_files_changed = 2
 
 
-Comment monter d'un cran — vers 🟢 Green
-----------------------------------------
+Ce qui manque pour 🟢 Green
+---------------------------
   1. Harness (à faire en premier) — ajouter au moins une règle, un agent ou un hook versionné, et
                                     câbler le hook dans la configuration pour qu'il s'exécute sans
                                     coopération du modèle
@@ -45,9 +48,9 @@ Comment monter d'un cran — vers 🟢 Green
      pour trancher : 4 PR de plus (échantillon insuffisant)
 
 
-Notes
------
-Pièces du dossier
-  · declaratif.md présent, non vérifié
-    profile.json — l'identité du profil et la liste des pièces annoncées.
-    (profile.json › available = declaratif.md)
+Les preuves des axes qui limitent
+---------------------------------
+  Harness — 🔹 Blue : c'est lui qui limite le niveau
+    context engineering sans behavior
+      vérifier dans : git-activity.json › context_files.agents_md = true
+    fourchette : entre 🔹 Blue et 🥉 Copper

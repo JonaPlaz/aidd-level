@@ -45,7 +45,7 @@ final class CalibrationTest extends TestCase
         self::assertGreaterThan(
             0,
             $this->pointedLineCount($rendered),
-            'Le bloc "Ce qui a mené là" ne cite aucune ligne de preuve pointée.',
+            'Le bloc "Les preuves des axes qui limitent" ne cite aucune ligne de preuve pointée.',
         );
     }
 
@@ -92,7 +92,7 @@ final class CalibrationTest extends TestCase
     }
 
     /**
-     * Counts the pointer-bearing lines inside the "Ce qui a mené là" block (docs/specs/06 §
+     * Counts the pointer-bearing lines inside the "Les preuves des axes qui limitent" block (docs/specs/06 §
      * Format de sortie): every axis headline sits at a two-space indent, every `Evidence`
      * pointer under it one level deeper, at four spaces. Candidate lines are selected by that
      * indentation alone, never by the presence of `›` (Codex review of PR #25, remark 3 — a
@@ -111,13 +111,13 @@ final class CalibrationTest extends TestCase
     }
 
     /**
-     * The "Ce qui a mené là" block only, up to the next known block heading — not the first
+     * The "Les preuves des axes qui limitent" block only, up to the next known block heading — not the first
      * blank line, which the block also uses between its own axis entries
      * (docs/specs/06-sortie-et-progression.md § 5.2).
      */
     private function cappingAxesSection(string $rendered): string
     {
-        $heading = 'Ce qui a mené là';
+        $heading = 'Les preuves des axes qui limitent';
         $start = strpos($rendered, $heading);
         self::assertNotFalse($start, sprintf('Bloc "%s" absent du rendu.', $heading));
 

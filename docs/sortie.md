@@ -10,103 +10,96 @@ gestes restent en spec — ce panneau montre et pointe. Sources : `docs/specs/06
 Sortie de `make evaluate arthur` (profil fourni par le sujet), copiée telle quelle :
 
 ```
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
-Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le niveau
-                 est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 
+Niveau par axe
+  +--------------+---------------------------+--------------------------------------------+
+  | Axe          | Niveau                    | Constat                                    |
+  +--------------+---------------------------+--------------------------------------------+
+  | Harness      | 🥉 Copper ← niveau global | context engineering acquis                 |
+  | En parallèle | 🥇 Gold                   | d'habitude 4 chantiers menés en même temps |
+  |              |                           | (médiane)                                  |
+  | Intervention | 🥉 Copper ← niveau global | d'habitude 1 corrections après l'ouverture |
+  |              |                           | d'une PR (médiane)                         |
+  | Taille       | 🥇 Gold                   | ses PR touchent d'habitude 29 fichiers     |
+  |              |                           | (médiane)                                  |
+  +--------------+---------------------------+--------------------------------------------+
 
-Ce qui a mené là
-----------------
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
-
-  Harness — 🥉 Copper : l'un des deux axes qui bloquent
-    context engineering acquis : un fichier mémoire est versionné à la racine du dépôt ; Green et
-    Copper demandent en plus une règle, un agent ou un hook versionné.
-      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
-                          de contexte, sur la période du fichier.
-      git-activity.json › context_files.agents_md = true
-    behavior acquis : 0 règles, 4 skills, 0 hooks, 2 agents ; au moins un compteur non nul, c'est le
-    « behavior » que Green et Copper demandent, Silver et Gold demandent en plus une boucle bornée.
-      git-activity.json › context_files = {rules:0, skills:4, hooks:0, agents:2}
-    behavior : preuve structurelle trouvée dans repo-context/
-      repo-context/.claude/agents/migration-auditor.md — la copie des fichiers de configuration IA
-                                                         trouvés à la racine du dépôt.
-      repo-context/.claude/agents/migration-auditor.md › file = present
-
-  Intervention — 🥉 Copper : l'un des deux axes qui bloquent
-    médiane 1 corrections après ouverture : aux étapes clés (0 < médiane < 2).
-      git-activity.json › pull_requests.median_correction_commits_after_open = 1
-    taille de l'échantillon de PR (plancher 5 ; plancher « jamais » 12)
-      git-activity.json › pull_requests.total = 154
+Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux — c'est
+                 l'axe le plus bas qui donne le niveau attribué.
 
 
 Déjà acquis pour 🥈 Silver
 --------------------------
   En parallèle — 🥇 Gold
-    4 chantiers de front en médiane, habituellement : au moins le seuil de 3 de Gold.
-      git-activity.json › parallelism.median_concurrent_branches = 4
+    d'habitude 4 chantiers menés en même temps (médiane) : au moins le seuil de 3 de Gold.
+      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
+                          de contexte, sur la période du fichier.
+      vérifier dans : git-activity.json › parallelism.median_concurrent_branches = 4
 
   Taille — 🥇 Gold
-    29 fichiers modifiés en médiane : bande XL (> 20), satisfait de Green à Gold.
-      git-activity.json › pull_requests.median_files_changed = 29
+    ses PR touchent d'habitude 29 fichiers (médiane) : taille XL (> 20), satisfait de Green à Gold.
+      vérifier dans : git-activity.json › pull_requests.median_files_changed = 29
 
 
-Comment monter d'un cran — vers 🥈 Silver
------------------------------------------
+Ce qui manque pour 🥈 Silver
+----------------------------
   1. Harness (à faire en premier) — ajouter une relance automatique bornée (N essais visibles) dans
                                     la CI ou un script, sur une commande du projet
      Ce qui le prouvera : repo-context/ › bounded retry
-     Aujourd'hui : git-activity.json › context_files.agents_md = true
+     Aujourd'hui : repo-context/ › bounded retry = none found
 
   2. Intervention — automatiser la validation (tests, lint, duplication) pour qu'aucune reprise
                     humaine ne soit nécessaire après ouverture
      Ce qui le prouvera : pull_requests.median_correction_commits_after_open
 
 
-Notes
------
-Écarté du calcul
-  · Harness : boucles : aucune relance bornée trouvée
-    (repo-context/ › bounded retry = none found)
-  · Intervention : merged_without_human_edit_after_open = 46/154 (corrobore, ne décide pas)
-    (git-activity.json › pull_requests.merged_without_human_edit_after_open = 46)
-  · En parallèle : pic observé : max 7, non retenu
-    (git-activity.json › parallelism.max_concurrent_branches = 7)
-  · La personne n'a pas répondu au questionnaire déclaratif.
-    profile.json — l'identité du profil et la liste des pièces annoncées.
-    (profile.json › note = La personne n'a pas répondu au questionnaire déclaratif.)
+Les preuves des axes qui limitent
+---------------------------------
+  Harness — 🥉 Copper : l'un des deux axes qui limitent le niveau
+    context engineering acquis : un fichier mémoire est versionné à la racine du dépôt ; Green et
+    Copper demandent en plus une règle, un agent ou un hook versionné.
+      vérifier dans : git-activity.json › context_files.agents_md = true
+    behavior acquis : 0 règles, 4 skills, 0 hooks, 2 agents ; au moins un compteur non nul, c'est le
+    « behavior » que Green et Copper demandent, Silver et Gold demandent en plus une boucle bornée.
+      vérifier dans : git-activity.json › context_files = {rules:0, skills:4, hooks:0, agents:2}
+    behavior : preuve structurelle trouvée dans repo-context/
+      repo-context/ — la copie des fichiers de configuration IA trouvés à la racine du dépôt.
+      vérifier dans : repo-context/.claude/agents/migration-auditor.md › file = present
+    boucles : aucune relance bornée trouvée
+      vérifier dans : repo-context/ › bounded retry = none found
 
-Qualité, citée sans jugement
-  · prérequis qualité, cité sans jugement : duplication = 2.4 %
-    sonar-measures.json — les mesures de qualité fournies avec le profil, citées sans jugement.
-    (sonar-measures.json › duplicated_lines_density = 2.4)
-  · prérequis qualité, cité sans jugement : couverture = 85 %
-    (sonar-measures.json › coverage = 85)
+  Intervention — 🥉 Copper : l'un des deux axes qui limitent le niveau
+    d'habitude 1 corrections après l'ouverture d'une PR (médiane) : aux étapes clés (0 < médiane <
+    2).
+      vérifier dans : git-activity.json › pull_requests.median_correction_commits_after_open = 1
+    taille de l'échantillon de PR (plancher 5 ; plancher « jamais » 12)
+      vérifier dans : git-activity.json › pull_requests.total = 154
 ```
 
 Lecture bloc par bloc (docs/specs/06-sortie-et-progression.md § 5) :
 
-- **l'en-tête, quatre lignes** — le niveau et l'identité ; la frise des sept niveaux, icône et
-  nom, le niveau atteint entre crochets ; la fiabilité de l'évaluation (le statut canonique,
-  puis ce qu'il veut dire) ; le niveau suivant et sa condition de passage — ici deux axes
-  bloquent à la fois, nommés l'un et l'autre, avec la phrase qui rappelle que le niveau est le
-  minimum des quatre axes.
-- « Ce qui a mené là » — une ligne de synthèse des quatre axes (niveau, `(bloque)` sur ceux qui
-  plafonnent), puis chaque axe qui bloque en détail : toutes ses `Evidence`, chacune avec sa
+- **l'en-tête, quatre lignes** — l'identité d'abord (`profile_id — role`) ; le niveau ; l'échelle
+  des sept niveaux, icône et nom, le niveau atteint entre crochets ; la fiabilité de l'évaluation (le statut canonique,
+  puis ce qu'il veut dire) ; puis, après le tableau, la ligne « Niveau suivant » et sa condition de passage — ici deux
+  axes limitent à la fois, nommés l'un et l'autre : c'est l'axe le plus bas qui donne le
+  niveau attribué.
+- le **tableau de synthèse** des quatre axes (colonnes Axe / Niveau / Constat, `← niveau
+  global` sur la rangée dont le niveau est le niveau final), juste sous l'en-tête ;
+- « Ce qui limite le niveau » — puis chaque axe qui bloque en détail : toutes ses `Evidence`, chacune avec sa
   phrase et son échelle, puis son pointeur `fichier › champ = valeur` sur sa propre ligne. La
   légende d'une pièce (`git-activity.json`, `repo-context/`…) précède son premier pointeur, une
   seule fois par sortie.
-- « Déjà acquis pour X » — les axes qui ne bloquent pas, avec le niveau atteint et l'`Evidence`
+- « Déjà acquis pour X » — rendu avant ce qui limite : les axes qui ne bloquent pas, avec le niveau atteint et l'`Evidence`
   qui l'a décidé ; un axe en fourchette y garderait sa mention `(fourchette)` et sa ligne
   `pour trancher`.
-- « Comment monter d'un cran » — un geste par axe bloquant, dans l'ordre d'actionnabilité
+- « Ce qui manque pour X » — un geste par axe qui limite, dans l'ordre d'actionnabilité
   (Harness d'abord) ; le premier porte la mention « à faire en premier » et la ligne
-  « Aujourd'hui : » — c'est la « prochaine quête », qui n'a plus de bloc à elle.
-- « Notes » — trois familles fixes, chacune une fois : Écarté du calcul (pics non retenus,
-  signaux qui corroborent sans décider), Pièces du dossier, Qualité citée sans jugement. Une
-  note qui redit un fait déjà rendu plus haut ne sort pas.
+  « Aujourd'hui : ». Les notes ne sortent plus sur un profil évalué (2026-08-31) : elles ne
+  disaient rien que les blocs pointés ne disent déjà.
 
 ## Les trois statuts
 
@@ -136,6 +129,7 @@ la largeur de repli — elle n'est jamais tronquée.
 
 ## Ce que l'outil n'imprime jamais
 
-Pas de sortie `--json`. Pas de jugement de qualité : Sonar est cité, jamais jugé. Pas de
+Pas de sortie `--json`. Pas de jugement de qualité : Sonar n'entre jamais dans le niveau (et n'apparaît plus sur un
+profil évalué). Pas de
 contenu déclaratif interprété : `declaratif.md` n'entre dans aucun calcul, seule sa présence
 est notée.

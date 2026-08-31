@@ -1,43 +1,37 @@
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
-Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le niveau
-                 est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 
+Niveau par axe
+  +--------------+---------------------------+--------------------------------+
+  | Axe          | Niveau                    | Constat                        |
+  +--------------+---------------------------+--------------------------------+
+  | Harness      | 🥉 Copper ← niveau global | behavior sans boucles          |
+  | En parallèle | 🥇 Gold                   | 4 (médiane)                    |
+  | Intervention | 🥉 Copper ← niveau global | aux étapes clés                |
+  | Taille       | 🥇 Gold                   | XL (median_files_changed = 29) |
+  +--------------+---------------------------+--------------------------------+
 
-Ce qui a mené là
-----------------
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
-
-  Harness — 🥉 Copper : l'un des deux axes qui bloquent
-    behavior sans boucles
-      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
-                          de contexte, sur la période du fichier.
-      git-activity.json › context_files.agents_md = true
-    règles et agents versionnés
-      git-activity.json › context_files.rules_count+skills_count+hooks_count+agents_count = 6
-    boucles non observées
-      repo-context/ — la copie des fichiers de configuration IA trouvés à la racine du dépôt.
-      repo-context/ › bounded retry = aucune relance bornée trouvée
-
-  Intervention — 🥉 Copper : l'un des deux axes qui bloquent
-    aux étapes clés
-      git-activity.json › pull_requests.median_correction_commits_after_open = 1
+Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux — c'est
+                 l'axe le plus bas qui donne le niveau attribué.
 
 
 Déjà acquis pour 🥈 Silver
 --------------------------
   En parallèle — 🥇 Gold
     4 (médiane)
-      git-activity.json › parallelism.median_concurrent_branches = 4
+      git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et fichiers
+                          de contexte, sur la période du fichier.
+      vérifier dans : git-activity.json › parallelism.median_concurrent_branches = 4
 
   Taille — 🥇 Gold
     XL (median_files_changed = 29)
-      git-activity.json › pull_requests.median_files_changed = 29
+      vérifier dans : git-activity.json › pull_requests.median_files_changed = 29
 
 
-Comment monter d'un cran — vers 🥈 Silver
------------------------------------------
+Ce qui manque pour 🥈 Silver
+----------------------------
   1. Harness (à faire en premier) — ajouter une relance automatique bornée (N essais visibles) dans
                                     la CI ou un script, sur une commande du projet
      Ce qui le prouvera : repo-context/ › bounded retry
@@ -48,16 +42,17 @@ Comment monter d'un cran — vers 🥈 Silver
      Ce qui le prouvera : pull_requests.median_correction_commits_after_open
 
 
-Notes
------
-Écarté du calcul
-  · pic observé, non retenu
-    (git-activity.json › parallelism.max_concurrent_branches = 7)
-  · pièce annoncée absente (n'a pas répondu au questionnaire)
-    profile.json — l'identité du profil et la liste des pièces annoncées.
-    (profile.json › note = declaratif.md absent)
+Les preuves des axes qui limitent
+---------------------------------
+  Harness — 🥉 Copper : l'un des deux axes qui limitent le niveau
+    behavior sans boucles
+      vérifier dans : git-activity.json › context_files.agents_md = true
+    règles et agents versionnés
+      vérifier dans : git-activity.json › context_files.rules_count+skills_count+hooks_count+agents_count = 6
+    boucles non observées
+      repo-context/ — la copie des fichiers de configuration IA trouvés à la racine du dépôt.
+      vérifier dans : repo-context/ › bounded retry = aucune relance bornée trouvée
 
-Qualité, citée sans jugement
-  · prérequis qualité : duplication 2,4 %, couverture 85 %
-    sonar-measures.json — les mesures de qualité fournies avec le profil, citées sans jugement.
-    (sonar-measures.json › duplicated_lines_density = 2.4)
+  Intervention — 🥉 Copper : l'un des deux axes qui limitent le niveau
+    aux étapes clés
+      vérifier dans : git-activity.json › pull_requests.median_correction_commits_after_open = 1
