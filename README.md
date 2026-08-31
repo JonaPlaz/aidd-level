@@ -17,8 +17,8 @@ Prérequis : [Docker](https://docs.docker.com/get-docker/) (Docker Desktop sur W
 macOS). Rien d'autre — pas de PHP local.
 
 ```
-make up            # une fois : construit et lance le conteneur, installe les dépendances
-make evaluate arthur
+make up               # une fois : construit et lance le conteneur, installe les dépendances
+make evaluate <nom>   # ex. make evaluate arthur
 ```
 
 `make evaluate <nom>` évalue le profil `profiles/<nom>` — **pour évaluer votre propre profil,
