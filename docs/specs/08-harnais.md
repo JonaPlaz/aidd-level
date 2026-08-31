@@ -206,9 +206,11 @@ journal avec l'URL de la PR ; `REVIEW_WAIT_MAX` est fixé d'après le délai mes
 
 ## 10. Ce que la vidéo montre
 
-Une issue étiquetée, le skill lancé, la PR ouverte avec la revue Codex, le merge automatique,
-puis `docker run … evaluate profiles/self` sur le dépôt lui-même. Deux minutes, muette,
-lisible sans le son (texte à l'écran, pas de voix).
+Version courte, arbitrée par Jonathan le 2026-08-31 (remplace le flux harnais complet du
+premier scénario) : le haut du README (installation et lancement), puis une évaluation
+réelle au terminal (`make evaluate arthur`, sortie narrative à l'écran), un profil incomplet
+en option. Une minute environ ; son libre, texte lisible sans le son. Le minutage vit dans
+`docs/scenario-video.md`.
 
 ## 11. Lancement autonome de la roadmap (chantier 17, 2026-08-30)
 
