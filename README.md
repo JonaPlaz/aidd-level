@@ -91,3 +91,5 @@ seuils, pourquoi) : `docs/methode.md`.
 - `profiles/README.md` — les entrées, ce que l'outil lit.
 - `src/README.md` — l'architecture du projet, hexagonale à trois couches.
 - `.claude/README.md` — l'architecture IA, le harnais.
+- `docs/demo.mp4` — la démonstration en vidéo (une minute) : le README, puis une évaluation
+  réelle au terminal.

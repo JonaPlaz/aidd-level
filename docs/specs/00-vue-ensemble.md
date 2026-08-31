@@ -162,8 +162,9 @@ Les quatre profils fournis sont recopiés dans `profiles/` avec attribution MIT
 Livrables inchangés : `README.md`, `docs/methode.md` (une page : ce qu'on mesure, pourquoi, le
 flow suivi ; cite le framework AIDD examiné et écarté, les conventions GenAI OpenTelemetry
 connues et écartées, et le seul geste manuel — l'activation de la revue Codex),
-`docs/calibration.md`, `docs/harness.md`, `ROADMAP.md`, `docs/journal.md`, une vidéo ou GIF de
-deux minutes, muette.
+`docs/calibration.md`, `docs/harness.md`, `ROADMAP.md`, `docs/journal.md`, une vidéo courte
+(une minute environ, son libre, texte lisible sans le son — arbitré par Jonathan le
+2026-08-31 ; minutage : `docs/scenario-video.md`).
 
 **Amendé le 2026-08-30 — chantier 19, issue #56, périmètre élargi par Jonathan le même jour.**
 L'issue prévoyait deux panneaux (`.claude/README.md`, `src/README.md`) ; le périmètre élargi
@@ -581,4 +582,5 @@ main dans la PR ; leur résultat va au journal. `make test`, `make lint`, `make 
 
 L'outil tourne sur son propre dépôt : un profil `profiles/self/` est fabriqué depuis le dépôt
 rendu (compteurs de contexte, médianes des PR réelles, branches concurrentes constatées). Le
-résultat figure dans la vidéo. Un dépôt qui se noterait Red se disqualifie seul.
+résultat se rejoue par `make self` (la vidéo courte du 2026-08-31 ne le montre plus). Un dépôt
+qui se noterait Red se disqualifie seul.
