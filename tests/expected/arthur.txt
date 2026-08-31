@@ -19,9 +19,10 @@ Ce qui a mené là
     « behavior » que Green et Copper demandent, Silver et Gold demandent en plus une boucle bornée.
       git-activity.json › context_files = {rules:0, skills:4, hooks:0, agents:2}
     behavior : preuve structurelle trouvée dans repo-context/
-      repo-context/.claude/agents/migration-auditor.md — la copie des fichiers de configuration IA
-                                                         trouvés à la racine du dépôt.
+      repo-context/ — la copie des fichiers de configuration IA trouvés à la racine du dépôt.
       repo-context/.claude/agents/migration-auditor.md › file = present
+    boucles : aucune relance bornée trouvée
+      repo-context/ › bounded retry = none found
 
   Intervention — 🥉 Copper : l'un des deux axes qui bloquent
     médiane 1 corrections après ouverture : aux étapes clés (0 < médiane < 2).
@@ -46,7 +47,7 @@ Comment monter d'un cran — vers 🥈 Silver
   1. Harness (à faire en premier) — ajouter une relance automatique bornée (N essais visibles) dans
                                     la CI ou un script, sur une commande du projet
      Ce qui le prouvera : repo-context/ › bounded retry
-     Aujourd'hui : git-activity.json › context_files.agents_md = true
+     Aujourd'hui : repo-context/ › bounded retry = none found
 
   2. Intervention — automatiser la validation (tests, lint, duplication) pour qu'aucune reprise
                     humaine ne soit nécessaire après ouverture
@@ -56,8 +57,6 @@ Comment monter d'un cran — vers 🥈 Silver
 Notes
 -----
 Écarté du calcul
-  · Harness : boucles : aucune relance bornée trouvée
-    (repo-context/ › bounded retry = none found)
   · Intervention : merged_without_human_edit_after_open = 46/154 (corrobore, ne décide pas)
     (git-activity.json › pull_requests.merged_without_human_edit_after_open = 46)
   · En parallèle : pic observé : max 7, non retenu

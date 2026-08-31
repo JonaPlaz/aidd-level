@@ -91,7 +91,7 @@ final class TextRendererTest extends TestCase
             $rendered,
         );
         self::assertStringContainsString(
-            'repo-context/ › retry_pattern = aucune relance bornée trouvée',
+            'repo-context/ › bounded retry = aucune relance bornée trouvée',
             $rendered,
         );
         self::assertStringContainsString(
@@ -134,8 +134,31 @@ final class TextRendererTest extends TestCase
         self::assertStringContainsString('1. Harness (à faire en premier)', $rendered);
         self::assertStringNotContainsString('2. Intervention (à faire en premier)', $rendered);
         self::assertStringContainsString('Ce qui le prouvera : repo-context/ › bounded retry', $rendered);
+        // docs/specs/06 § 5.5: "Aujourd'hui" is the state the proof field itself is coming
+        // from — the pointer that observed `repo-context/ › bounded retry`, never an
+        // unrelated first Evidence (Codex review of PR #72, remark 3).
         self::assertStringContainsString(
-            'Aujourd\'hui : git-activity.json › context_files.agents_md = true',
+            'Aujourd\'hui : repo-context/ › bounded retry = aucune relance bornée trouvée',
+            $rendered,
+        );
+    }
+
+    /**
+     * docs/specs/06 § 5.5, § 12 test 3: when nothing observed yet matches
+     * `Recommendation::$proofField`, the quest says so explicitly instead of omitting the
+     * line or falling back to an unrelated pointer (Codex review of PR #72, remark 3).
+     */
+    #[Test]
+    public function theNextQuestSaysSoExplicitlyWhenNoPointerMatchesTheProofField(): void
+    {
+        $rendered = new TextRenderer()->render($this->lowConfidenceAssessment());
+
+        self::assertStringContainsString(
+            'Ce qui le prouvera : context_files.rules_count, skills_count, hooks_count, agents_count',
+            $rendered,
+        );
+        self::assertStringContainsString(
+            "Aujourd'hui : aucune preuve pointée pour ce champ pour l'instant.",
             $rendered,
         );
     }
@@ -171,6 +194,22 @@ final class TextRendererTest extends TestCase
         self::assertStringContainsString('évalué, confiance basse', $rendered);
         self::assertStringContainsString('entre 🔹 Blue et 🥉 Copper', $rendered);
         self::assertStringContainsString('4 PR de plus', $rendered);
+    }
+
+    /**
+     * docs/specs/06 § 12, test 1 (P1, Codex review of PR #72, remark 1): `floor === ceiling`
+     * must never stand in for `Assessment::$status` — a `Range` masked by a lower `Confirmed`
+     * bottleneck (Intervention here, floor Silver, capped from view by Harness at Copper) is
+     * still `évalué, confiance basse`, never `évalué`.
+     */
+    #[Test]
+    public function aRangeMaskedByALowerConfirmedBottleneckStaysLowConfidence(): void
+    {
+        $rendered = new TextRenderer()->render($this->maskedRangeAssessment());
+
+        self::assertStringContainsString('Fiabilité : évalué, confiance basse', $rendered);
+        self::assertStringNotContainsString('Fiabilité : évalué —', $rendered);
+        self::assertStringContainsString('Intervention (manque 3 PR)', $rendered);
     }
 
     /**
@@ -423,7 +462,7 @@ final class TextRendererTest extends TestCase
                     'règles et agents versionnés',
                     new Pointer('git-activity.json', 'context_files.rules_count+skills_count+hooks_count+agents_count', '6'),
                 ),
-                new Evidence('boucles non observées', new Pointer('repo-context/', 'retry_pattern', 'aucune relance bornée trouvée')),
+                new Evidence('boucles non observées', new Pointer('repo-context/', 'bounded retry', 'aucune relance bornée trouvée')),
             ],
         );
 
@@ -526,6 +565,71 @@ final class TextRendererTest extends TestCase
             verdicts: $verdicts,
             recommendations: $recommendations,
             notes: $notes,
+        );
+    }
+
+    /**
+     * docs/specs/06 § 12, test 1 (P1, Codex review of PR #72, remark 1): a `Range` masked by a
+     * lower `Confirmed` bottleneck can leave `Assessment::$level === $ceiling` while the
+     * result is still unconfirmed (`LevelRule::apply()`'s own docblock) — the canonical
+     * `évalué, confiance basse` label must come from `$status`, never from comparing the two
+     * levels.
+     */
+    private function maskedRangeAssessment(): Assessment
+    {
+        $identity = new ProfileIdentity('masked', 'développeur solo', [], []);
+
+        $harness = new AxisVerdict(
+            axis: Axis::Harness,
+            level: Level::Copper,
+            confidence: new Confirmed(),
+            evidences: [
+                new Evidence('context engineering et behavior acquis', new Pointer('git-activity.json', 'context_files.agents_md', 'true')),
+            ],
+        );
+
+        // Silver–Gold: its own floor (Silver) sits above the Harness bottleneck (Copper), so
+        // it never caps the floor — but it is still a Range, so the result cannot be Confirmed.
+        $intervention = new AxisVerdict(
+            axis: Axis::Intervention,
+            level: Level::Silver,
+            confidence: new Range(Level::Silver, Level::Gold, 3),
+            evidences: [
+                new Evidence('jamais, une fois la tâche cadrée', new Pointer('git-activity.json', 'pull_requests.median_correction_commits_after_open', '0')),
+            ],
+        );
+
+        $size = new AxisVerdict(
+            axis: Axis::Size,
+            level: Level::Gold,
+            confidence: new Confirmed(),
+            evidences: [
+                new Evidence('XL (median_files_changed = 25)', new Pointer('git-activity.json', 'pull_requests.median_files_changed', '25')),
+            ],
+        );
+
+        $parallelism = new AxisVerdict(
+            axis: Axis::Parallelism,
+            level: Level::Gold,
+            confidence: new Confirmed(),
+            evidences: [
+                new Evidence('5 chantiers de front en médiane', new Pointer('git-activity.json', 'parallelism.median_concurrent_branches', '5')),
+            ],
+        );
+
+        $cappingAxes = [Axis::Harness];
+        $verdicts = [$size, $harness, $intervention, $parallelism];
+        $recommendations = new RecommendationPolicy()->recommend($verdicts, $cappingAxes, Level::Silver);
+
+        return new Assessment(
+            status: AssessmentStatus::LowConfidence,
+            identity: $identity,
+            level: Level::Copper,
+            ceiling: Level::Copper,
+            cappingAxes: $cappingAxes,
+            verdicts: $verdicts,
+            recommendations: $recommendations,
+            notes: [],
         );
     }
 

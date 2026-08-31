@@ -41,7 +41,7 @@ Comment monter d'un cran — vers 🟢 Green
                                     câbler le hook dans la configuration pour qu'il s'exécute sans
                                     coopération du modèle
      Ce qui le prouvera : context_files.rules_count, skills_count, hooks_count, agents_count
-     Aujourd'hui : git-activity.json › context_files.agents_md = true
+     Aujourd'hui : aucune preuve pointée pour ce champ pour l'instant.
      pour trancher : 4 PR de plus (échantillon insuffisant)
 
 

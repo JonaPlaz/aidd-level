@@ -18,7 +18,7 @@ Ce qui a mené là
       git-activity.json › context_files.rules_count+skills_count+hooks_count+agents_count = 6
     boucles non observées
       repo-context/ — la copie des fichiers de configuration IA trouvés à la racine du dépôt.
-      repo-context/ › retry_pattern = aucune relance bornée trouvée
+      repo-context/ › bounded retry = aucune relance bornée trouvée
 
   Intervention — 🥉 Copper : l'un des deux axes qui bloquent
     aux étapes clés
@@ -41,7 +41,7 @@ Comment monter d'un cran — vers 🥈 Silver
   1. Harness (à faire en premier) — ajouter une relance automatique bornée (N essais visibles) dans
                                     la CI ou un script, sur une commande du projet
      Ce qui le prouvera : repo-context/ › bounded retry
-     Aujourd'hui : git-activity.json › context_files.agents_md = true
+     Aujourd'hui : repo-context/ › bounded retry = aucune relance bornée trouvée
 
   2. Intervention — automatiser la validation (tests, lint, duplication) pour qu'aucune reprise
                     humaine ne soit nécessaire après ouverture
