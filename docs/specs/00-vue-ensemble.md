@@ -328,8 +328,8 @@ puis
 1. **Installation et lancement** — les deux blocs explicitement titrés « hors du conteneur » et
    « dans le conteneur » (§ 6), le repli sans `make` et l'image autonome ;
 2. **Commandes** — la table des cibles `make` (§ 6) ;
-3. **La sortie** — les **quatre premières lignes** d'une sortie réelle (frise, axe bloquant,
-   niveau, atteint / visé), puis **une ligne par bloc** nommant ce que le bloc contient ;
+3. **La sortie** — le **bloc d'en-tête entier** d'une sortie réelle, recopié jusqu'à la première
+   ligne vide (spec 06 § 5.1), puis **une ligne par bloc** nommant ce que le bloc contient ;
 4. un bloc final de renvois, **une ligne par panneau** (§ 7.2) — tranché le 2026-08-30 : il est
    gardé, et il est **de la navigation, pas du contenu**. Une ligne de renvoi ne dit que le nom
    du panneau et son sujet ; dès qu'elle explique quelque chose, elle est du contenu et redescend
