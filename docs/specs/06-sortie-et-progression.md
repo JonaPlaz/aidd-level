@@ -138,9 +138,10 @@ jamais une. C'est un manque de la table, il se corrige dans la table.
 ## 5. Format de sortie
 
 Icône **et** nom du niveau, jamais la couleur seule ni l'icône seule (lecteur daltonien parmi les
-lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-tête** (§ 5.1),
-**ce qui a mené là** — la ligne de synthèse des quatre axes, l'axe qui bloque détaillé (§ 5.2),
-puis les autres axes (§ 5.4) —, **comment monter d'un cran** (§ 5.5), les **notes** (§ 5.6).
+lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-tête** (§ 5.1), le **tableau de synthèse** des quatre axes (§ 5.4), **déjà acquis**
+(§ 5.4), **ce qui limite le niveau** — chaque axe limitant détaillé (§ 5.2) —, **comment monter
+d'un cran** (§ 5.5), les **notes** (§ 5.6). Ordre narratif arbitré le 2026-08-31 : l'état, les
+forces, puis ce qui limite, puis les gestes — jamais un manque avant les acquis.
 
 ### 5.1 L'en-tête — cinq lignes logiques
 
@@ -184,15 +185,14 @@ qu'elle explique quelque chose. C'est ce qui remplace « axe bloquant … (ex æ
 que la sortie n'emploie plus (§ 10), sans rien perdre de l'invariant : les axes ex æquo sont tous
 nommés, dans l'ordre du § 5.3, et aucune moyenne n'est jamais rendue.
 
-### 5.2 *Ce qui a mené là* — l'axe qui bloque, détaillé
+### 5.2 *Ce qui limite le niveau* — l'axe qui limite, détaillé
 
-Le bloc s'ouvre sur la ligne de synthèse du § 5.4, puis vient une entrée par axe bloquant, dans
-l'ordre du § 5.3. Chaque entrée porte, sur sa ligne de tête, le nom de l'axe, le niveau qu'il
+Le tableau du § 5.4 est rendu plus haut, sous l'en-tête ; ce bloc porte une entrée par axe
+limitant, dans l'ordre du § 5.3. Chaque entrée porte, sur sa ligne de tête, le nom de l'axe, le niveau qu'il
 atteint (icône + nom) et le fait qu'il bloque ; puis ses `Evidence` à la grammaire du § 2.
 
 ```
-Ce qui a mené là
-  [le tableau de synthèse du § 5.4 — une rangée par axe]
+Ce qui limite le niveau
 
   Harness — 🥉 Copper : l'un des deux axes qui bloquent
     Un fichier mémoire est versionné à la racine du dépôt.
@@ -227,7 +227,7 @@ dépendance au terminal (arbitré par Jonathan le 2026-08-31). Il ne porte aucun
 sa colonne « Constat » se replie (constante SYNTHESIS_CLAIM_MAX_WIDTH, bornée pour que la rangée
 la plus large reste sous MAX_WIDTH), rien de vérifiable n'y est jamais coupé.
 
-**Le tableau de synthèse**, en tête du bloc *Ce qui a mené là*, juste sous son titre —
+**Le tableau de synthèse**, rendu juste sous l'en-tête, avant *Déjà acquis* —
 colonnes Axe / Niveau / Constat, une rangée par axe, le « Constat » étant la phrase de la
 première `Evidence` de l'axe (celle qui décide) :
 
@@ -235,19 +235,19 @@ première `Evidence` de l'axe (celle qui décide) :
   +--------------+--------------------+----------------------------------------------------+
   | Axe          | Niveau             | Constat                                            |
   +--------------+--------------------+----------------------------------------------------+
-  | Harness      | 🥉 Copper (bloque) | context engineering acquis : un fichier mémoire …  |
+  | Harness      | 🥉 Copper ← niveau global | context engineering acquis : un fichier mémoire …  |
   | En parallèle | 🥇 Gold            | 4 chantiers de front en médiane, habituellement …  |
   +--------------+--------------------+----------------------------------------------------+
 ```
 
 - **les quatre axes**, dans l'ordre du § 5.3 — Harness, En parallèle, Intervention, Taille —,
-  séparés par ` · ` ;
-- chacun : nom de l'axe, niveau atteint **icône et nom**, et une mention entre parenthèses quand
-  il y a lieu — `(bloque)` pour un axe qui plafonne, `(fourchette)` pour un axe non tranché,
-  `(bloque, fourchette)` pour les deux. **Jamais la couleur ni l'icône seule** pour dire lequel
-  bloque ;
-- un axe en fourchette y montre **plancher et plafond** : `Intervention 🔹 Blue–🥉 Copper
-  (fourchette)` ;
+  une rangée chacun ;
+- chacun : nom de l'axe, niveau atteint **icône et nom**, et une mention quand il y a lieu —
+  `← niveau global` sur la rangée (ou les rangées ex æquo) dont le niveau est le niveau final
+  (« bloque » était du jargon, remplacé le 2026-08-31), `(incertain)` pour un axe non tranché.
+  **Jamais la couleur ni l'icône seule** pour dire lequel limite ;
+- un axe en fourchette y montre **plancher et plafond** : `entre 🔹 Blue et 🥉 Copper
+  (incertain)` ;
 - **c'est une exception nommée à la règle 4** : la synthèse **récapitule des lignes pointées
   rendues juste en dessous**, elle n'affirme rien de neuf. Elle est exclue du contrôle du § 12 au
   même titre que la légende du § 4. Avec la légende et la pièce nommée par son chemin en `non
@@ -592,11 +592,11 @@ S'y ajoutent :
    constante**, jamais réécrite dans le test.
 4. **Les quatre axes sont dans la sortie** (§ 5.4) : le tableau de synthèse les porte tous les
    quatre, une rangée par axe dans l'ordre de `RecommendationPolicy::AXIS_ORDER`, chacun avec son niveau (icône +
-   nom), `(bloque)` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne, et
-   `(fourchette)` sur ceux — et seulement ceux — dont la confiance est un `Range` ; chaque axe qui
+   nom), `← niveau global` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne, et
+   `(incertain)` sur ceux — et seulement ceux — dont la confiance est un `Range` ; chaque axe qui
    ne bloque pas se retrouve ensuite sous `Déjà acquis`, avec son niveau et au moins un pointeur.
 5. **Un axe en fourchette qui ne bloque pas ne perd rien** (§ 5.4) : sur `fixtures/short-sample`,
-   Intervention et Taille — qui ne plafonnent pas — portent chacune leur mention `(fourchette)`,
+   Intervention et Taille — qui ne plafonnent pas — portent chacune leur mention `(incertain)`,
    leur ligne `fourchette : entre … et …` et leur ligne `pour trancher : …` ; la ligne *Fiabilité*
    les nomme toutes les deux, en plus de l'axe qui plafonne.
 6. **La condition de passage** (§ 5.1), un cas par ligne de la table du § 5.1 : `perceval` (un
