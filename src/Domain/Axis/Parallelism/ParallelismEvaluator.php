@@ -121,17 +121,17 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
 
         return match ($level) {
             Level::White => sprintf(
-                '%s chantier concurrent en médiane : aucun, sous le seuil de %d de Green.',
+                "d'habitude %s chantier mené en même temps (médiane) : sous le seuil de %d de Green.",
                 $value,
                 ParallelismThresholds::MEDIAN_SOME_MIN,
             ),
             Level::Green => self::greenClaim($median),
             Level::Gold => sprintf(
-                '%s chantiers de front en médiane, habituellement : au moins le seuil de %d de Gold.',
+                "d'habitude %s chantiers menés en même temps (médiane) : au moins le seuil de %d de Gold.",
                 $value,
                 ParallelismThresholds::MEDIAN_HABITUAL_MIN,
             ),
-            default => sprintf('%s chantiers concurrents en médiane', $value),
+            default => sprintf("d'habitude %s chantiers menés en même temps (médiane)", $value),
         };
     }
 
@@ -145,7 +145,7 @@ final readonly class ParallelismEvaluator implements AxisEvaluator
         }
 
         return sprintf(
-            '%s chantiers de front en médiane, sous le seuil de %d de Copper.',
+            "d'habitude %s chantiers menés en même temps (médiane), sous le seuil de %d de Copper.",
             self::formatNumber($median),
             ParallelismThresholds::MEDIAN_HABITUAL_MIN,
         );

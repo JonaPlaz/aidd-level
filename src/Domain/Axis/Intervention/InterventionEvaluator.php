@@ -166,27 +166,27 @@ final class InterventionEvaluator implements AxisEvaluator
 
         return match ($level) {
             Level::Red => sprintf(
-                'médiane %s corrections après ouverture : %s (≥ %d).',
+                "d'habitude %s corrections après l'ouverture d'une PR (médiane) : %s (≥ %d).",
                 $value,
                 self::CLAIM_MAJORITY,
                 InterventionThresholds::MEDIAN_MAJORITY_MIN,
             ),
             Level::Blue => sprintf(
-                'médiane %s corrections après ouverture : %s (%d ≤ médiane < %d).',
+                "d'habitude %s corrections après l'ouverture d'une PR (médiane) : %s (%d ≤ médiane < %d).",
                 $value,
                 self::CLAIM_PARTIAL,
                 InterventionThresholds::MEDIAN_PARTIAL,
                 InterventionThresholds::MEDIAN_MAJORITY_MIN,
             ),
             Level::Copper => sprintf(
-                'médiane %s corrections après ouverture : %s (%d < médiane < %d).',
+                "d'habitude %s corrections après l'ouverture d'une PR (médiane) : %s (%d < médiane < %d).",
                 $value,
                 self::CLAIM_KEY_STEPS,
                 InterventionThresholds::MEDIAN_NEVER,
                 InterventionThresholds::MEDIAN_PARTIAL,
             ),
             Level::Silver => sprintf(
-                'médiane %s correction après ouverture : %s (= %d).',
+                "d'habitude %s correction après l'ouverture d'une PR (médiane) : %s (= %d).",
                 $value,
                 self::CLAIM_NEVER,
                 InterventionThresholds::MEDIAN_NEVER,

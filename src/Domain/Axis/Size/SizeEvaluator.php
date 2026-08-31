@@ -183,22 +183,22 @@ final readonly class SizeEvaluator implements AxisEvaluator
 
         return match ($band) {
             SizeBand::S => sprintf(
-                '%s fichiers modifiés en médiane : bande S (≤ %d), satisfait Red.',
+                "ses PR touchent d'habitude %s fichiers (médiane) : taille S (≤ %d), satisfait Red.",
                 $value,
                 SizeThresholds::FILES_S_MAX,
             ),
             SizeBand::M => sprintf(
-                '%s fichiers modifiés en médiane : bande M (≤ %d), satisfait Blue.',
+                "ses PR touchent d'habitude %s fichiers (médiane) : taille M (≤ %d), satisfait Blue.",
                 $value,
                 SizeThresholds::FILES_M_MAX,
             ),
             SizeBand::L => sprintf(
-                '%s fichiers modifiés en médiane : bande L (≤ %d), satisfait de Green à Gold.',
+                "ses PR touchent d'habitude %s fichiers (médiane) : taille L (≤ %d), satisfait de Green à Gold.",
                 $value,
                 SizeThresholds::FILES_L_MAX,
             ),
             SizeBand::XL => sprintf(
-                '%s fichiers modifiés en médiane : bande XL (> %d), satisfait de Green à Gold.',
+                "ses PR touchent d'habitude %s fichiers (médiane) : taille XL (> %d), satisfait de Green à Gold.",
                 $value,
                 SizeThresholds::FILES_L_MAX,
             ),
@@ -214,22 +214,22 @@ final readonly class SizeEvaluator implements AxisEvaluator
 
         return match ($band) {
             SizeBand::S => sprintf(
-                '%s lignes modifiées en médiane : bande S (≤ %d), satisfait Red.',
+                "ses PR touchent d'habitude %s lignes (médiane) : taille S (≤ %d), satisfait Red.",
                 $value,
                 SizeThresholds::LINES_S_MAX,
             ),
             SizeBand::M => sprintf(
-                '%s lignes modifiées en médiane : bande M (≤ %d), satisfait Blue.',
+                "ses PR touchent d'habitude %s lignes (médiane) : taille M (≤ %d), satisfait Blue.",
                 $value,
                 SizeThresholds::LINES_M_MAX,
             ),
             SizeBand::L => sprintf(
-                '%s lignes modifiées en médiane : bande L (≤ %d), satisfait de Green à Gold.',
+                "ses PR touchent d'habitude %s lignes (médiane) : taille L (≤ %d), satisfait de Green à Gold.",
                 $value,
                 SizeThresholds::LINES_L_MAX,
             ),
             SizeBand::XL => sprintf(
-                '%s lignes modifiées en médiane : bande XL (> %d), satisfait de Green à Gold.',
+                "ses PR touchent d'habitude %s lignes (médiane) : taille XL (> %d), satisfait de Green à Gold.",
                 $value,
                 SizeThresholds::LINES_L_MAX,
             ),
