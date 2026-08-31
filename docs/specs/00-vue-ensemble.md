@@ -326,11 +326,12 @@ dans les panneaux** — le README les pointe.
 Le README porte donc, dans cet ordre : le titre et **une** phrase disant ce que fait l'outil ;
 puis
 
-1. **Installation et lancement** — les deux blocs explicitement titrés « hors du conteneur » et
-   « dans le conteneur » (§ 6), le repli sans `make` et l'image autonome ;
+1. **Installation et lancement** — la notice en deux lignes du § 6 (`make up`, puis
+   `make evaluate <profil>`) ; pas de repli sans `make` (§ 6, arbitré le 2026-08-31) ;
 2. **Commandes** — la table des cibles `make` (§ 6) ;
-3. **La sortie** — le **bloc d'en-tête entier** d'une sortie réelle, recopié jusqu'à la première
-   ligne vide (spec 06 § 5.1), puis **une ligne par bloc** nommant ce que le bloc contient ;
+3. **La sortie** — la **sortie réelle complète** d'un profil, recopiée telle quelle depuis une
+   exécution (arbitré par Jonathan le 2026-08-31 : elle se lit d'elle-même, aucune liste de
+   blocs à côté) ;
 4. un bloc final de renvois, **une ligne par panneau** (§ 7.2) — tranché le 2026-08-30 : il est
    gardé, et il est **de la navigation, pas du contenu**. Une ligne de renvoi ne dit que le nom
    du panneau et son sujet ; dès qu'elle explique quelque chose, elle est du contenu et redescend
@@ -339,8 +340,9 @@ puis
 **Le README montre, les panneaux définissent.** Conséquences, qui sont ce que « rien d'autre »
 veut dire ici :
 
-- la **sortie réelle complète** ne figure qu'une fois, dans `docs/sortie.md` — le README n'en
-  montre que la tête ;
+- la sortie réelle vit à deux endroits pour deux lecteurs : **brute dans le README** (on la
+  regarde), **commentée dans `docs/sortie.md`** (on la comprend) — ce sont deux usages, pas une
+  duplication de prose ;
 - le README **ne définit ni les trois statuts, ni le format de pointeur, ni la règle du
   minimum** : il les laisse à `docs/sortie.md` et aux specs ;
 - les sections actuelles « Ce que fait l'outil », « Comment fonctionne le calcul », « Exemple de
