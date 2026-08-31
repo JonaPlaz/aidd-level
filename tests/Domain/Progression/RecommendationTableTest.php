@@ -70,7 +70,8 @@ final class RecommendationTableTest extends TestCase
         $table = new RecommendationTable();
 
         self::assertSame(
-            "aucun geste : l'axe plafonne à Silver par construction",
+            "aucun geste : l'axe plafonne à Silver par construction — « cadrage compris » "
+            .'n\'est pas observable dans les pièces fournies',
             $table->gestureFor(Axis::Intervention, Level::Gold),
         );
     }

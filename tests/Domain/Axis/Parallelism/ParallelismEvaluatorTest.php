@@ -132,7 +132,7 @@ final class ParallelismEvaluatorTest extends TestCase
     {
         $verdict = new ParallelismEvaluator()->evaluate(self::profile(1.0, 1, self::ABOVE_FLOOR_PR_TOTAL));
 
-        self::assertSame('un chantier à la fois', $verdict->evidences[0]->claim);
+        self::assertSame('un chantier à la fois : sous le seuil de 3 de Copper.', $verdict->evidences[0]->claim);
     }
 
     #[Test]
@@ -141,7 +141,7 @@ final class ParallelismEvaluatorTest extends TestCase
         $verdict = new ParallelismEvaluator()->evaluate(self::profile(2.0, 2, self::ABOVE_FLOOR_PR_TOTAL));
 
         self::assertSame(
-            '2 chantiers de front en médiane, sous le seuil de 3 de Copper',
+            '2 chantiers de front en médiane, sous le seuil de 3 de Copper.',
             $verdict->evidences[0]->claim,
         );
     }
