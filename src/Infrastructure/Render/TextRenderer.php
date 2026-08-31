@@ -128,14 +128,16 @@ final class TextRenderer
     private function notAssessableBlocks(Assessment $assessment): array
     {
         $identity = $assessment->identity;
+        // A long profile_id or role must not push the identity line past MAX_WIDTH here
+        // either (Codex review of PR #72, remark 7).
         $header = null !== $identity
-            ? sprintf('⛔ Non évaluable — %s (%s)', $identity->id, $identity->role)
+            ? $this->wrapped('⛔ Non évaluable — ', sprintf('%s (%s)', $identity->id, $identity->role))
             : '⛔ Non évaluable';
 
         $identityBlock = implode("\n", [
             'Ce qui a été lu',
             null !== $identity
-                ? sprintf('  identité : %s (%s)', $identity->id, $identity->role)
+                ? $this->wrapped('  identité : ', sprintf('%s (%s)', $identity->id, $identity->role))
                 : "  rien : le dossier ou profile.json n'a pas pu être lu",
         ]);
 
@@ -168,17 +170,27 @@ final class TextRenderer
 
     private function header(Assessment $assessment, Level $floor, Level $ceiling): string
     {
-        $identity = null !== $assessment->identity
-            ? sprintf(' — %s (%s)', $assessment->identity->id, $assessment->identity->role)
-            : '';
+        // docs/specs/06 § 6: the canonical status label — "évalué" vs "évalué, confiance
+        // basse" — is driven by `Assessment::$status`, never by comparing `$floor` and
+        // `$ceiling`: a `Range` masked by a lower `Confirmed` bottleneck can legitimately
+        // leave floor === ceiling while `LevelRule` still reports the result unconfirmed
+        // (LevelRule::apply() docblock; Codex review of PR #72, remark 1).
+        $evaluated = AssessmentStatus::Evaluated === $assessment->status;
 
-        $line1 = $floor === $ceiling
-            ? sprintf('Niveau AIDD : %s%s', $floor->label(), $identity)
-            : sprintf('Niveau AIDD : entre %s et %s%s', $floor->label(), $ceiling->label(), $identity);
+        $levelPart = $evaluated
+            ? sprintf('Niveau AIDD : %s', $floor->label())
+            : sprintf('Niveau AIDD : entre %s et %s', $floor->label(), $ceiling->label());
 
-        $line2 = $floor === $ceiling ? $this->levelBar($floor) : $this->levelRangeBar($floor, $ceiling);
+        // A long profile_id or role must not push the identity line past MAX_WIDTH — only
+        // pointer lines are exempt from wrapping (§ 2, invariant 3; Codex review of PR #72,
+        // remark 7).
+        $line1 = null !== $assessment->identity
+            ? $this->wrapped($levelPart.' — ', sprintf('%s (%s)', $assessment->identity->id, $assessment->identity->role))
+            : $levelPart;
 
-        $line3 = $floor === $ceiling
+        $line2 = $evaluated ? $this->levelBar($floor) : $this->levelRangeBar($floor, $ceiling);
+
+        $line3 = $evaluated
             ? 'Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.'
             : $this->lowConfidenceReliabilityLine($assessment);
 
@@ -392,7 +404,10 @@ final class TextRenderer
                 $verdict->level->label(),
                 $ranged ? ' (fourchette)' : '',
             );
-            array_push($lines, ...$this->axisBodyLines($verdict, includeTranche: true));
+            // docs/specs/06 § 5.4, rule "pas de détail": a non-blocking axis only rends the
+            // Evidence that decided its level, never the full fact-by-fact detail reserved to
+            // a blocking axis (§ 5.2, rule 3 — Codex review of PR #72, remark 5).
+            array_push($lines, ...$this->axisBodyLines($verdict, includeTranche: true, onlyDecisiveEvidence: true));
         }
 
         return implode("\n", $lines);
@@ -401,19 +416,27 @@ final class TextRenderer
     // -- Shared axis-detail rendering (§ 2, § 6.1) -------------------------------------------
 
     /**
-     * Every `Evidence` of the axis (§ 2, invariant 1 — never only the first one), then, for a
-     * `Range` axis, every `Note` naming an absent field (§ 6.1, "ce qui manque") and the
-     * `fourchette` line (§ 6.1, "ce qui empêche" — plancher et plafond disent jusqu'où). The
-     * `pour trancher` line (§ 6.1, "le geste") is only rendered here for an axis that does not
-     * block (§ 5.4) — a blocking axis carries it under its gesture instead (§ 5.5).
+     * Every `Evidence` of the axis (§ 2, invariant 1 — never only the first one) when the axis
+     * blocks, or only the first (decisive) one when it does not (§ 5.4, "pas de détail" —
+     * Codex review of PR #72, remark 5). Then every `Note` this axis's own explanation still
+     * owes the reader (§ 12.1) — a missing field (§ 6.1, "ce qui manque"), the applicable
+     * pull-request floor when the sample fell short of it (Codex review of PR #72, remark 2:
+     * the floor must stay in the axis's own block, not vanish with the generic Notes filter),
+     * and any fact structurally decisive for the axis's own level (Codex review of PR #72,
+     * remark 8: Harness's "no bounded loop found"/"repo-context/ absent" cap it at Copper,
+     * they are not corroboration to discard). Finally, for a `Range` axis, the `fourchette`
+     * line (§ 6.1, "ce qui empêche" — plancher et plafond disent jusqu'où). The `pour trancher`
+     * line (§ 6.1, "le geste") is only rendered here for an axis that does not block (§ 5.4) —
+     * a blocking axis carries it under its gesture instead (§ 5.5).
      *
      * @return list<string>
      */
-    private function axisBodyLines(AxisVerdict $verdict, bool $includeTranche): array
+    private function axisBodyLines(AxisVerdict $verdict, bool $includeTranche, bool $onlyDecisiveEvidence = false): array
     {
         $lines = [];
 
-        foreach ($verdict->evidences as $evidence) {
+        $evidences = $onlyDecisiveEvidence ? \array_slice($verdict->evidences, 0, 1) : $verdict->evidences;
+        foreach ($evidences as $evidence) {
             $key = $evidence->claim.'|'.(string) $evidence->pointer;
             if (isset($this->renderedEvidence[$key])) {
                 continue;
@@ -422,13 +445,14 @@ final class TextRenderer
             array_push($lines, ...$this->evidenceLines($evidence, indent: 4));
         }
 
-        if ($verdict->confidence instanceof Range) {
-            foreach ($verdict->notes as $note) {
-                if ('absent' === $note->pointer->value) {
-                    array_push($lines, ...$this->noteLines($note, indent: 4));
-                }
+        $ranged = $verdict->confidence instanceof Range;
+        foreach ($verdict->notes as $note) {
+            if ($this->belongsToAxisBody($note, $ranged)) {
+                array_push($lines, ...$this->noteLines($note, indent: 4));
             }
+        }
 
+        if ($verdict->confidence instanceof Range) {
             $lines[] = $this->wrapped(
                 '    fourchette : ',
                 sprintf('entre %s et %s', $verdict->confidence->floor->label(), $verdict->confidence->ceiling->label()),
@@ -440,6 +464,50 @@ final class TextRenderer
         }
 
         return $lines;
+    }
+
+    /**
+     * Structural selection, never free-text matching (Codex review of PR #72, remark 4: a
+     * user-supplied `profile.json › note` could legitimately contain a phrase like "échantillon
+     * insuffisant", and a substring check would wrongly swallow it). A note belongs to its
+     * axis's own explanation when its `Pointer` identifies it as one of three known kinds: a
+     * missing field (§ 6.1), the pull-request sample floor `SampleCheck` names on a `Range`
+     * axis (remark 2), or a fact structurally decisive for the level Harness reached (remark 8).
+     */
+    private function belongsToAxisBody(Note $note, bool $ranged): bool
+    {
+        if ($this->isDecisiveHarnessNote($note)) {
+            return true;
+        }
+
+        if (!$ranged) {
+            return false;
+        }
+
+        return 'absent' === $note->pointer->value || $this->isSampleTotalNote($note);
+    }
+
+    /**
+     * `pull_requests.total` is the one pointer `SampleCheck`'s floor note always carries
+     * (Size, Parallelism) — matched by pointer identity, not by the "suffisant"/"insuffisant"
+     * wording (Codex review of PR #72, remarks 2 and 4).
+     */
+    private function isSampleTotalNote(Note $note): bool
+    {
+        return 'git-activity.json' === $note->pointer->file && 'pull_requests.total' === $note->pointer->field;
+    }
+
+    /**
+     * Harness's own "why the axis stops here" facts (docs/specs/02-axe-harness.md § Boucles):
+     * no bounded retry found, or `repo-context/` itself absent — both cap the axis at Copper.
+     * Matched by the pointer's field, the same structural identifier
+     * `RecommendationTable::proofFieldFor()` already uses for `repo-context/ › bounded retry`
+     * (Codex review of PR #72, remark 8) — never by the note's free text.
+     */
+    private function isDecisiveHarnessNote(Note $note): bool
+    {
+        return 'repo-context/' === $note->pointer->file
+            && \in_array($note->pointer->field, ['bounded retry', 'directory'], true);
     }
 
     /**
@@ -520,10 +588,17 @@ final class TextRenderer
             $lines[] = $this->wrapped('     Ce qui le prouvera : ', $recommendation->proofField);
 
             if (0 === $index) {
-                $pointer = $this->firstPointerFor($assessment, $recommendation->axis);
-                if (null !== $pointer) {
-                    $lines[] = sprintf('     Aujourd\'hui : %s', (string) $pointer);
-                }
+                $verdictForQuest = $verdictsByAxis[$recommendation->axis->name] ?? null;
+                $pointer = null !== $verdictForQuest
+                    ? $this->pointerForProofField($verdictForQuest, $recommendation->proofField)
+                    : null;
+                // docs/specs/06 § 5.5: "Aujourd'hui" is the state the proof field itself is
+                // coming from — never an unrelated first Evidence (Codex review of PR #72,
+                // remark 3). Said explicitly, never silently omitted, when nothing observed
+                // yet matches that exact field.
+                $lines[] = null !== $pointer
+                    ? sprintf('     Aujourd\'hui : %s', (string) $pointer)
+                    : "     Aujourd'hui : aucune preuve pointée pour ce champ pour l'instant.";
             }
 
             $verdict = $verdictsByAxis[$recommendation->axis->name] ?? null;
@@ -566,11 +641,17 @@ final class TextRenderer
     private const string FAMILY_QUALITY = 'Qualité, citée sans jugement';
 
     /**
-     * Three families, deduplicated (docs/specs/06 § 5.6): a note whose pointer was already
-     * consumed while rendering an axis's "ce qui manque" (§ 6.1) does not repeat here (§ 2,
-     * invariant 5); two notes sharing a pointer fuse into the first; the Intervention ceiling
-     * note and the sample-size notes are dropped outright — the `fourchette` line and the
-     * `Niveau suivant` line already say what they said (§ 5.6, rule 1).
+     * Three families, deduplicated (docs/specs/06 § 5.6) **by pointer identity only** — never
+     * by matching against a note's free text (Codex review of PR #72, remark 4: `profile.json
+     * › note` carries whatever the profile wrote, and a substring check on it would risk
+     * silently dropping a legitimate remark). A note whose pointer was already consumed while
+     * rendering an axis's own body (§ 6.1's "ce qui manque", the sample floor, or a decisive
+     * Harness fact — `belongsToAxisBody()`) does not repeat here (§ 2, invariant 5); two notes
+     * sharing a pointer fuse into the first. This is also how the Intervention ceiling note
+     * disappears without a dedicated rule: its pointer is always identical to the axis's own
+     * primary `Evidence` pointer (`InterventionEvaluator::ceilingNote()`, same field and same
+     * formatted value), which every axis already renders once, blocking or not (§ 5.4) — so it
+     * is always already in `$seenPointers` by the time this runs.
      *
      * @param list<Note> $notes
      */
@@ -580,7 +661,12 @@ final class TextRenderer
         $families = [self::FAMILY_DISCARDED => [], self::FAMILY_PIECES => [], self::FAMILY_QUALITY => []];
 
         foreach ($notes as $note) {
-            if ($this->isRedundantNote($note)) {
+            if ($this->isSampleTotalNote($note)) {
+                // The Confirmed-sample ("échantillon suffisant") case never gets consumed by
+                // an axis body (only a Range axis renders a sample-floor note there): the
+                // `Fiabilité : évalué` line already says the sample sufficed, structurally,
+                // for every axis at once (§ 5.6, rule 1) — dropped by pointer identity, not by
+                // matching the word "suffisant" (remark 4).
                 continue;
             }
 
@@ -620,17 +706,16 @@ final class TextRenderer
     }
 
     /**
-     * "échantillon suffisant"/"échantillon insuffisant" duplicate the `fourchette` line
-     * derived directly from `Confidence`; the Intervention ceiling note duplicates the
-     * `Niveau suivant` line whenever it says something (§ 5.6, rule 1).
+     * Family assignment by pointer identity (docs/specs/06 § 5.6): `sonar-measures.json` is
+     * always Qualité; `profile.json › available` (declared-but-absent), `declaratif.md`
+     * (declarative-piece presence) and the `présent` value `EvaluateProfileHandler` gives a
+     * present-but-undeclared piece are always Pièces du dossier — `présent` is the same
+     * literal `EvaluateProfileHandler::availabilityNotes()`/`buildNotes()` write for both, a
+     * structural marker rather than the piece's own path (which varies per profile). Everything
+     * else — including a profile's own free-text note (`profile.json › note`) — falls back to
+     * Écarté du calcul, exactly as § 5.6 prescribes for a note whose family is not determined
+     * by its source: a gap in this table, not a text guess (Codex review of PR #72, remark 4).
      */
-    private function isRedundantNote(Note $note): bool
-    {
-        return str_contains($note->text, 'échantillon suffisant')
-            || str_contains($note->text, 'échantillon insuffisant')
-            || str_contains($note->text, 'cadrage lui-même est automatisé');
-    }
-
     private function familyFor(Note $note): string
     {
         if ('sonar-measures.json' === $note->pointer->file) {
@@ -638,9 +723,8 @@ final class TextRenderer
         }
 
         if ('available' === $note->pointer->field
-            || str_contains($note->text, 'déclarative')
-            || str_contains($note->text, 'declaratif.md')
-            || str_contains($note->text, 'pièce présente')
+            || 'declaratif.md' === $note->pointer->file
+            || 'présent' === $note->pointer->value
         ) {
             return self::FAMILY_PIECES;
         }
@@ -657,13 +741,17 @@ final class TextRenderer
             return null;
         }
 
+        // The legend is printed under the normalized key, never the full nested path: a
+        // `repo-context/…` pointer can be arbitrarily deep, and the legend line — unlike a
+        // pointer line — is not exempt from MAX_WIDTH (§ 2, invariant 3; Codex review of
+        // PR #72, remark 6).
         $key = str_starts_with($file, 'repo-context/') ? 'repo-context/' : $file;
         if (isset($this->legendsShown[$key])) {
             return null;
         }
         $this->legendsShown[$key] = true;
 
-        return $this->wrapped(str_repeat(' ', $indent).$file.' — ', $legend.'.');
+        return $this->wrapped(str_repeat(' ', $indent).$key.' — ', $legend.'.');
     }
 
     // -- Small helpers -------------------------------------------------------------------
@@ -694,11 +782,39 @@ final class TextRenderer
         ));
     }
 
-    private function firstPointerFor(Assessment $assessment, Axis $axis): ?Pointer
+    /**
+     * The pointer of the `Evidence` or `Note` that already observed
+     * `Recommendation::$proofField` for this axis — never just the axis's first `Evidence`
+     * (Codex review of PR #72, remark 3). `$proofField` is matched three ways, in the shapes
+     * `RecommendationTable`/`RecommendationPolicy` actually produce: the bare dotted field
+     * (`context_files.rules_count`), the `file › field` form used as Harness's Silver/Gold
+     * default (`repo-context/ › bounded retry`), or a comma-separated list of alternative
+     * fields (Harness's Green/Copper default, only reached without a matching verdict).
+     */
+    private function pointerForProofField(AxisVerdict $verdict, string $proofField): ?Pointer
     {
-        foreach ($assessment->verdicts as $verdict) {
-            if ($verdict->axis === $axis && [] !== $verdict->evidences) {
-                return $verdict->evidences[0]->pointer;
+        $candidates = [];
+        foreach ($verdict->evidences as $evidence) {
+            $candidates[] = $evidence->pointer;
+        }
+        foreach ($verdict->notes as $note) {
+            $candidates[] = $note->pointer;
+        }
+
+        foreach ($candidates as $pointer) {
+            if ($pointer->field === $proofField || sprintf('%s › %s', $pointer->file, $pointer->field) === $proofField) {
+                return $pointer;
+            }
+        }
+
+        if (str_contains($proofField, ',')) {
+            foreach (explode(',', $proofField) as $alternative) {
+                $alternative = trim($alternative);
+                foreach ($candidates as $pointer) {
+                    if ($pointer->field === $alternative) {
+                        return $pointer;
+                    }
+                }
             }
         }
 
