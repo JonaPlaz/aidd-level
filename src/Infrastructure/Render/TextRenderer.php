@@ -44,7 +44,7 @@ final class TextRenderer
      * que la rangée la plus large (bordures + Axe + Niveau + Constat) reste sous MAX_WIDTH —
      * le tableau ne porte aucun pointeur, ses cellules peuvent se replier sans rien couper.
      */
-    private const int SYNTHESIS_CLAIM_MAX_WIDTH = 50;
+    private const int SYNTHESIS_CLAIM_MAX_WIDTH = 46;
 
     /** @var array<string, true> keys are legend keys (§ 4), reset at the start of every render(). */
     private array $legendsShown = [];
@@ -84,16 +84,33 @@ final class TextRenderer
         $level = $assessment->level;
         \assert(null !== $level);
 
-        $blocks = [$this->header($assessment, $level, $level)];
-        $blocks[] = $this->whatLedHereBlock($assessment);
+        // Ordre narratif (Jonathan, 2026-08-31) : l'évaluation, le niveau par axe, le niveau
+        // suivant, les acquis, ce qui manque (avec les gestes), puis les preuves en détail.
+        // Les notes ne sortent plus sur un profil évalué (arbitré le 2026-08-31) : elles ne
+        // portaient que des signaux écartés, sans intérêt pour la personne évaluée.
+        return $this->narrativeBlocks($assessment, $level, $level);
+    }
 
-        $target = $level->next();
+    /**
+     * @return list<string>
+     */
+    private function narrativeBlocks(Assessment $assessment, Level $floor, Level $ceiling): array
+    {
+        $blocks = [$this->header($assessment, $floor, $ceiling)];
+        $blocks[] = $this->synthesisTable($assessment);
+        $blocks[] = $this->nextLevelLine($floor, $assessment->cappingAxes);
+
+        $target = $floor->next();
         $acquired = $this->acquiredBlock($assessment, $target);
         if (null !== $acquired) {
             $blocks[] = $acquired;
         }
+        if (null !== $target && [] !== $assessment->recommendations) {
+            $blocks[] = $this->recommendationsBlock($assessment, $target);
+        }
+        $blocks[] = $this->whatLedHereBlock($assessment);
 
-        return $this->withProgressionAndNotes($blocks, $assessment, $target);
+        return $blocks;
     }
 
     // -- LowConfidence ---------------------------------------------------------------------
@@ -107,16 +124,7 @@ final class TextRenderer
         $ceiling = $assessment->ceiling;
         \assert(null !== $floor && null !== $ceiling);
 
-        $blocks = [$this->header($assessment, $floor, $ceiling)];
-        $blocks[] = $this->whatLedHereBlock($assessment);
-
-        $target = $floor->next();
-        $acquired = $this->acquiredBlock($assessment, $target);
-        if (null !== $acquired) {
-            $blocks[] = $acquired;
-        }
-
-        return $this->withProgressionAndNotes($blocks, $assessment, $target);
+        return $this->narrativeBlocks($assessment, $floor, $ceiling);
     }
 
     // -- NotAssessable -----------------------------------------------------------------------
@@ -206,10 +214,8 @@ final class TextRenderer
             ? 'Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.'
             : $this->lowConfidenceReliabilityLine($assessment);
 
-        $nextLine = $this->nextLevelLine($floor, $assessment->cappingAxes);
-
         return implode("\n", array_values(array_filter(
-            [$identityLine, $levelLine, $scaleLine, $reliabilityLine, $nextLine],
+            [$identityLine, $levelLine, $scaleLine, $reliabilityLine],
             static fn (?string $line): bool => null !== $line,
         )));
     }
@@ -300,8 +306,9 @@ final class TextRenderer
         $axisPhrase = 1 >= \count($ordered)
             ? sprintf('il faut que %s y monte.', $names[0] ?? '')
             : sprintf(
-                'il faut que %s y montent%s ; le niveau est le plus bas des quatre axes, un axe '
-                ."haut n'en compense pas un bas.",
+                // Formulation de Jonathan (2026-08-31) : « c'est l'axe le plus bas qui donne
+                // le niveau attribué » — l'ancienne phrase ne se comprenait pas.
+                "il faut que %s y montent%s — c'est l'axe le plus bas qui donne le niveau attribué.",
                 $this->joinFr($names),
                 2 === \count($ordered) ? ' tous les deux' : ' tous',
             );
@@ -309,13 +316,11 @@ final class TextRenderer
         return $this->wrapped('Niveau suivant : ', sprintf('%s — %s', $target->label(), $axisPhrase));
     }
 
-    // -- "Ce qui a mené là" (§ 5.2, § 5.3, § 5.4) ---------------------------------------------
+    // -- "Ce qui limite le niveau" (§ 5.2, § 5.3, § 5.4) ---------------------------------------------
 
     private function whatLedHereBlock(Assessment $assessment): string
     {
-        $lines = [$this->sectionTitle('Ce qui a mené là')];
-        $lines[] = $this->synthesisTable($assessment);
-        $lines[] = '';
+        $lines = [$this->sectionTitle('Les preuves des axes qui limitent')];
 
         $verdictsByAxis = $this->verdictsByAxis($assessment);
         $ordered = $this->orderedAxes($assessment->cappingAxes);
@@ -330,8 +335,8 @@ final class TextRenderer
                 continue;
             }
             $blockPhrase = 1 === $blockingCount
-                ? "l'axe qui bloque"
-                : sprintf("l'un des %s axes qui bloquent", $this->frenchNumber($blockingCount));
+                ? "c'est lui qui limite le niveau"
+                : sprintf("l'un des %s axes qui limitent le niveau", $this->frenchNumber($blockingCount));
             $lines[] = sprintf('  %s — %s : %s', $this->axisLabel($axis), $verdict->level->label(), $blockPhrase);
             array_push($lines, ...$this->axisBodyLines($verdict, includeTranche: false));
         }
@@ -360,13 +365,21 @@ final class TextRenderer
                 ? sprintf('%s–%s', $verdict->level->label(), $verdict->confidence->ceiling->label())
                 : $verdict->level->label();
 
-            $mentions = array_filter([$blocking ? 'bloque' : null, $ranged ? 'fourchette' : null]);
-            $suffix = [] !== $mentions ? sprintf(' (%s)', implode(', ', $mentions)) : '';
+            // « ← niveau global » : la rangée dont le niveau EST le niveau final — le mot
+            // « bloque » était du jargon (Jonathan, 2026-08-31) ; « incertain » remplace
+            // « fourchette » pour la même raison.
+            $suffix = ($blocking ? ' ← niveau global' : '').($ranged ? ' (incertain)' : '');
+
+            // Constat court (Jonathan, 2026-08-31) : la phrase complète était illisible en
+            // cellule — seul le segment avant le premier « : » sort ici, la phrase entière
+            // avec échelle et pointeur vit dans « Les preuves des axes qui limitent ».
+            $claim = [] === $verdict->evidences ? '' : $verdict->evidences[0]->claim;
+            $shortClaim = false !== ($cut = mb_strpos($claim, ' : ')) ? mb_substr($claim, 0, $cut) : rtrim($claim, '.');
 
             $rows[] = [
                 $this->axisLabel($axis),
                 $level.$suffix,
-                [] === $verdict->evidences ? '' : $verdict->evidences[0]->claim,
+                $shortClaim,
             ];
         }
 
@@ -378,12 +391,17 @@ final class TextRenderer
         $table = new Table($buffer);
         $table->setHeaders(['Axe', 'Niveau', 'Constat']);
         $table->setRows($rows);
+        // La colonne Niveau est bornée aussi : une fourchette (« entre ❖ White et 🔺 Red
+        // (incertain) ») allongeait la rangée au-delà de MAX_WIDTH.
+        $table->setColumnMaxWidth(1, 26);
         $table->setColumnMaxWidth(2, self::SYNTHESIS_CLAIM_MAX_WIDTH);
         $table->render();
 
         $lines = explode("\n", rtrim($buffer->fetch(), "\n"));
 
-        return implode("\n", array_map(static fn (string $line): string => '  '.rtrim($line), $lines));
+        // Le tableau porte son titre (Jonathan, 2026-08-31 : « on ne sait pas à quoi il
+        // correspond » sans lui).
+        return "Niveau par axe\n".implode("\n", array_map(static fn (string $line): string => '  '.rtrim($line), $lines));
     }
 
     /**
@@ -555,7 +573,9 @@ final class TextRenderer
             $lines[] = $legend;
         }
 
-        $lines[] = str_repeat(' ', $indent + 2).(string) $evidence->pointer;
+        // « vérifier dans : » (Jonathan, 2026-08-31) : le pointeur brut est un reçu technique —
+        // le préfixe dit au lecteur ce que c'est, au lieu de le laisser deviner.
+        $lines[] = str_repeat(' ', $indent + 2).'vérifier dans : '.(string) $evidence->pointer;
         $this->consumedPointers[(string) $evidence->pointer] = true;
 
         return $lines;
@@ -574,7 +594,7 @@ final class TextRenderer
             $lines[] = $legend;
         }
 
-        $lines[] = str_repeat(' ', $indent + 2).(string) $note->pointer;
+        $lines[] = str_repeat(' ', $indent + 2).'vérifier dans : '.(string) $note->pointer;
         $this->consumedPointers[(string) $note->pointer] = true;
 
         return $lines;
@@ -605,7 +625,7 @@ final class TextRenderer
     {
         $verdictsByAxis = $this->verdictsByAxis($assessment);
 
-        $lines = [$this->sectionTitle(sprintf("Comment monter d'un cran — vers %s", $targetLevel->label()))];
+        $lines = [$this->sectionTitle(sprintf('Ce qui manque pour %s', $targetLevel->label()))];
 
         foreach ($assessment->recommendations as $index => $recommendation) {
             if (0 !== $index) {
@@ -643,27 +663,6 @@ final class TextRenderer
         }
 
         return implode("\n", $lines);
-    }
-
-    /**
-     * The tail shared by `evaluatedBlocks()` and `lowConfidenceBlocks()`.
-     *
-     * @param list<string> $blocks
-     *
-     * @return list<string>
-     */
-    private function withProgressionAndNotes(array $blocks, Assessment $assessment, ?Level $target): array
-    {
-        if (null !== $target && [] !== $assessment->recommendations) {
-            $blocks[] = $this->recommendationsBlock($assessment, $target);
-        }
-
-        $notes = $this->notesBlock($assessment->notes);
-        if (null !== $notes) {
-            $blocks[] = $notes;
-        }
-
-        return $blocks;
     }
 
     // -- "Notes" (§ 5.6) ------------------------------------------------------------------------
@@ -893,7 +892,7 @@ final class TextRenderer
     }
 
     /**
-     * `Ce qui a mené là`'s block title and the other three named blocks (§ 9: "les titres de
+     * `Ce qui limite le niveau`'s block title and the other three named blocks (§ 9: "les titres de
      * bloc passent par `section()`" — soulignés d'une ligne de tirets, accepté tel quel). A
      * fresh `SymfonyStyle` on its own `BufferedOutput`, undecorated: no color escape code ever
      * reaches the buffer, and the underline's width only depends on the title string itself
