@@ -28,7 +28,10 @@ up:
 	$(COMPOSE) exec -T --user root php sh -c 'chown -R $(UID):$(GID) /app/vendor /app/composer.lock 2>/dev/null || true'
 	$(COMPOSE) exec -T php composer install --no-interaction --no-progress
 
-build: up
+# Removed alias: without this explicit failure the catch-all `%:` rule below would
+# swallow `make build` and exit 0 without doing anything (Codex review of PR #74).
+build:
+	@echo "make build n'existe plus : utilise make up"; exit 1
 
 exec: require-up
 	$(COMPOSE) exec php sh
