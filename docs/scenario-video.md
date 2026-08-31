@@ -25,4 +25,6 @@ le son. Capture d'écran Windows, terminal plein écran, police lisible.
 
 ## Après le tournage
 
-L'issue #12 se ferme quand la vidéo est déposée à l'endroit convenu du rendu.
+La vidéo se pousse dans le dépôt sous `docs/demo.mp4` (mp4 compressé, bien sous la limite
+GitHub de 100 Mo — une minute d'écran suffit largement) ; le README la référence dans
+« Pour aller plus loin ». L'issue #12 se ferme quand le fichier est poussé.
