@@ -21,8 +21,10 @@ make up            # une fois : construit et lance le conteneur, installe les d�
 make evaluate arthur
 ```
 
-`make evaluate` évalue un ou plusieurs profils : `make evaluate arthur bohort`. Le nom est
-cherché dans `profiles/`, puis dans `fixtures/`, sinon pris comme chemin. La commande se tape
+`make evaluate <nom>` évalue le profil `profiles/<nom>` — **pour évaluer votre propre profil,
+déposez son dossier de mesures dans `profiles/` et lancez `make evaluate <son-nom>`** (format
+des pièces : `profiles/README.md`). Plusieurs noms acceptés (`make evaluate arthur bohort`) ;
+un nom est aussi cherché dans `fixtures/`, sinon pris comme chemin. La commande se tape
 où l'on veut : hors du conteneur, elle se relaie d'elle-même dans le conteneur — qui doit
 tourner (`make up` d'abord, sinon le message « Lance d'abord : make up » le rappelle).
 
