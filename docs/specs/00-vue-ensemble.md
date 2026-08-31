@@ -148,11 +148,11 @@ qui reste vivant, piloté par `make` :
 | `make down` | `docker compose down` |
 | `make test` · `lint` · `dup` · `fmt` | `docker compose exec php …` (le conteneur doit tourner ; message clair sinon) |
 
-Notice du README, trois lignes en deux blocs explicitement titrés **« hors du conteneur »**
-(`make up`, `make exec`) et **« dans le conteneur »** (`make evaluate arthur`). Repli sans `make`, dans
-le README sous la notice : les deux commandes `docker compose` équivalentes, et l'image
-autonome `docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur`
-(le `Dockerfile` garde son `ENTRYPOINT`).
+Notice du README, deux lignes : `make up` une fois, puis `make evaluate <profil>` — la même
+commande se relaie d'elle-même dans le conteneur quand elle est tapée dehors. Pas de repli
+sans `make` dans le README (arbitré par Jonathan le 2026-08-31 : moins de chemins, un README
+plus court) ; le `Dockerfile` garde son `ENTRYPOINT`, l'image autonome reste possible sans
+être documentée là.
 
 Les quatre profils fournis sont recopiés dans `profiles/` avec attribution MIT
 (`profiles/ATTRIBUTION.md` → `ai-driven-dev/laivel-up`, commit `89b9e35`).

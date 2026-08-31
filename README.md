@@ -1,66 +1,46 @@
 # aidd-level
 
 Évalue le niveau **AI-Driven Development** d'un profil de développeur sur la grille AIDD
-(❖ White → 🥇 Gold) et dit ce qui a mené là et comment monter d'un cran.
+(❖ White → 🥇 Gold). La sortie dit trois choses : le niveau atteint, les faits qui le
+justifient (chacun avec sa preuve), et ce qu'il faudrait changer pour passer au niveau
+suivant.
+
+Les profils d'exemple de `profiles/` sont fournis par le sujet, copiés tels quels (licence
+et provenance : `profiles/ATTRIBUTION.md`) ; l'outil évalue aussi tout dossier au même
+format — un chemin, une fixture, ou le dépôt lui-même (`make self`).
 
 ## Installation et lancement
 
-**Hors du conteneur** :
-
 ```
-make up
-make exec
-```
-
-**Dans le conteneur** (après `make exec`) :
-
-```
+make up            # une fois : construit et lance le conteneur, installe les dépendances
 make evaluate arthur
 ```
 
-`make evaluate` accepte plusieurs noms (`make evaluate arthur bohort`) ; le nom d'un profil
-est résolu dans `profiles/`, puis `fixtures/`, sinon pris comme chemin tel quel. Tapée hors du
-conteneur, la même commande fonctionne aussi (elle repasse par `docker compose exec`).
-
-**Sans `make`** :
-
-```
-UID=$(id -u) GID=$(id -g) docker compose up -d --build
-docker compose exec php composer install --no-interaction --no-progress
-docker compose exec php bin/aidd-level evaluate profiles/arthur
-```
-
-**Image autonome** (sans conteneur vivant) :
-
-```
-docker build -t aidd-level . && docker run --rm aidd-level evaluate profiles/arthur
-```
+`make evaluate` évalue un ou plusieurs profils : `make evaluate arthur bohort`. Le nom est
+cherché dans `profiles/`, puis dans `fixtures/`, sinon pris comme chemin. La commande se tape
+où l'on veut : hors du conteneur, elle se relaie d'elle-même dans le conteneur — qui doit
+tourner (`make up` d'abord, sinon le message « Lance d'abord : make up » le rappelle).
 
 ## Commandes
 
-| Commande | Rôle |
+| Commande | Effet |
 |---|---|
-| `make up` | construit l'image, la lance (`sleep infinity`), installe les dépendances |
-| `make build` | alias de `make up` |
-| `make exec` | shell interactif dans le conteneur |
-| `make evaluate arthur [bohort ...]` | lance `bin/aidd-level evaluate` sur les profils nommés ; tapée dans le conteneur comme hors du conteneur |
+| `make up` | construit l'image, lance le conteneur (il reste ouvert), installe les dépendances |
+| `make exec` | ouvre un shell dans le conteneur |
+| `make evaluate arthur bohort` | évalue les profils nommés |
+| `make demo` | évalue les quatre profils fournis par le sujet |
+| `make self` | évalue le dépôt `aidd-level` lui-même (profil `profiles/self`) |
+| `make test` | lance les tests (PHPUnit) |
+| `make lint` | analyse statique du code (PHPStan) |
+| `make dup` | vérifie qu'aucun bloc de code n'est dupliqué dans `src/` |
+| `make fmt FILE=…` | met en forme un fichier PHP |
 | `make down` | arrête le conteneur |
-| `make test` | PHPUnit |
-| `make lint` | PHPStan |
-| `make dup` | détection de duplication |
-| `make demo` | évalue les quatre profils fournis (contrat de `docs/calibration.md`) |
-| `make self` | évalue `profiles/self` |
-| `make fmt FILE=…` | formate un fichier PHP |
 
-Tout tourne dans un conteneur de développement vivant (PHP local insuffisant). Les commandes
-autres que `up`, `build` et `down` exigent le conteneur déjà lancé, et échouent sinon avec
-« Lance d'abord : make up ». Tapée dans le conteneur, `make evaluate` s'exécute directement ;
-tapée hors du conteneur, elle vérifie elle-même le conteneur avant de s'y relayer — même
-message d'erreur s'il ne tourne pas.
+Tout tourne dans Docker : le PHP local n'est pas requis, seul le conteneur l'est.
 
 ## La sortie
 
-L'en-tête entier d'une sortie réelle (`make evaluate arthur`), quatre lignes logiques :
+L'en-tête d'une sortie réelle (`make evaluate arthur`) :
 
 ```
 Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
@@ -70,22 +50,23 @@ Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent t
                  est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 ```
 
-Puis, un bloc par ligne (docs/specs/06-sortie-et-progression.md § 5) :
+Puis quatre blocs :
 
-- « Ce qui a mené là » — la synthèse des quatre axes, puis chaque axe qui bloque en détail :
-  toutes ses preuves, chacune avec sa phrase et son pointeur.
-- « Déjà acquis pour X » — les axes qui ne bloquent pas, avec le niveau qu'ils atteignent.
-- « Comment monter d'un cran » — un geste par axe bloquant, ordonné par actionnabilité ; le
-  premier porte la mention « à faire en premier » (la prochaine quête).
-- « Notes » — trois familles fixes : écarté du calcul, pièces du dossier, qualité citée sans
-  jugement.
+- « Ce qui a mené là » — l'état des quatre axes en une ligne, puis le détail de chaque axe
+  qui bloque : chaque fait en une phrase, avec sa preuve (`fichier › champ = valeur`).
+- « Déjà acquis pour X » — les axes qui suffisent déjà pour le niveau suivant.
+- « Comment monter d'un cran » — un geste concret par axe bloquant, le premier marqué
+  « à faire en premier ».
+- « Notes » — ce qui a été vu mais ne décide pas : signaux écartés, qualité citée sans
+  jugement, pièces du dossier.
 
-Sortie complète, annotée bloc par bloc : `docs/sortie.md`.
+Sortie complète commentée : `docs/sortie.md`. Méthode de calcul (quelles données, quels
+seuils, pourquoi) : `docs/methode.md`.
 
 ## Pour aller plus loin
 
-- `.claude/README.md` — l'architecture IA, le harnais.
-- `src/README.md` — l'architecture du projet, hexagonale à trois couches.
-- `profiles/README.md` — les entrées, ce que l'outil lit.
-- `docs/sortie.md` — les sorties, ce que l'outil rend.
 - `docs/methode.md` — la méthode complète : entrées, calcul, sortie.
+- `docs/sortie.md` — les sorties, ce que l'outil rend.
+- `profiles/README.md` — les entrées, ce que l'outil lit.
+- `src/README.md` — l'architecture du projet, hexagonale à trois couches.
+- `.claude/README.md` — l'architecture IA, le harnais.
