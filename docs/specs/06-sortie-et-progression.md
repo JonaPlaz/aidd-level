@@ -142,27 +142,31 @@ lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-
 **ce qui a mené là** — la ligne de synthèse des quatre axes, l'axe qui bloque détaillé (§ 5.2),
 puis les autres axes (§ 5.4) —, **comment monter d'un cran** (§ 5.5), les **notes** (§ 5.6).
 
-### 5.1 L'en-tête — quatre lignes logiques
+### 5.1 L'en-tête — cinq lignes logiques
+
+Ordre arbitré par Jonathan le 2026-08-31 : le lecteur rencontre la personne avant le verdict.
 
 ```
-Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
-❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
+arthur — développeur indépendant
+Niveau AIDD : 🥉 Copper
+Échelle des niveaux : ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
 Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
 Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le
                  niveau est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 ```
 
-- **ligne 1** — le niveau et l'identité. `Level::label()` fournit déjà « icône + nom » ;
-- **ligne 2 — la frise (écart 1.2)** : les sept niveaux, **chacun avec son nom à côté de son
+- **ligne 1** — l'identité seule : `profile_id — role`, tels que `profile.json` les donne ;
+- **ligne 2** — le niveau : `Niveau AIDD : …`, `Level::label()` fournissant « icône + nom » ;
+- **ligne 3 — l'échelle nommée (écart 1.2)**, préfixée `Échelle des niveaux : ` : les sept niveaux, **chacun avec son nom à côté de son
   icône**, le niveau atteint entre crochets. Une frise d'icônes nues ne se lit pas sans la grille
   sous les yeux, et ne se lit pas du tout si le terminal ne rend pas les emoji ;
-- **ligne 3 — la fiabilité (écart 1.7)** : § 6 ;
-- **ligne 4 — le niveau suivant (écarts 1.1 et 1.5)** : le mot « visé » disparaît — personne ne
+- **ligne 4 — la fiabilité (écart 1.7)** : § 6 ;
+- **ligne 5 — le niveau suivant (écarts 1.1 et 1.5)** : le mot « visé » disparaît — personne ne
   vise ce niveau, il est simplement le suivant. La ligne nomme le niveau suivant (icône + nom)
   **et sa condition de passage**, c'est-à-dire les axes qui doivent y monter.
 
-**En fourchette** (statut `évalué, confiance basse`), l'en-tête garde ses quatre lignes : la
-ligne 1 dit `Niveau AIDD : entre 🔹 Blue et 🥉 Copper — …`, la frise ouvre le crochet sur le
+**En fourchette** (statut `évalué, confiance basse`), l'en-tête garde ses cinq lignes : la
+ligne 2 dit `Niveau AIDD : entre 🔹 Blue et 🥉 Copper — …`, la frise ouvre le crochet sur le
 plancher et le ferme sur le plafond (convention existante, conservée), la ligne 3 dit ce qui
 manque (§ 6.1) et la ligne 4 vise le cran au-dessus du **plancher**.
 
@@ -188,7 +192,7 @@ atteint (icône + nom) et le fait qu'il bloque ; puis ses `Evidence` à la gramm
 
 ```
 Ce qui a mené là
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
+  [le tableau de synthèse du § 5.4 — une rangée par axe]
 
   Harness — 🥉 Copper : l'un des deux axes qui bloquent
     Un fichier mémoire est versionné à la racine du dépôt.
@@ -217,14 +221,23 @@ parallèle, Intervention, Taille**. Il est déjà porté par une seule constante
 
 Écart 1.6 : la sortie ne montrait que ce qui bloque, et la personne évaluée ne voyait jamais ce
 qu'elle avait déjà acquis. **Les quatre axes sont désormais rendus, sans exception**, en deux
-temps — tranché le 2026-08-31 : une ligne de synthèse, puis les autres axes en clair. Le tableau
-des quatre axes est écarté : sa colonne de pointeurs impose des rangées bien au-delà de
-`MAX_WIDTH`, et replier une cellule couperait un pointeur (§ 2, invariant 3).
+temps — tranché le 2026-08-31 : un tableau de synthèse aligné, puis les autres axes en clair. Le tableau est rendu par le
+composant Table de symfony/console sur un BufferedOutput — largeurs fixées dans le code, aucune
+dépendance au terminal (arbitré par Jonathan le 2026-08-31). Il ne porte aucun pointeur : seule
+sa colonne « Constat » se replie (constante SYNTHESIS_CLAIM_MAX_WIDTH, bornée pour que la rangée
+la plus large reste sous MAX_WIDTH), rien de vérifiable n'y est jamais coupé.
 
-**La ligne de synthèse**, en tête du bloc *Ce qui a mené là*, juste sous son titre :
+**Le tableau de synthèse**, en tête du bloc *Ce qui a mené là*, juste sous son titre —
+colonnes Axe / Niveau / Constat, une rangée par axe, le « Constat » étant la phrase de la
+première `Evidence` de l'axe (celle qui décide) :
 
 ```
-  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
+  +--------------+--------------------+----------------------------------------------------+
+  | Axe          | Niveau             | Constat                                            |
+  +--------------+--------------------+----------------------------------------------------+
+  | Harness      | 🥉 Copper (bloque) | context engineering acquis : un fichier mémoire …  |
+  | En parallèle | 🥇 Gold            | 4 chantiers de front en médiane, habituellement …  |
+  +--------------+--------------------+----------------------------------------------------+
 ```
 
 - **les quatre axes**, dans l'ordre du § 5.3 — Harness, En parallèle, Intervention, Taille —,
@@ -562,12 +575,12 @@ S'y ajoutent :
 
 1. **Une phrase par pointeur, un pointeur par phrase** (§ 2). **Portée du contrôle, close** : il
    ne porte que sur les lignes rendues **depuis une `Evidence` ou une `Note`**. Sont hors champ,
-   parce qu'elles ne sont pas des affirmations sur le profil : les quatre lignes de l'en-tête
+   parce qu'elles ne sont pas des affirmations sur le profil : les cinq lignes de l'en-tête
    (§ 5.1), la frise, la ligne *Fiabilité*, les titres de bloc et leur soulignement, les
    intertitres, les lignes de tête d'axe, les intitulés de famille de notes, et les lignes du plan
    de progression (numéro, geste, « Ce qui le prouvera », « pour trancher »). Sont exclues
-   nommément, alors même qu'elles ressemblent à des affirmations : la légende du § 4, la ligne de
-   synthèse du § 5.4, et les lignes de `non évaluable` qui nomment une pièce plutôt qu'un champ
+   nommément, alors même qu'elles ressemblent à des affirmations : la légende du § 4, le tableau de
+   synthèse du § 5.4 (bordures, en-têtes et cellules comprises), et les lignes de `non évaluable` qui nomment une pièce plutôt qu'un champ
    (§ 6.2). Dans ce périmètre : le nombre de lignes contenant ` › ` égale le nombre d'`Evidence`
    et de `Note` rendues, et aucune ligne de pointeur n'est la première ligne de son entrée.
 2. **Toutes les `Evidence` d'un axe bloquant sont rendues** — le défaut corrigé était d'en perdre
@@ -577,8 +590,8 @@ S'y ajoutent :
 3. **Chaque chiffre porte son échelle** (§ 3), testé côté domaine, par axe et par bande : la
    phrase de l'`Evidence` contient la valeur du seuil nommé qui borne la bande, **lue depuis la
    constante**, jamais réécrite dans le test.
-4. **Les quatre axes sont dans la sortie** (§ 5.4) : la ligne de synthèse les porte tous les
-   quatre, dans l'ordre de `RecommendationPolicy::AXIS_ORDER`, chacun avec son niveau (icône +
+4. **Les quatre axes sont dans la sortie** (§ 5.4) : le tableau de synthèse les porte tous les
+   quatre, une rangée par axe dans l'ordre de `RecommendationPolicy::AXIS_ORDER`, chacun avec son niveau (icône +
    nom), `(bloque)` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne, et
    `(fourchette)` sur ceux — et seulement ceux — dont la confiance est un `Range` ; chaque axe qui
    ne bloque pas se retrouve ensuite sous `Déjà acquis`, avec son niveau et au moins un pointeur.
