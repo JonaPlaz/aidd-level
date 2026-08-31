@@ -80,7 +80,7 @@ evaluate:
 			elif [ -d "fixtures/$$n" ]; then paths="$$paths fixtures/$$n"; \
 			else paths="$$paths $$n"; fi; \
 		done; \
-		bin/aidd-level evaluate $$paths; \
+		bin/aidd-level evaluate $$paths || echo "⚠️  Au moins un profil n'a pas pu être évalué — le détail est au-dessus."; \
 	else \
 		$(MAKE) --no-print-directory require-up; \
 		$(COMPOSE) exec -T php make evaluate $$names; \
