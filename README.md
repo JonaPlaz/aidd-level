@@ -7,7 +7,7 @@ suivant.
 
 Les profils d'exemple de `profiles/` sont fournis par le sujet, copiés tels quels (licence
 et provenance : `profiles/ATTRIBUTION.md`) ; l'outil évalue aussi tout dossier au même
-format — un chemin, une fixture, ou le dépôt lui-même (`make self`).
+format — un chemin ou une fixture.
 
 **Démonstration en vidéo (une minute) : [docs/demo.mp4](docs/demo.mp4).**
 
@@ -31,7 +31,6 @@ tourner (`make up` d'abord, sinon le message « Lance d'abord : make up » le ra
 | `make exec` | ouvre un shell dans le conteneur |
 | `make evaluate arthur bohort` | évalue les profils nommés |
 | `make demo` | évalue les quatre profils fournis par le sujet |
-| `make self` | le dépôt se note lui-même : `profiles/self` est fabriqué depuis ses propres commits et PRs, `make self` rend son verdict |
 | `make test` | lance les tests (PHPUnit) |
 | `make lint` | analyse statique du code (PHPStan) |
 | `make dup` | vérifie qu'aucun bloc de code n'est dupliqué dans `src/` |
