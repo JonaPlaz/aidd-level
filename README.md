@@ -17,6 +17,7 @@ Prérequis : [Docker](https://docs.docker.com/get-docker/) (Docker Desktop sur W
 macOS). Rien d'autre — pas de PHP local.
 
 ```
+git clone https://github.com/JonaPlaz/aidd-level.git && cd aidd-level
 make up               # une fois : construit et lance le conteneur, installe les dépendances
 make evaluate <nom>   # ex. make evaluate arthur
 ```
