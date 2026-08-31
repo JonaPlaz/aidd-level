@@ -9,9 +9,10 @@ Texte seul (tranché le 2026-08-26), pas de `--json`.
 > chantier refond **la forme rendue** et rien d'autre : le niveau reste le minimum des quatre
 > axes, la médiane décide toujours, un ex æquo n'est jamais moyenné, chaque affirmation porte
 > toujours son pointeur vérifiable (règle 3 d'`AGENTS.md`) — le pointeur cesse seulement d'être
-> *toute* la ligne. Aucun seuil de domaine, aucun verdict, aucun statut interne ne change.
-> Tout ce qui porte ici un nom de classe, de constante ou de champ a été relevé dans le dépôt le
-> 2026-08-31 ; ce qui n'a pas pu l'être est marqué **non vérifié**.
+> *toute* la ligne. Aucun seuil de domaine, aucun verdict, **aucun des trois statuts** ne change,
+> pas même son libellé (`AGENTS.md`, règle 6 : décision figée, § 6). Tout ce qui porte ici un nom
+> de classe, de constante, de champ ou de pointeur a été relevé dans le dépôt le 2026-08-31 ; ce
+> qui n'a pas pu l'être est marqué **non vérifié**.
 
 ## 1. Cinq règles (validées le 2026-08-25 ; règles 2, 3 et 4 reformulées le 2026-08-31)
 
@@ -41,33 +42,43 @@ Texte seul (tranché le 2026-08-26), pas de `--json`.
 
 C'est la grammaire que tous les écarts de forme supposent ; elle vaut partout dans la sortie.
 
-**Une `Evidence` rendue = deux lignes logiques**, dans cet ordre et jamais l'inverse (la phrase
-peut se replier, le pointeur jamais — invariant 3) :
+**Une `Evidence` rendue = deux lignes logiques**, dans cet ordre et jamais l'inverse :
 
 ```
     <une phrase en français, qui dit le fait et son échelle (§ 3)>
       <fichier> › <champ> = <valeur>
 ```
 
-Quatre invariants, chacun testable (§ 12) :
+Cinq invariants, chacun testable (§ 12) :
 
 1. **aucune ligne de pointeur sans sa phrase** — c'est ce que la forme antérieure violait : seule
    la première `Evidence` d'un axe portait une phrase, les suivantes ne rendaient que leur
    pointeur. **Toutes les `Evidence` d'un axe sont rendues, chacune avec sa phrase** ;
 2. **aucune phrase sans son pointeur** (règle 4) ;
-3. **le pointeur n'est jamais replié** : il tient sur sa ligne, `›` et la valeur ne peuvent pas
-   être séparés par un retour à la ligne. Seule la phrase se replie, avec continuation indentée ;
-4. **la phrase est produite par le domaine, jamais par le rendu** : elle est le `claim` de
-   l'`Evidence`, écrit par l'évaluateur d'axe, qui est le seul à connaître le seuil qui a décidé
-   (règle 2 d'`AGENTS.md` : aucun seuil hors d'une constante nommée du domaine). `TextRenderer`
-   n'écrit jamais un seuil, ni un nom de bande, ni une valeur.
+3. **le pointeur n'est jamais replié, jamais tronqué.** `›` et la valeur ne peuvent pas être
+   séparés par un retour à la ligne, et une valeur longue n'est pas coupée : un pointeur sert à
+   revérifier le fait, un pointeur amputé ne sert plus à rien. **La ligne de pointeur est donc la
+   seule ligne de la sortie autorisée à dépasser `MAX_WIDTH`** — cas réels : une note de profil
+   recopiée en valeur, un chemin imbriqué sous `repo-context/`. Aucune continuation, aucune
+   ellipse : la ligne est longue et elle se copie-colle telle quelle ;
+4. **la phrase est produite en amont du rendu, jamais par lui** : elle est le `claim` d'une
+   `Evidence`. Deux producteurs, et **deux seulement**, vérifiés le 2026-08-31 — les quatre
+   évaluateurs d'axe (`src/Domain/Axis/`), et `EvaluateProfileHandler::whiteVerdicts()`
+   (`src/Application/`), qui fabrique les deux `Evidence` du filtre White sans passer par un
+   évaluateur (spec 05 § *Filtre White*). Les deux passent au format phrase + échelle. Le
+   `TextRenderer` n'écrit jamais un seuil, ni un nom de bande, ni une valeur ;
+5. **un fait déjà rendu ne se redit pas** : deux `Evidence` de même pointeur et de même phrase ne
+   sortent qu'une fois, la première. Cas réel, et c'est pourquoi la règle est ici et pas seulement
+   au § 5.6 : `whiteVerdicts()` partage les **mêmes** deux `Evidence` entre les quatre axes — sans
+   cette règle, un profil White imprimerait quatre fois les deux mêmes lignes. L'entrée d'axe
+   garde sa ligne de tête, elle ne répète pas la preuve.
 
 Les specs 01 à 04 continuent de décider **quelles** `Evidence` existent et **quel pointeur**
 chacune porte (leurs § *Preuves rendues*) ; **la forme de la phrase qui les accompagne se décide
 ici**, et nulle part ailleurs.
 
 Repli de ligne : `MAX_WIDTH = 100` colonnes, constante du rendu, **adaptation assumée** (largeur
-de terminal courante) — inchangée par ce chantier.
+de terminal courante) — inchangée par ce chantier, sauf pour l'exception de l'invariant 3.
 
 ## 3. Les chiffres et leur échelle — aucun chiffre nu
 
@@ -118,8 +129,8 @@ il ne se rédige pas au rendu.
 
 **La légende n'est pas une affirmation sur le profil** : elle ne cite aucune valeur mesurée, et le
 nom de la pièce qu'elle porte est sa propre référence. La règle 4 (une affirmation, un pointeur)
-ne s'y applique donc pas, et le contrôle du § 12 qui compte les lignes sans pointeur l'exclut
-nommément — c'est écrit ici pour qu'on ne l'y remette pas par erreur.
+ne s'y applique donc pas, et le contrôle du § 12 l'exclut nommément — c'est écrit ici pour qu'on
+ne l'y remette pas par erreur.
 
 Cas dégradé : une pièce absente de la table ne reçoit **aucune** légende — le rendu n'en invente
 jamais une. C'est un manque de la table, il se corrige dans la table.
@@ -129,14 +140,14 @@ jamais une. C'est un manque de la table, il se corrige dans la table.
 Icône **et** nom du niveau, jamais la couleur seule ni l'icône seule (lecteur daltonien parmi les
 lecteurs, et la vidéo est muette). Quatre choses, dans cet ordre fixe : l'**en-tête** (§ 5.1),
 **ce qui a mené là** — la ligne de synthèse des quatre axes, l'axe qui bloque détaillé (§ 5.2),
-puis les axes acquis (§ 5.4) —, **comment monter d'un cran** (§ 5.5), les **notes** (§ 5.6).
+puis les autres axes (§ 5.4) —, **comment monter d'un cran** (§ 5.5), les **notes** (§ 5.6).
 
 ### 5.1 L'en-tête — quatre lignes logiques
 
 ```
 Niveau AIDD : 🥉 Copper — arthur (développeur indépendant)
 ❖ White  🔺 Red  🔹 Blue  🟢 Green  [🥉 Copper]  🥈 Silver  🥇 Gold
-Fiabilité : mesure complète — les quatre axes ont assez de matière pour être tranchés.
+Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.
 Niveau suivant : 🥈 Silver — il faut que Harness et Intervention y montent tous les deux ; le
                  niveau est le plus bas des quatre axes, un axe haut n'en compense pas un bas.
 ```
@@ -177,22 +188,24 @@ atteint (icône + nom) et le fait qu'il bloque ; puis ses `Evidence` à la gramm
 
 ```
 Ce qui a mené là
-  Taille 🥇 Gold · En parallèle 🥇 Gold · Harness 🥉 Copper (bloque) · Intervention 🥉 Copper (bloque)
+  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
 
   Harness — 🥉 Copper : l'un des deux axes qui bloquent
     Un fichier mémoire est versionné à la racine du dépôt.
       git-activity.json — l'activité git du profil, déjà agrégée : PR, commits, branches et
         fichiers de contexte, sur la période du fichier.
       git-activity.json › context_files.agents_md = true
-    Six fichiers de contexte versionnés (0 règle, 4 skills, 0 hook, 2 agents) : au moins un
-    compteur non nul, c'est le « behavior » que Green et Copper demandent.
-      git-activity.json › context_files.rules_count+skills_count+hooks_count+agents_count = 6
+    Six fichiers de contexte versionnés : au moins un compteur non nul, c'est le « behavior »
+    que Green et Copper demandent.
+      git-activity.json › context_files = {rules:0, skills:4, hooks:0, agents:2}
     Aucune relance automatique bornée n'a été trouvée : c'est ce que Silver demande en plus.
-      repo-context/ › retry_pattern = aucune relance bornée trouvée
+      repo-context/ › bounded retry = none found
 ```
 
-Les phrases ci-dessus sont la **forme** attendue, pas leur texte figé : le texte est celui que
-l'évaluateur d'axe produit (§ 2, invariant 4).
+Les pointeurs de cet exemple sont ceux que le domaine produit réellement (vérifié le 2026-08-31
+dans `HarnessEvaluator` et à la spec 02 § *Preuves rendues*) ; les phrases, elles, sont la
+**forme** attendue, pas leur texte figé : le texte est celui que le producteur du `claim` écrit
+(§ 2, invariant 4).
 
 ### 5.3 L'ordre des axes
 
@@ -200,32 +213,36 @@ Un seul ordre dans toute la sortie, celui de l'actionnabilité causale (règle 5
 parallèle, Intervention, Taille**. Il est déjà porté par une seule constante,
 `RecommendationPolicy::AXIS_ORDER` ; le rendu la lit, il n'en garde pas de copie.
 
-### 5.4 L'état des quatre axes — synthèse, puis les axes acquis
+### 5.4 L'état des quatre axes — synthèse, puis les autres axes
 
 Écart 1.6 : la sortie ne montrait que ce qui bloque, et la personne évaluée ne voyait jamais ce
 qu'elle avait déjà acquis. **Les quatre axes sont désormais rendus, sans exception**, en deux
-temps — tranché le 2026-08-31 : une ligne de synthèse, puis les axes acquis en clair. Le tableau
+temps — tranché le 2026-08-31 : une ligne de synthèse, puis les autres axes en clair. Le tableau
 des quatre axes est écarté : sa colonne de pointeurs impose des rangées bien au-delà de
 `MAX_WIDTH`, et replier une cellule couperait un pointeur (§ 2, invariant 3).
 
 **La ligne de synthèse**, en tête du bloc *Ce qui a mené là*, juste sous son titre :
 
 ```
-  Taille 🥇 Gold · En parallèle 🥇 Gold · Harness 🥉 Copper (bloque) · Intervention 🥉 Copper (bloque)
+  Harness 🥉 Copper (bloque) · En parallèle 🥇 Gold · Intervention 🥉 Copper (bloque) · Taille 🥇 Gold
 ```
 
-- **les quatre axes**, dans l'ordre du § 5.3, séparés par ` · ` ;
-- chacun : nom de l'axe, niveau atteint **icône et nom**, et `(bloque)` pour ceux qui plafonnent —
-  jamais la couleur ni l'icône seule pour dire lequel bloque ;
+- **les quatre axes**, dans l'ordre du § 5.3 — Harness, En parallèle, Intervention, Taille —,
+  séparés par ` · ` ;
+- chacun : nom de l'axe, niveau atteint **icône et nom**, et une mention entre parenthèses quand
+  il y a lieu — `(bloque)` pour un axe qui plafonne, `(fourchette)` pour un axe non tranché,
+  `(bloque, fourchette)` pour les deux. **Jamais la couleur ni l'icône seule** pour dire lequel
+  bloque ;
+- un axe en fourchette y montre **plancher et plafond** : `Intervention 🔹 Blue–🥉 Copper
+  (fourchette)` ;
 - **c'est une exception nommée à la règle 4** : la synthèse **récapitule des lignes pointées
   rendues juste en dessous**, elle n'affirme rien de neuf. Elle est exclue du contrôle du § 12 au
   même titre que la légende du § 4. Avec la légende et la pièce nommée par son chemin en `non
-  évaluable` (§ 6.2), **cela fait trois exceptions, et le fichier n'en connaît pas d'autre** :
-  aucune ligne ne peut se réclamer de celle-ci ;
+  évaluable` (§ 6.2), **cela fait trois exceptions, et le fichier n'en connaît pas d'autre** ;
 - au-delà de `MAX_WIDTH` elle se replie comme n'importe quelle phrase (§ 2), **sur un séparateur
   ` · `**, jamais au milieu d'un couple axe–niveau.
 
-**Les axes acquis**, après le détail de l'axe (ou des axes) qui bloquent, sous leur propre
+**Les autres axes**, après le détail de l'axe (ou des axes) qui bloquent, sous leur propre
 intertitre `Déjà acquis pour <niveau suivant>`. Une entrée par axe qui ne bloque pas, portant :
 
 1. le **nom de l'axe** ;
@@ -241,6 +258,21 @@ Trois règles s'y ajoutent, et elles suffisent à rendre le bloc déterministe :
 - **aucun axe omis** : un axe sans verdict est impossible hors `non évaluable` ; s'il survenait,
   il se rendrait comme non observable (§ 6), jamais en silence.
 
+**Un axe en fourchette qui ne bloque pas garde tout ce qui le concerne** — décidé le 2026-08-31,
+et c'est ce qui remplace le bloc *Incertitude sur les autres axes* qui existait à part. Cas réel :
+sur `fixtures/short-sample`, En parallèle plafonne, mais Intervention et Taille sont en fourchette
+elles aussi ; leur doute ne doit pas disparaître de la sortie parce qu'elles ne bloquent pas. Son
+entrée porte donc, en plus des quatre points ci-dessus :
+
+- le niveau rendu est le **plancher** de la fourchette — c'est lui qui est acquis, le reste n'est
+  pas prouvé, et c'est ce qui rend l'intertitre vrai ;
+- la mention `(fourchette)` sur la ligne de tête, et une ligne `fourchette : entre <plancher> et
+  <plafond>` ;
+- une ligne `pour trancher : <manque chiffré>` — `N PR de plus` pour un échantillon court,
+  `fournir le champ <x>` pour un signal absent (§ 6.1). **C'est le seul geste qu'un axe non
+  bloquant reçoit** : il ne prend pas de geste de la table du § 7, qui ne s'adresse qu'à ce qui
+  bloque (règle 5), mais son doute reste levable et la sortie dit comment.
+
 ### 5.5 *Comment monter d'un cran* — un seul bloc (écart 1.8)
 
 « Comment monter d'un cran » et « Prochaine quête » disaient deux fois la même chose, le second
@@ -251,7 +283,7 @@ Comment monter d'un cran — vers 🥈 Silver
   1. Harness (à faire en premier) — ajouter une relance automatique bornée (N essais visibles)
      dans la CI ou un script, sur une commande du projet.
      Ce qui le prouvera : repo-context/ › bounded retry
-     Aujourd'hui : repo-context/ › retry_pattern = aucune relance bornée trouvée
+     Aujourd'hui : repo-context/ › bounded retry = none found
   2. Intervention — automatiser la validation (tests, lint, duplication) pour qu'aucune reprise
      humaine ne soit nécessaire après ouverture.
      Ce qui le prouvera : pull_requests.median_correction_commits_after_open
@@ -261,7 +293,9 @@ Comment monter d'un cran — vers 🥈 Silver
 - **chaque** geste porte le champ qui devra bouger (`Recommendation::$proofField`, § 7) ;
 - **le premier seul** porte la mention « à faire en premier » et la ligne « Aujourd'hui : », le
   pointeur de l'état d'où il part. C'est la « prochaine quête » de la gamification (§ 8), qui
-  cesse d'être un bloc pour devenir la tête du plan.
+  cesse d'être un bloc pour devenir la tête du plan ;
+- un axe bloquant **en fourchette** garde sa ligne `pour trancher : <manque chiffré>` sous son
+  geste, comme aujourd'hui.
 
 ### 5.6 *Notes* — dédupliquées et raccourcies (écart 1.10)
 
@@ -291,15 +325,21 @@ déduplication suffit. Une note dont la famille n'est pas déterminée par sa so
 ## 6. Fiabilité de l'évaluation — Raccord avec les statuts
 
 Écart 1.7 : « statut » ne dit pas ce qu'il qualifie. Ce que le mot qualifie, c'est **la fiabilité
-de l'évaluation** — et c'est ce mot qui est rendu. **Les trois statuts gardent leur nom** dans le
-domaine (`AssessmentStatus`), dans la spec 05 et dans `AGENTS.md` : ce qui change est le texte
-affiché, et lui seul.
+de l'évaluation** — et c'est ce mot qui introduit la ligne. **Les trois statuts gardent leur nom,
+y compris à l'écran** : `évalué`, `évalué, confiance basse`, `non évaluable` sont une décision
+figée (`AGENTS.md`, règle 6 et *Décisions figées*), ils ne se rebaptisent pas. Ce chantier ne
+change qu'une chose : le libellé canonique **cesse d'être seul** et gagne, sur la même ligne, ce
+qu'il veut dire. Il reste donc `grep`-able dans la sortie, mot pour mot.
 
-| Statut (interne, inchangé) | Ce que la sortie affiche |
+| Statut | Ce que la sortie affiche |
 |---|---|
-| `évalué` | `Fiabilité : mesure complète — les quatre axes ont assez de matière pour être tranchés.` |
-| `évalué, confiance basse` | `Fiabilité : partielle — <ce qui manque, chiffré> ; le niveau est donné en fourchette.` |
-| `non évaluable` | pas de ligne *Fiabilité* : l'en-tête devient `Évaluation impossible` (§ 6.2) |
+| `évalué` | `Fiabilité : évalué — les quatre axes ont assez de matière pour être tranchés.` |
+| `évalué, confiance basse` | `Fiabilité : évalué, confiance basse — <les axes en fourchette, nommés> ; <le manque, chiffré> ; le niveau est donné en fourchette.` |
+| `non évaluable` | pas de ligne *Fiabilité* : le libellé est porté par l'en-tête lui-même (§ 6.2) |
+
+La ligne *Fiabilité* nomme **tous** les axes en fourchette, pas seulement celui qui plafonne :
+c'est l'autre moitié de la décision du § 5.4, et les deux se tiennent — la ligne les annonce, les
+entrées d'axe les détaillent.
 
 ### 6.1 Les cas dégradés, en langage clair (écart 2.3)
 
@@ -319,13 +359,14 @@ Tout cas dégradé rend **trois choses, dans cet ordre**, par axe concerné :
 La fourchette reste rendue — plancher et plafond, icône et nom — mais **jamais seule** : la phrase
 qui l'accompagne dit ce qui empêche de trancher. Le mot « manque N PR » ne sort que lorsque le
 manque **est** un nombre de PR ; un champ absent ne se rend jamais comme un échantillon court.
+Ceci vaut pour tout axe en fourchette, qu'il bloque (§ 5.5) ou non (§ 5.4).
 
 ### 6.2 `non évaluable`
 
 L'en-tête des quatre lignes est remplacé par :
 
 ```
-Évaluation impossible : galahad (stagiaire)
+⛔ Non évaluable — galahad (stagiaire)
 Ce qui manque : git-activity.json, absent ou illisible.
 Ce que ça empêche : les quatre axes se calculent depuis ce fichier ; sans lui, aucun niveau ne
                     peut être rendu.
@@ -333,8 +374,11 @@ Pour débloquer : fournir un git-activity.json valide à la racine du dossier de
                  (profiles/galahad/).
 ```
 
-Puis, inchangés : *Ce qui a été lu* (l'identité si `profile.json` était lisible) et *Notes*. Ni
-frise, ni niveau, ni geste : il n'y a rien à en dire, et en fabriquer serait mentir.
+Le libellé canonique `non évaluable` est donc sur la première ligne, icône **et** mot — avec sa
+capitale de début de ligne, `Non évaluable`, et c'est la seule différence tolérée : le contrôle du
+§ 12 compare le libellé sans tenir compte de cette capitale initiale. Puis,
+inchangés : *Ce qui a été lu* (l'identité si `profile.json` était lisible) et *Notes*. Ni frise,
+ni niveau, ni geste : il n'y a rien à en dire, et en fabriquer serait mentir.
 
 Deux précisions, l'une et l'autre nécessaires pour que la règle 4 reste vraie ici :
 
@@ -342,7 +386,7 @@ Deux précisions, l'une et l'autre nécessaires pour que la règle 4 reste vraie
   à citer dans un fichier qu'on n'a pas pu lire. C'est le seul endroit de la sortie où une
   affirmation se réfère à une pièce plutôt qu'à un couple champ = valeur, et le contrôle du § 12
   l'exclut nommément, comme la légende du § 4 ;
-- **`profile.json` illisible** : la ligne 1 se réduit à `Évaluation impossible`, sans identité, et
+- **`profile.json` illisible** : la ligne 1 se réduit à `⛔ Non évaluable`, sans identité, et
   *Ce qui a été lu* dit que rien n'a pu l'être — comportement actuel, conservé.
 
 ## 7. Table des gestes (`Recommendation`)
@@ -434,7 +478,7 @@ Quatre contraintes, chacune avec son motif :
    `comment()`. Ces helpers sont **interdits** ici : ils rendraient les fichiers attendus
    dépendants de `COLUMNS`. Restent autorisés, parce qu'ils écrivent leur argument tel quel :
    `section()`, `text()`, `listing()`, `writeln()`, `newLine()`. Le repli de ligne reste celui du
-   rendu, à `MAX_WIDTH` (§ 2).
+   rendu, à `MAX_WIDTH` (§ 2), exception de pointeur comprise.
    **Les titres de bloc passent par `section()`** — soulignés d'une ligne de tirets, c'est ce que
    le helper produit, et c'est accepté tel quel (tranché le 2026-08-31). **`title()` est
    proscrit** : son soulignement en `=` sous la ligne d'identité alourdit l'en-tête sans rien
@@ -461,8 +505,9 @@ attendus :
 | `(ex æquo)` | les axes nommés un par un, plus la phrase « chacun doit monter » | 1.1 |
 | `niveau visé : X` | `Niveau suivant : X` **et sa condition de passage** | 1.5 |
 | frise d'icônes nues | frise icône **+** nom | 1.2 |
-| `statut` / `évalué, confiance basse` **affiché** | `Fiabilité : …` (le statut garde son nom dans le domaine) | 1.7 |
+| le libellé de statut rendu **seul** | `Fiabilité : <libellé canonique> — <ce qu'il veut dire>` ; les trois libellés eux-mêmes sont **inchangés** (§ 6) | 1.7 |
 | bloc `Prochaine quête` | premier élément de *Comment monter d'un cran*, marqué | 1.8 |
+| bloc `Incertitude sur les autres axes` | fondu dans la ligne *Fiabilité* (les axes nommés) et dans les entrées d'axe du § 5.4 (fourchette et manque chiffré) | 1.6, 2.3 |
 | lignes de pointeur sans phrase | une phrase par `Evidence`, pointeur en appui | 1.1, 1.9 |
 | intertitre `Acquis pour X` | ligne de synthèse des quatre axes, puis `Déjà acquis pour X` | 1.6 |
 
@@ -473,19 +518,26 @@ attendus :
 | `src/Domain/` — évaluateurs des quatre axes | les phrases des `Evidence` portent l'échelle (§ 3) ; aucun seuil n'est déplacé |
 | `src/Domain/SourceGlossary.php` | **créé** — la table des légendes du § 4 |
 | `src/Domain/Progression/RecommendationTable.php` | **une constante** : `INTERVENTION_GOLD` est réalignée **mot pour mot** sur la cellule Intervention → Gold de la table du § 7, comme le docblock de la classe le promet déjà pour toutes les autres. Écart constaté le 2026-08-31, corrigé ici parce que c'est ce chantier qui touche la table |
+| `src/Application/EvaluateProfileHandler.php` | les deux `Evidence` du filtre White (`whiteVerdicts()`) passent au format phrase + échelle (§ 2, invariant 4) ; aucune autre modification du handler |
 | `src/Infrastructure/Render/TextRenderer.php` | la sortie du § 5, la grammaire du § 2, `SymfonyStyle` (§ 9) |
 | `src/Infrastructure/Console/EvaluateCommand.php` | passe sa sortie au rendu ; l'échappement du § 9, contrainte 4 |
-| `tests/expected/evaluated.txt`, `low-confidence.txt`, `not-assessable.txt` | **les trois sont réécrits**, chacun recopié depuis la sortie du rendu, jamais à la main. Ces trois-là figent le rendu d'`Assessment` construits dans le test, pas d'un profil du dépôt (vérifié le 2026-08-31 : `TextRendererTest` les fabrique ; c'est `CalibrationTest` qui rend les vrais profils) — ils restent donc libres de porter des cas que les profils fournis ne montrent pas, et `docs/sortie.md` reste la seule pièce recopiée d'une exécution réelle |
+| `tests/expected/evaluated.txt`, `low-confidence.txt`, `not-assessable.txt` | **les trois sont réécrits**, chacun recopié depuis la sortie du rendu, jamais à la main. Ces trois-là figent le rendu d'`Assessment` **construits dans le test**, pas d'un profil du dépôt (vérifié le 2026-08-31 : `TextRendererTest` les fabrique) |
+| `tests/expected/arthur.txt` | **créé** — le seul instantané d'une sortie **réelle** (§ 12, test 14) |
 | `tests/` | les tests du § 12 |
-| `docs/sortie.md` | **réécrit**, et **régénéré depuis une exécution réelle** en même temps que les fichiers attendus : la sortie annotée bloc par bloc, les trois statuts et leur texte de fiabilité (règle 10 d'`AGENTS.md`, table du § 7.5 de la spec 00). Sa divergence actuelle avec `tests/expected/evaluated.txt` — claims et notes différents, constatée le 2026-08-31 — est connue et **résorbée par cette PR** : le panneau se recopie d'un `make evaluate arthur`, jamais à la main |
+| `docs/sortie.md` | **réécrit**, et **régénéré depuis une exécution réelle** en même temps que l'instantané `arthur` : la sortie annotée bloc par bloc, les trois statuts et leur ligne de fiabilité (règle 10 d'`AGENTS.md`, table du § 7.5 de la spec 00). Sa divergence actuelle avec `tests/expected/evaluated.txt` — claims et notes différents, constatée le 2026-08-31 — est connue et **résorbée par cette PR** : le panneau se recopie d'un `make evaluate arthur`, jamais à la main |
 | `fixtures/gold-unreachable/README.md` | **une ligne** : le plafond d'Intervention n'est plus attendu en note mais sur la ligne *Niveau suivant* (§ 5.1 et § 5.6, règle 1) |
-| `README.md` § *La sortie* | l'extrait devient **le bloc d'en-tête entier** (§ 5.1), recopié de la même exécution jusqu'à la première ligne vide, et la liste « un bloc par ligne » suit les blocs du § 5 (même règle, quatrième ligne de la table du § 7.5 : une forme de sortie qui change périme les deux) |
-| `docs/specs/00-vue-ensemble.md` § 7.3, point 3 | **une ligne, changée par cette PR** : « les quatre premières lignes (frise, axe bloquant, niveau, atteint / visé) » devient **le bloc d'en-tête entier**. Motif : l'en-tête du § 5.1 a quatre lignes logiques dont une se replie, et couper à la quatrième ligne physique couperait une phrase |
+| `README.md` § *La sortie* | l'extrait devient **le bloc d'en-tête entier** (§ 5.1), recopié de la même exécution jusqu'à la première ligne vide, et la liste « un bloc par ligne » suit les blocs du § 5 |
+| `docs/specs/00-vue-ensemble.md` § 7.5 et § 7.7 test 2 | **deux phrases d'appui**, à aligner sur le § 7.3 amendé : « le `README.md` embarque les quatre premières lignes d'une sortie réelle » devient le bloc d'en-tête, et les deux lignes citées en exemple du préfixe commun README / `docs/sortie.md` (`axe bloquant : …`, `Niveau atteint : …`) sont remplacées par deux lignes du nouvel en-tête. Ni la table du § 7.5 ni le test 2 ne changent |
+
+Le § 7.3, point 3 de `docs/specs/00-vue-ensemble.md` est **déjà amendé** par la PR qui porte cette
+spec : l'extrait du `README.md` y est le bloc d'en-tête entier, et non plus « les quatre premières
+lignes ». Motif : l'en-tête du § 5.1 a quatre lignes logiques dont une se replie, et couper à la
+quatrième ligne physique couperait une phrase.
 
 Deux contraintes de découpage, imposées par `AGENTS.md` :
 
 - **règle 7** : un commit ne touche jamais `src/Domain/` et `src/Infrastructure/` ensemble — le
-  chantier se commit au minimum en domaine, infrastructure, tests, documentation ;
+  chantier se commit au minimum en domaine, application, infrastructure, tests, documentation ;
 - les commentaires de `src/` qui citent un § de cette spec par son titre suivent les titres
   ci-dessus : un pointeur pendant est un défaut au même titre qu'ailleurs.
 
@@ -495,51 +547,84 @@ de fini l'exige.
 
 ## 12. Tests
 
-Les tests existants qui figent un invariant sont **conservés** : rendu de chaque profil comparé à
-son fichier attendu, ex æquo `arthur` rendu sans moyenne, ordre Harness > En parallèle >
-Intervention > Taille, aucune ligne au-delà de `MAX_WIDTH`, aucun pointeur coupé par un repli,
-`non évaluable` qui nomme son prérequis et ce qui a été lu quand même. S'y ajoutent :
+Les tests existants qui figent un invariant sont **conservés** : rendu comparé au fichier attendu
+pour les **trois** `Assessment` construits par `TextRendererTest` (`évalué`, `évalué, confiance
+basse`, `non évaluable`) ; ex æquo `arthur` rendu sans moyenne ; ordre Harness > En parallèle >
+Intervention > Taille ; `non évaluable` qui nomme son prérequis et ce qui a été lu quand même.
+Deux d'entre eux changent d'énoncé, et c'est dit ici plutôt que découvert à l'exécution :
 
-1. **Une phrase par pointeur, un pointeur par phrase** (§ 2) : dans chacun des trois fichiers
-   attendus, le nombre de lignes contenant ` › ` est égal au nombre d'`Evidence` et de `Note`
-   rendues, et **aucune** ligne de pointeur n'est la première ligne de son entrée. Trois exclusions
-   du compte, nommées ici et nulle part ailleurs : les légendes du § 4, la ligne de synthèse du
-   § 5.4, et les lignes de `non évaluable` qui nomment une pièce plutôt qu'un champ (§ 6.2).
+- « aucune ligne au-delà de `MAX_WIDTH` » devient « aucune ligne au-delà de `MAX_WIDTH`,
+  **sauf les lignes de pointeur**, qui n'ont ni repli ni troncature » (§ 2, invariant 3) ;
+- « aucun pointeur coupé par un repli » est **renforcé** : un pointeur n'est jamais replié, quelle
+  que soit sa longueur.
+
+S'y ajoutent :
+
+1. **Une phrase par pointeur, un pointeur par phrase** (§ 2). **Portée du contrôle, close** : il
+   ne porte que sur les lignes rendues **depuis une `Evidence` ou une `Note`**. Sont hors champ,
+   parce qu'elles ne sont pas des affirmations sur le profil : les quatre lignes de l'en-tête
+   (§ 5.1), la frise, la ligne *Fiabilité*, les titres de bloc et leur soulignement, les
+   intertitres, les lignes de tête d'axe, les intitulés de famille de notes, et les lignes du plan
+   de progression (numéro, geste, « Ce qui le prouvera », « pour trancher »). Sont exclues
+   nommément, alors même qu'elles ressemblent à des affirmations : la légende du § 4, la ligne de
+   synthèse du § 5.4, et les lignes de `non évaluable` qui nomment une pièce plutôt qu'un champ
+   (§ 6.2). Dans ce périmètre : le nombre de lignes contenant ` › ` égale le nombre d'`Evidence`
+   et de `Note` rendues, et aucune ligne de pointeur n'est la première ligne de son entrée.
 2. **Toutes les `Evidence` d'un axe bloquant sont rendues** — le défaut corrigé était d'en perdre
    toutes sauf la première : un verdict à trois `Evidence` rend trois phrases et trois pointeurs.
+   Et le doublon ne revient pas : sur `fixtures/white`, les deux `Evidence` partagées par les
+   quatre axes (`whiteVerdicts()`) ne sortent **qu'une fois** (§ 2, invariant 5).
 3. **Chaque chiffre porte son échelle** (§ 3), testé côté domaine, par axe et par bande : la
    phrase de l'`Evidence` contient la valeur du seuil nommé qui borne la bande, **lue depuis la
    constante**, jamais réécrite dans le test.
 4. **Les quatre axes sont dans la sortie** (§ 5.4) : la ligne de synthèse les porte tous les
    quatre, dans l'ordre de `RecommendationPolicy::AXIS_ORDER`, chacun avec son niveau (icône +
-   nom), et `(bloque)` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne ;
-   chaque axe qui ne bloque pas se retrouve ensuite sous `Déjà acquis`, avec son niveau et au
-   moins un pointeur. **Les exclusions du contrôle 1 sont closes** : le test échoue si une ligne
-   sans pointeur apparaît hors des trois cas qui y sont nommés.
-5. **La condition de passage** (§ 5.1), un cas par ligne de la table du § 5.1 : `perceval` (un
+   nom), `(bloque)` sur ceux — et seulement ceux — que `Assessment::$cappingAxes` désigne, et
+   `(fourchette)` sur ceux — et seulement ceux — dont la confiance est un `Range` ; chaque axe qui
+   ne bloque pas se retrouve ensuite sous `Déjà acquis`, avec son niveau et au moins un pointeur.
+5. **Un axe en fourchette qui ne bloque pas ne perd rien** (§ 5.4) : sur `fixtures/short-sample`,
+   Intervention et Taille — qui ne plafonnent pas — portent chacune leur mention `(fourchette)`,
+   leur ligne `fourchette : entre … et …` et leur ligne `pour trancher : …` ; la ligne *Fiabilité*
+   les nomme toutes les deux, en plus de l'axe qui plafonne.
+6. **La condition de passage** (§ 5.1), un cas par ligne de la table du § 5.1 : `perceval` (un
    seul axe bloquant) ne rend pas la phrase de la règle du minimum ; `arthur` (deux axes) la rend
    et nomme les deux ; la fixture `gold-unreachable` rend Gold « hors d'atteinte ici ». Le cas
    « déjà Gold » **n'a pas de fixture et n'en aura pas** : Gold global exige Intervention à Gold,
    inatteignable par construction (spec 03) — la branche se teste sur un `Assessment` construit
    dans le test, comme la garde qu'elle est.
-6. **La légende sort une fois** (§ 4) : sur un profil qui cite `git-activity.json` dix fois, la
+7. **La légende sort une fois** (§ 4) : sur un profil qui cite `git-activity.json` dix fois, la
    légende apparaît exactement une fois, avant le premier pointeur qui cite la pièce ; une pièce
    hors table ne produit aucune légende.
-7. **Le vocabulaire retiré ne revient pas** (§ 10) : `axe bloquant`, `ex æquo`, `niveau visé`,
-   `Prochaine quête` et le mot `statut` sont absents des trois fichiers attendus.
-8. **Les notes sont dédupliquées** (§ 5.6) : aucun pointeur n'apparaît deux fois dans le bloc
+8. **Le vocabulaire retiré ne revient pas, les libellés canoniques restent** (§ 10) :
+   `axe bloquant`, `ex æquo`, `niveau visé`, `Prochaine quête` et `Incertitude sur les autres
+   axes` sont absents des fichiers attendus ; et chacun des trois libellés — `évalué`,
+   `évalué, confiance basse`, `non évaluable` — est **présent** dans le fichier attendu de son
+   statut, mot pour mot, à la capitale initiale près pour `non évaluable` (§ 6.2) — c'est la
+   décision figée de la règle 6 d'`AGENTS.md` rendue vérifiable.
+9. **Les notes sont dédupliquées** (§ 5.6) : aucun pointeur n'apparaît deux fois dans le bloc
    *Notes* ; aucun pointeur du bloc *Notes* n'apparaît déjà dans un bloc précédent ; un intitulé
    de famille apparaît au plus une fois.
-9. **Les cas dégradés disent les trois choses** (§ 6.1) : sur `fixtures/absent-signals`, la sortie
-   nomme le champ manquant avec son pointeur `= absent`, dit ce qu'il empêche, et son premier
-   geste est « fournir le champ » ; sur `fixtures/short-sample`, elle chiffre le manque en PR
-   **et** nomme le plancher.
-10. **La sortie ne dépend pas du terminal** (§ 9, contrainte 1) : le rendu est identique avec
+10. **Les cas dégradés disent les trois choses** (§ 6.1) : sur `fixtures/absent-signals`, la
+    sortie nomme le champ manquant avec son pointeur `= absent`, dit ce qu'il empêche, et son
+    premier geste est « fournir le champ » ; sur `fixtures/short-sample`, elle chiffre le manque
+    en PR **et** nomme le plancher.
+11. **La sortie ne dépend pas du terminal** (§ 9, contrainte 1) : le rendu est identique avec
     `COLUMNS=40` et avec `COLUMNS=200`.
-11. **Le texte du profil n'est pas mangé par le formateur** (§ 9, contrainte 4) : un `<` dans une
-    note et dans une identité ressort tel quel.
-12. **Sans décoration, rien ne se perd** (§ 9, contrainte 3) : la sortie décorée et la sortie non
-    décorée portent les mêmes mots et les mêmes icônes.
+12. **Le texte du profil n'est pas mangé par le formateur** (§ 9, contrainte 4) : un `<` dans une
+    note et dans une identité ressort tel quel — et, la valeur d'un pointeur pouvant recopier une
+    note de profil, la ligne longue qui en résulte n'est ni repliée ni tronquée (§ 2,
+    invariant 3).
 13. **Le geste rendu est celui de la table** (§ 7) : pour chaque paire (axe, niveau visé),
     `RecommendationTable::gestureFor()` rend le texte de la cellule correspondante **mot pour
     mot** — Intervention → Gold compris, qui ne l'était pas avant ce chantier.
+14. **Un instantané de sortie réelle** — test **neuf**, et c'est le seul du chantier à partir d'un
+    profil du dépôt : la sortie de `arthur` rendue par le câblage complet (`ApplicationFactory`)
+    est comparée à `tests/expected/arthur.txt`. Motif du choix, écrit pour qu'on ne le rejoue
+    pas : les trois fichiers attendus historiques figent des `Assessment` construits à la main
+    (vérifié le 2026-08-31), et `CalibrationTest` ne compare que le niveau et les axes plafonnants
+    — **aucun test ne regardait la sortie réelle d'un profil**, ce qui est précisément la chose
+    que ce chantier prétend améliorer. Un seul profil est figé, `arthur`, parce que c'est celui
+    que `docs/sortie.md` et le `README.md` recopient : le test devient le garde-fou du point de
+    revue 10 (« la doc suit le code »). Les trois autres profils calibrés restent couverts par
+    `CalibrationTest`, sans instantané — figer quatre sorties ferait payer chaque reformulation de
+    phrase quatre fois, sans rien prouver de plus.
