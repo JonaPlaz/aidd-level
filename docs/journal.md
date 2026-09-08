@@ -89,3 +89,7 @@ pointeur vérifiable — sans pointeur elle ne vaut rien.
 | 2026-08-31T09:25Z | conduite | session Claude Code · fable · défaut | prérequis Docker ajouté au README (une ligne, § Installation) — remarque de Jonathan au remplissage du formulaire de rendu ; poussé directement sur main sous la même autorisation d'urgence que `ce3d003`, journalisée plus haut | README.md § Installation et lancement | — |
 | 2026-08-31T09:27Z | conduite | session Claude Code · fable · défaut | README § lancement : le geste jury écrit — déposer un dossier de mesures dans profiles\/ puis make evaluate <nom> (remarque de Jonathan au formulaire de rendu) ; poussé directement sur main, même autorisation d'urgence journalisée que `ce3d003` | README.md § Installation et lancement | — |
 | 2026-09-08T13:03Z | main | session | config VS Code versionnée (`.vscode/settings.json`, `extensions.json`, `tasks.json`) : identité navy/cyan/or, police mono, tâches `make`, push direct sur `main` à la demande de Jonathan | `227d63b` | — |
+| 2026-09-08T13:13Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
+| 2026-09-08T13:24Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
+| 2026-09-08T13:29Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
+| 2026-09-08T13:33Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
