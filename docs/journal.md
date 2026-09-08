@@ -93,3 +93,5 @@ pointeur vérifiable — sans pointeur elle ne vaut rien.
 | 2026-09-08T13:24Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
 | 2026-09-08T13:29Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
 | 2026-09-08T13:33Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `a1f12ef` | — |
+| 2026-09-08T14:39Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `6446dcb` | — |
+| 2026-09-08T16:16Z | main | hook `journal.js` (SubagentStop) | agent terminé : inconnu | `6446dcb` | — |
