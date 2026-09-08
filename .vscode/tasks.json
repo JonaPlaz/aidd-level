@@ -1,0 +1,53 @@
+{
+  // Every project command goes through make (Docker) — never php/composer directly.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "make test",
+      "type": "shell",
+      "command": "make test",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "make lint",
+      "type": "shell",
+      "command": "make lint",
+      "problemMatcher": []
+    },
+    {
+      "label": "make dup",
+      "type": "shell",
+      "command": "make dup",
+      "problemMatcher": []
+    },
+    {
+      "label": "make demo",
+      "type": "shell",
+      "command": "make demo",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "make evaluate <nom>",
+      "type": "shell",
+      "command": "make evaluate ${input:profile}",
+      "problemMatcher": []
+    },
+    {
+      "label": "make up",
+      "type": "shell",
+      "command": "make up",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "profile",
+      "type": "pickString",
+      "description": "Profil à évaluer (profiles/<nom>)",
+      "options": ["arthur", "bohort", "leodagan", "perceval", "venec", "lancelot", "self"],
+      "default": "arthur"
+    }
+  ]
+}

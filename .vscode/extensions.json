@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "bmewburn.vscode-intelephense-client",
+    "ms-vscode.makefile-tools",
+    "ms-azuretools.vscode-docker",
+    "github.vscode-github-actions",
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker",
+    "streetsidesoftware.code-spell-checker-french",
+    "anthropic.claude-code"
+  ],
+  "unwantedRecommendations": [
+    "felixfbecker.php-debug",
+    "zobo.php-intellisense"
+  ]
+}

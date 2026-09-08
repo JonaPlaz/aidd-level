@@ -1,0 +1,164 @@
+{
+  // aidd-level — workspace identity.
+  // Palette: AI-Driven Dev navy + electric cyan, with the Gold level as the accent.
+  // The user is colour-blind: the tint is carried by luminosity and contrast, never by hue
+  // alone, and every coloured surface also has a text marker (window title, status bar).
+
+  // ── Window & chrome ──────────────────────────────────────────────────────────
+  "window.title": "🥇 aidd-level — ${dirty}${activeEditorShort}${separator}${rootName}",
+  "workbench.colorTheme": "Default Dark Modern",
+  "workbench.colorCustomizations": {
+    // Title bar: deep navy, cyan text — the AIDD base.
+    "titleBar.activeBackground": "#0b1a33",
+    "titleBar.activeForeground": "#7ee8ff",
+    "titleBar.inactiveBackground": "#0b1a33",
+    "titleBar.inactiveForeground": "#7ee8ff99",
+    "titleBar.border": "#f2c14e",
+
+    // Activity bar: same navy, gold badge — "Gold" is the ceiling of the grid.
+    "activityBar.background": "#0b1a33",
+    "activityBar.foreground": "#e6f1ff",
+    "activityBar.inactiveForeground": "#e6f1ff66",
+    "activityBar.activeBorder": "#f2c14e",
+    "activityBar.activeBackground": "#132a4d",
+    "activityBarBadge.background": "#f2c14e",
+    "activityBarBadge.foreground": "#0b1a33",
+
+    // Status bar: gold on navy — the strongest luminosity contrast on screen, so the
+    // project is recognisable at a glance even in peripheral vision.
+    "statusBar.background": "#f2c14e",
+    "statusBar.foreground": "#0b1a33",
+    "statusBar.border": "#0b1a33",
+    "statusBarItem.hoverBackground": "#ffd977",
+    "statusBarItem.remoteBackground": "#0b1a33",
+    "statusBarItem.remoteForeground": "#f2c14e",
+    "statusBar.debuggingBackground": "#7ee8ff",
+    "statusBar.debuggingForeground": "#0b1a33",
+
+    // Editor: navy-tinted background, cyan cursor, rulers at the doc wrap width.
+    "editor.background": "#0f1729",
+    "editorCursor.foreground": "#7ee8ff",
+    "editorRuler.foreground": "#f2c14e33",
+    "editorLineNumber.activeForeground": "#f2c14e",
+    "editorGroupHeader.tabsBackground": "#0b1a33",
+    "tab.activeBorderTop": "#f2c14e",
+    "tab.activeBackground": "#0f1729",
+    "tab.inactiveBackground": "#0b1a33",
+    "sideBar.background": "#0c1526",
+    "sideBarTitle.foreground": "#7ee8ff",
+    "panel.border": "#f2c14e66",
+    "focusBorder": "#7ee8ff",
+    "terminal.background": "#0b1424",
+    "terminalCursor.foreground": "#f2c14e"
+  },
+
+  // ── Typography ───────────────────────────────────────────────────────────────
+  // Monospace with ligatures, first installed face wins; the trailing generic keeps it
+  // usable on a fresh machine.
+  "editor.fontFamily": "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 14,
+  "editor.lineHeight": 1.6,
+  "editor.fontWeight": "450",
+  "terminal.integrated.fontFamily": "'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace",
+  "terminal.integrated.fontSize": 13,
+  "debug.console.fontFamily": "'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace",
+
+  // ── Editor behaviour ─────────────────────────────────────────────────────────
+  // Docs and specs wrap at 100 columns; PHP follows PSR-12 (120 max).
+  "editor.rulers": [
+    { "column": 100, "color": "#f2c14e55" },
+    { "column": 120, "color": "#7ee8ff33" }
+  ],
+  "editor.renderWhitespace": "boundary",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.minimap.enabled": false,
+  "editor.stickyScroll.enabled": true,
+  "editor.linkedEditing": true,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.encoding": "utf8",
+
+  // ── Files & search ───────────────────────────────────────────────────────────
+  // `.brief/` is private: hidden from the explorer and from search so it is never quoted.
+  "files.exclude": {
+    "**/.git": true,
+    ".phpunit.cache": true,
+    ".php-cs-fixer.cache": true,
+    ".claude/worktrees": true,
+    "composer.phar": true
+  },
+  "search.exclude": {
+    "vendor": true,
+    ".brief": true,
+    ".claude/worktrees": true,
+    "composer.lock": true,
+    "docs/demo.mp4": true
+  },
+  "files.watcherExclude": {
+    "**/vendor/**": true,
+    "**/.claude/worktrees/**": true
+  },
+  "files.associations": {
+    ".worktreeinclude": "ignore",
+    ".php-cs-fixer.dist.php": "php",
+    "phpstan.neon.dist": "yaml",
+    "*.neon": "yaml"
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "composer.json": "composer.lock, composer.phar",
+    "README.md": "AGENTS.md, CLAUDE.md, ROADMAP.md, LICENSE",
+    "Dockerfile": "compose.yaml, Makefile",
+    "phpunit.xml.dist": "phpstan.neon.dist, .php-cs-fixer.dist.php"
+  },
+
+  // ── PHP (Intelephense) ───────────────────────────────────────────────────────
+  // PHP runs in Docker only; the language server just needs the version and stubs.
+  "intelephense.environment.phpVersion": "8.5.0",
+  "intelephense.files.exclude": [
+    "**/.git/**",
+    "**/.brief/**",
+    "**/.claude/worktrees/**",
+    "**/node_modules/**"
+  ],
+  "php.validate.enable": false,
+  "php.suggest.basic": false,
+  "[php]": {
+    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client",
+    "editor.formatOnSave": false,
+    "editor.tabSize": 4
+  },
+
+  // ── Markdown & docs (French, append-only journal) ────────────────────────────
+  "[markdown]": {
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 100,
+    "editor.quickSuggestions": { "comments": "off", "strings": "off", "other": "off" },
+    "files.trimTrailingWhitespace": false
+  },
+  "[json]": { "editor.tabSize": 2 },
+  "[jsonc]": { "editor.tabSize": 2 },
+  "[yaml]": { "editor.tabSize": 2 },
+  "[makefile]": { "editor.insertSpaces": false },
+
+  // ── Git ──────────────────────────────────────────────────────────────────────
+  // Conventional Commits, 72-char subject (AGENTS.md § Conventions).
+  "git.inputValidationSubjectLength": 72,
+  "git.inputValidationLength": 72,
+  "git.branchProtection": ["main"],
+  "git.branchProtectionPrompt": "alwaysPrompt",
+  "git.rebaseWhenSync": true,
+  "git.autofetch": true,
+
+  // ── Spelling / language ──────────────────────────────────────────────────────
+  // Code in English, prose in French: both dictionaries if cSpell is installed.
+  "cSpell.language": "en,fr",
+  "cSpell.words": ["aidd", "AIDD", "harnais", "Intelephense", "PHPStan", "PHPUnit", "Codex", "worktree", "worktrees"],
+
+  // ── Terminal ─────────────────────────────────────────────────────────────────
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "terminal.integrated.scrollback": 10000
+}
